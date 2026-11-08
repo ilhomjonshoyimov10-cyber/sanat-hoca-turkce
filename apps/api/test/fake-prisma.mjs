@@ -435,6 +435,10 @@ export function createFakePrisma() {
       async create({ data }) {
         db.results.push({ id: id(), createdAt: new Date(), ...data });
       },
+      // Kunlik XP chegarasini hisoblash uchun
+      async findMany({ where = {}, select } = {}) {
+        return db.results.filter((r) => match(r, where)).map((r) => pick(r, select));
+      },
       async groupBy({ where, take }) {
         const optIn = (uid) => db.users.find((u) => u.id === uid)?.leaderboardOptIn === true;
         const totals = new Map();

@@ -52,3 +52,35 @@ export class TypedAnswerDto {
   @IsString() @MaxLength(40)
   answer!: string;
 }
+
+// ───────────── Yangi o'yinlar ─────────────
+
+export class DrillQueryDto {
+  @IsOptional() @IsEnum(Level)
+  level?: Level;
+
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(10)
+  limit?: number;
+
+  /** Qo'shimcha mashqini qoida bo'yicha filtrlash (masalan "locative"). */
+  @IsOptional() @IsString() @MaxLength(40)
+  rule?: string;
+}
+
+/** Gap tuzish va qo'shimcha mashqi uchun javob. */
+export class TextAnswerDto {
+  @IsString() @MaxLength(1200)
+  token!: string;
+
+  @IsString() @MaxLength(300)
+  answer!: string;
+}
+
+/** So'z zanjiri: oldingi so'zning oxirgi harfidan boshlanadigan so'z. */
+export class ChainAnswerDto {
+  @IsString() @MaxLength(2000)
+  token!: string;
+
+  @IsString() @MaxLength(40)
+  answer!: string;
+}

@@ -5,13 +5,16 @@ import { useRouter } from "next/navigation";
 import { api, needs2fa } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { BuilderGame } from "./games/BuilderGame";
+import { ChainGame } from "./games/ChainGame";
 import { ListenGame } from "./games/ListenGame";
 import { MatchGame } from "./games/MatchGame";
 import { QuizGame } from "./games/QuizGame";
+import { SentenceGame } from "./games/SentenceGame";
+import { SuffixGame } from "./games/SuffixGame";
 import { errorText, LEVELS, type GameProps, type Stats } from "./games/types";
 
 type Row = { rank: number; name: string; xp: number; isMe: boolean };
-type Key = "quiz" | "match" | "builder" | "listen";
+type Key = "quiz" | "match" | "builder" | "listen" | "sentence" | "suffix" | "chain";
 
 const Icon = ({ children }: { children: ReactNode }) => (
   <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
@@ -22,6 +25,9 @@ const GAMES: { key: Key; title: string; text: string; icon: ReactNode; Comp: (p:
   { key: "match", title: "Juftlikni top", text: "Turkcha so'zni tarjimasi bilan bog'lang", icon: <Icon><circle cx="6" cy="12" r="3" /><circle cx="18" cy="12" r="3" /><path d="M9 12h6" /></Icon>, Comp: MatchGame },
   { key: "builder", title: "Harflardan so'z", text: "Aralash harflardan so'zni yig'ing", icon: <Icon><rect x="3" y="5" width="7" height="7" rx="1.5" /><rect x="14" y="5" width="7" height="7" rx="1.5" /><path d="M5 18h14" /></Icon>, Comp: BuilderGame },
   { key: "listen", title: "Tinglab yozish", text: "Eshiting va to'g'ri yozing", icon: <Icon><path d="M11 5 6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" /></Icon>, Comp: ListenGame },
+  { key: "sentence", title: "Gap tuzish", text: "Aralash so'zlardan gap yasang", icon: <Icon><path d="M4 7h16M4 12h10M4 17h13" /></Icon>, Comp: SentenceGame },
+  { key: "suffix", title: "Qo'shimchalar", text: "Unlilar moslashuvi va yumshash", icon: <Icon><path d="M7 8h10M12 8v9" /><circle cx="12" cy="19" r="1.6" /></Icon>, Comp: SuffixGame },
+  { key: "chain", title: "So'z zanjiri", text: "Oxirgi harfdan yangi so'z", icon: <Icon><path d="M9 12a3 3 0 0 1 3-3h1a3 3 0 0 1 0 6h-1" /><path d="M15 12a3 3 0 0 0-3-3h-1a3 3 0 0 0 0 6h1" /></Icon>, Comp: ChainGame },
 ];
 
 export function GamesPanel() {

@@ -12,9 +12,27 @@ const PURPOSE = 'quiz';
 const PURPOSE_MATCH = 'match';
 const PURPOSE_BUILDER = 'builder';
 const PURPOSE_LISTEN = 'listen';
+const PURPOSE_SENTENCE = 'sentence';
+const PURPOSE_SUFFIX = 'suffix';
+const PURPOSE_CHAIN = 'chain';
+
+/** So'z zanjiri necha qadamda tugaydi. Tokenning hajmini ham cheklaydi. */
+const CHAIN_LENGTH = 10;
+
+/**
+ * Gap tuzish va qo'shimcha mashqlarida so'zlarning takrorlash jadvali yo'q,
+ * ya'ni "vaqti kelganda beriladi" qoidasi ishlamaydi. Shuning uchun bu
+ * o'yinlarda XP ga KUNLIK CHEGARA qo'yamiz: aks holda bitta mashqni
+ * qayta-qayta yuborib cheksiz XP yig'ish mumkin bo'lardi.
+ */
+const DAILY_XP_CAP_PER_GAME = 120;
 
 interface MatchPayload { u: string; e: number; w: string[]; m: number[] }
 interface TypedPayload { u: string; e: number; w: string }
+interface SentencePayload { u: string; e: number; s: string }
+interface SuffixPayload { u: string; e: number; d: string }
+/** c = hozirgi so'z, used = ishlatilgan so'zlar, n = qadam raqami */
+interface ChainPayload { u: string; e: number; c: string; used: string[]; n: number }
 
 /** Turkcha kichik harfga o'tkazish (I → ı, İ → i) va NFC normallashtirish */
 const normTr = (s: string) => s.normalize('NFC').trim().toLocaleLowerCase('tr-TR');
@@ -295,5 +313,214 @@ export class GamesService {
     }
     await this.prisma.user.update({ where: { id: userId }, data: { leaderboardOptIn: optIn } });
     return { optIn };
+  }
+
+  // ═══════════════ Chegaralangan mukofot (so'zga bog'liq bo'lmagan o'yinlar) ═══════════════
+
+  /** Bugun shu o'yindan qancha XP olingani. */
+  private async xpToday(userId: string, game: GameType): Promise<number> {
+    const today = tashkentDay(new Date());
+    const rows = await this.prisma.gameResult.findMany({
+      where: { userId, game, createdAt: { gte: new Date(`${today}T00:00:00Z`) } },
+      select: { score: true },
+    });
+    return rows.reduce((sum, r) => sum + r.score, 0);
+  }
+
+  /** So'zga bog'lanmagan o'yinlar uchun mukofot. Kunlik chegaraga bo'ysunadi. */
+  private async settleFree(userId: string, game: GameType, correct: boolean) {
+    if (!correct) return { xpGained: 0, capped: false };
+    const already = await this.xpToday(userId, game);
+    const room = DAILY_XP_CAP_PER_GAME - already;
+    if (room <= 0) {
+      // Chegara tugadi: javob to'g'ri, lekin XP berilmaydi. Mashq qilish
+      // mumkin, faqat reyting uchun "ishlab olish" to'xtaydi.
+      return { xpGained: 0, capped: true };
+    }
+    const xp = Math.min(XP_PER_CORRECT, room);
+    const now = new Date();
+    await this.addActivity(userId, xp, now);
+    await this.prisma.gameResult.create({ data: { userId, game, score: xp } });
+    return { xpGained: xp, capped: false };
+  }
+
+  // ═══════════════ 5) Gap tuzish ═══════════════
+
+  async sentenceSet(userId: string, level: Level | undefined, limit = 5) {
+    const rows = await this.prisma.sentence.findMany({
+      where: { verified: true, ...(level ? { level } : {}) },
+      orderBy: { position: 'asc' },
+      take: 200,
+      select: { id: true, turkish: true, uzbek: true, note: true },
+    });
+    if (rows.length === 0) return { items: [] };
+
+    const chosen = shuffle(rows).slice(0, limit);
+    return {
+      items: chosen.map((s) => ({
+        token: this.seal(PURPOSE_SENTENCE, { u: userId, s: s.id }),
+        uzbek: s.uzbek,
+        note: s.note,
+        // So'zlar aralashtirilgan holda beriladi. To'g'ri tartib klientga
+        // YUBORILMAYDI — u faqat serverda tekshiriladi.
+        words: shuffle(s.turkish.split(/\s+/).filter(Boolean)),
+      })),
+    };
+  }
+
+  async sentenceAnswer(userId: string, dto: { token: string; answer: string }) {
+    const p = this.validOrThrow<SentencePayload>(PURPOSE_SENTENCE, dto.token, userId);
+    const sentence = await this.prisma.sentence.findUnique({
+      where: { id: p.s },
+      select: { turkish: true, uzbek: true, note: true },
+    });
+    if (!sentence) throw new BadRequestException('Gap topilmadi');
+
+    // Tinish belgilari va ortiqcha bo'shliqlar hisobga olinmaydi
+    const clean = (s: string) => normTr(s).replace(/[.,!?;:]/g, '').replace(/\s+/g, ' ');
+    const correct = clean(dto.answer) === clean(sentence.turkish);
+    const almost = !correct && fold(clean(dto.answer)) === fold(clean(sentence.turkish));
+
+    const { xpGained, capped } = await this.settleFree(userId, 'SENTENCE_BUILDER', correct);
+    return { correct, almost, answer: sentence.turkish, note: sentence.note, xpGained, capped, stats: await this.myStats(userId) };
+  }
+
+  // ═══════════════ 6) Qo'shimchalar mashqi ═══════════════
+
+  async suffixSet(userId: string, level: Level | undefined, limit = 5, rule?: string) {
+    const rows = await this.prisma.suffixDrill.findMany({
+      where: { verified: true, ...(level ? { level } : {}), ...(rule ? { rule } : {}) },
+      orderBy: { position: 'asc' },
+      take: 200,
+      select: { id: true, base: true, prompt: true },
+    });
+    if (rows.length === 0) return { items: [] };
+
+    const chosen = shuffle(rows).slice(0, limit);
+    return {
+      items: chosen.map((d) => ({
+        token: this.seal(PURPOSE_SUFFIX, { u: userId, d: d.id }),
+        base: d.base,
+        prompt: d.prompt,
+      })),
+    };
+  }
+
+  async suffixAnswer(userId: string, dto: { token: string; answer: string }) {
+    const p = this.validOrThrow<SuffixPayload>(PURPOSE_SUFFIX, dto.token, userId);
+    const drill = await this.prisma.suffixDrill.findUnique({
+      where: { id: p.d },
+      select: { answer: true, alternates: true, explanation: true },
+    });
+    if (!drill) throw new BadRequestException('Mashq topilmadi');
+
+    const accepted = [drill.answer, ...drill.alternates].map(normTr);
+    const given = normTr(dto.answer);
+    const correct = accepted.includes(given);
+    // Turkcha harflarsiz yozgan bo'lsa ("gozden") — "deyarli to'g'ri"
+    const almost = !correct && accepted.map(fold).includes(fold(given));
+
+    const { xpGained, capped } = await this.settleFree(userId, 'SUFFIX_TRAINER', correct);
+    return { correct, almost, answer: drill.answer, explanation: drill.explanation, xpGained, capped, stats: await this.myStats(userId) };
+  }
+
+  // ═══════════════ 7) So'z zanjiri ═══════════════
+
+  /** Oxirgi harf: turkcha kichik harfga o'tkazib olinadi. */
+  private lastLetter(word: string): string {
+    const w = normTr(word).replace(/[^\p{L}]/gu, '');
+    return w.slice(-1);
+  }
+
+  async chainStart(userId: string, level: Level | undefined) {
+    const words = await this.prisma.word.findMany({
+      where: { verified: true, ...(level ? { level } : {}) },
+      select: { id: true, turkish: true, uzbek: true },
+      take: 500,
+    });
+    if (words.length < CHAIN_LENGTH) {
+      throw new BadRequestException("Bu darajada so'z zanjiri uchun so'z yetarli emas");
+    }
+    const start = shuffle(words)[0];
+    return {
+      token: this.seal(PURPOSE_CHAIN, { u: userId, c: start.turkish, used: [normTr(start.turkish)], n: 1 }),
+      current: start.turkish,
+      currentUz: start.uzbek,
+      nextLetter: this.lastLetter(start.turkish),
+      step: 1,
+      total: CHAIN_LENGTH,
+    };
+  }
+
+  async chainAnswer(userId: string, dto: { token: string; answer: string }) {
+    const p = this.validOrThrow<ChainPayload>(PURPOSE_CHAIN, dto.token, userId);
+    const given = normTr(dto.answer).trim();
+    const needLetter = this.lastLetter(p.c);
+
+    if (!given) throw new BadRequestException("So'z yozilmadi");
+
+    // 1) Kerakli harfdan boshlanishi
+    if (!given.startsWith(needLetter)) {
+      return {
+        correct: false,
+        reason: `So'z \u00ab${needLetter}\u00bb harfidan boshlanishi kerak`,
+        nextLetter: needLetter,
+        step: p.n,
+        total: CHAIN_LENGTH,
+        xpGained: 0,
+      };
+    }
+
+    // 2) Takrorlanmasligi
+    if (p.used.includes(given)) {
+      return {
+        correct: false,
+        reason: "Bu so'z allaqachon ishlatilgan",
+        nextLetter: needLetter,
+        step: p.n,
+        total: CHAIN_LENGTH,
+        xpGained: 0,
+      };
+    }
+
+    // 3) Lug'atda borligi. Turkcha harflar bilan ham, ularsiz ham qabul
+    //    qilamiz, lekin javobda to'g'ri yozilishi ko'rsatiladi.
+    const candidates = await this.prisma.word.findMany({
+      where: { verified: true },
+      select: { turkish: true, uzbek: true },
+      take: 5000,
+    });
+    const hit =
+      candidates.find((w) => normTr(w.turkish) === given) ??
+      candidates.find((w) => fold(w.turkish) === fold(given));
+    if (!hit) {
+      return {
+        correct: false,
+        reason: "Bu so'z lug'atda yo'q",
+        nextLetter: needLetter,
+        step: p.n,
+        total: CHAIN_LENGTH,
+        xpGained: 0,
+      };
+    }
+
+    const step = p.n + 1;
+    const used = [...p.used, normTr(hit.turkish)];
+    const finished = step >= CHAIN_LENGTH;
+    const { xpGained, capped } = await this.settleFree(userId, 'WORD_CHAIN', true);
+
+    return {
+      correct: true,
+      accepted: hit.turkish,
+      acceptedUz: hit.uzbek,
+      finished,
+      step,
+      total: CHAIN_LENGTH,
+      nextLetter: finished ? null : this.lastLetter(hit.turkish),
+      token: finished ? null : this.seal(PURPOSE_CHAIN, { u: userId, c: hit.turkish, used, n: step }),
+      xpGained,
+      capped,
+      stats: await this.myStats(userId),
+    };
   }
 }

@@ -2,7 +2,7 @@ import { Body, Controller, Get, Patch, Post, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/auth.decorators.js';
 import type { AuthUser } from '../auth/auth.decorators.js';
-import { AnswerDto, MatchAnswerDto, OptInDto, QuizQueryDto, SetQueryDto, TypedAnswerDto } from './games.dto.js';
+import { AnswerDto, ChainAnswerDto, DrillQueryDto, MatchAnswerDto, OptInDto, QuizQueryDto, SetQueryDto, TextAnswerDto, TypedAnswerDto } from './games.dto.js';
 import { GamesService } from './games.service.js';
 
 @Controller('games')
@@ -40,6 +40,41 @@ export class GamesController {
   @Throttle({ default: { limit: 120, ttl: 60 * 1000 } })
   @Post('listen/answer')
   listenAnswer(@CurrentUser() user: AuthUser, @Body() dto: TypedAnswerDto) { return this.games.typedAnswer(user.id, 'listen', dto); }
+
+  // ───────── Yangi o'yinlar ─────────
+
+  @Get('sentence')
+  sentence(@CurrentUser() user: AuthUser, @Query() q: DrillQueryDto) {
+    return this.games.sentenceSet(user.id, q.level, q.limit ?? 5);
+  }
+
+  @Throttle({ default: { limit: 120, ttl: 60 * 1000 } })
+  @Post('sentence/answer')
+  sentenceAnswer(@CurrentUser() user: AuthUser, @Body() dto: TextAnswerDto) {
+    return this.games.sentenceAnswer(user.id, dto);
+  }
+
+  @Get('suffix')
+  suffix(@CurrentUser() user: AuthUser, @Query() q: DrillQueryDto) {
+    return this.games.suffixSet(user.id, q.level, q.limit ?? 5, q.rule);
+  }
+
+  @Throttle({ default: { limit: 120, ttl: 60 * 1000 } })
+  @Post('suffix/answer')
+  suffixAnswer(@CurrentUser() user: AuthUser, @Body() dto: TextAnswerDto) {
+    return this.games.suffixAnswer(user.id, dto);
+  }
+
+  @Get('chain')
+  chain(@CurrentUser() user: AuthUser, @Query() q: SetQueryDto) {
+    return this.games.chainStart(user.id, q.level);
+  }
+
+  @Throttle({ default: { limit: 120, ttl: 60 * 1000 } })
+  @Post('chain/answer')
+  chainAnswer(@CurrentUser() user: AuthUser, @Body() dto: ChainAnswerDto) {
+    return this.games.chainAnswer(user.id, dto);
+  }
 
   @Get('me')
   me(@CurrentUser() user: AuthUser) {

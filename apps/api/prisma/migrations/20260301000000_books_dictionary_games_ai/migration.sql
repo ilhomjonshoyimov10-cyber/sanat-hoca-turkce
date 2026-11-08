@@ -240,6 +240,8 @@ CREATE INDEX "SuffixDrill_level_verified_position_idx" ON "SuffixDrill"("level",
 
 CREATE INDEX "SuffixDrill_rule_idx" ON "SuffixDrill"("rule");
 
+CREATE UNIQUE INDEX "SuffixDrill_base_answer_key" ON "SuffixDrill"("base", "answer");
+
 -- ───────────── AI yordamchi ─────────────
 
 CREATE TABLE "AiConversation" (

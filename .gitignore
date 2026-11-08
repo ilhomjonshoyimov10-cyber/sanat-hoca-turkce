@@ -21,3 +21,6 @@ Thumbs.db
 
 # Vercel
 .vercel/
+
+# Serverless funksiya uchun yig'ma (build paytida yaratiladi)
+dist-bundle/

@@ -2,12 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm exec prisma generate && pnpm exec prisma migrate deploy && if [ \"$VERCEL_ENV\" = production ]; then pnpm exec tsx prisma/seed.ts && pnpm exec tsx prisma/seed-content.ts; else echo 'seed faqat production uchun'; fi && pnpm exec nest build",
+  "buildCommand": "pnpm exec prisma generate && pnpm exec prisma migrate deploy && if [ \"$VERCEL_ENV\" = production ]; then pnpm exec tsx prisma/seed.ts && pnpm exec tsx prisma/seed-content.ts; else echo 'seed faqat production uchun'; fi && pnpm exec nest build && node bundle.mjs",
   "outputDirectory": "public",
   "functions": {
     "api/index.js": {
-      "maxDuration": 30,
-      "memory": 1024
+      "maxDuration": 30
     }
   },
   "rewrites": [

@@ -158,14 +158,22 @@ describe("o'qish matnlari", () => {
     const r = await S1.agent.get(`/reading/${text.slug}`);
     assert.equal(r.status, 200);
     assert.equal(r.body.questions.length, 2);
-    const raw = JSON.stringify(r.body);
     for (const q of r.body.questions) {
       assert.equal(q.correctIndex, undefined, 'correctIndex javob bilan kelib qoldi');
       assert.equal(q.correctText, undefined, 'correctText javob bilan kelib qoldi');
       assert.equal(q.explanation, undefined, 'explanation javob bilan kelib qoldi');
     }
-    // Qisqa javobning matni butun javobda hech qayerda bo'lmasin
-    assert.ok(!raw.includes('gazete'), 'qisqa javob matni sizib chiqdi');
+    // Qisqa javob ("gazete") SAVOLLAR ichida bo'lmasin.
+    //
+    // DIQQAT: butun javobni tekshirib bo'lmaydi — "gazete" so'zi matnning
+    // o'zida ham bor (o'quvchi uni o'qib javob topadi). Avval shu tasdiq
+    // butun javobga qo'yilgan edi va soxta Prisma matn tanasini buzib
+    // qo'ygani uchun yolg'ondan o'tib ketgan. Endi faqat savollar
+    // tekshiriladi — aynan shu joy sizib chiqmasligi kerak.
+    const questionsRaw = JSON.stringify(r.body.questions);
+    assert.ok(!questionsRaw.includes('gazete'), 'qisqa javob matni savollar ichida sizib chiqdi');
+    // Izoh matni ham savollarda bo'lmasin
+    assert.ok(!questionsRaw.includes('Matnda'), 'izoh savollar ichida sizib chiqdi');
   });
 
   it('javoblar SERVERDA tekshiriladi va natija yoziladi', async () => {

@@ -13,7 +13,7 @@ function linksFor(role: string): { href: string; label: string }[] {
       { href: "/admin", label: "Boshqaruv" },
       { href: "/groups", label: "Guruhlar" },
       { href: "/kitoblar", label: "Materiallar" },
-      { href: "/oqish", label: "O'qish" },
+      { href: "/lugat", label: "Lug'at" },
       { href: "/arizalar", label: "Arizalar" },
     ];
   }
@@ -23,6 +23,7 @@ function linksFor(role: string): { href: string; label: string }[] {
       { href: "/groups", label: "Guruhlar" },
       { href: "/kitoblar", label: "Materiallar" },
       { href: "/oqish", label: "O'qish" },
+      { href: "/lugat", label: "Lug'at" },
       { href: "/ai", label: "AI" },
       { href: "/arizalar", label: "Arizalar" },
     ];

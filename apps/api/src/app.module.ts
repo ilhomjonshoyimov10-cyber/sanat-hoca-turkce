@@ -7,6 +7,7 @@ import { AiModule } from './ai/ai.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BooksModule } from './books/books.module.js';
 import { ChatModule } from './chat/chat.module.js';
+import { DictionaryModule } from './dictionary/dictionary.module.js';
 import { CsrfGuard } from './common/csrf.guard.js';
 import { validateEnv } from './config/env.validation.js';
 import { GamesModule } from './games/games.module.js';
@@ -34,6 +35,7 @@ import { UsersModule } from './users/users.module.js';
     LessonsModule,
     BooksModule,
     ReadingModule,
+    DictionaryModule,
     AiModule,
     AdminModule,
     HealthModule,

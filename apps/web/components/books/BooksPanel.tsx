@@ -120,7 +120,7 @@ export function BooksPanel() {
       {/* Filtrlar */}
       <section>
         <div className="mb-5 flex flex-wrap items-end gap-3">
-          <div className="segment flex gap-1" role="tablist" aria-label="Daraja">
+          <div className="segment flex flex-wrap gap-1" role="tablist" aria-label="Daraja">
             <button type="button" role="tab" aria-selected={level === ""} onClick={() => setLevel("")} className="min-h-10 px-3 text-sm">
               Hammasi
             </button>

@@ -134,12 +134,28 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
     );
 
   return {
-    async findMany({ where = {}, orderBy, take, skip, select } = {}) {
+    async findMany({ where = {}, orderBy, take, skip, select, distinct } = {}) {
       let list = rows().filter((r) => match(r, flat(where)));
       if (orderBy) list = sortBy(list, orderBy);
+      if (distinct) {
+        const keys = Array.isArray(distinct) ? distinct : [distinct];
+        const seen = new Set();
+        list = list.filter((r) => {
+          const k = keys.map((key) => String(r[key])).join('\u0000');
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+      }
       if (skip) list = list.slice(skip);
       if (take) list = list.slice(0, take);
       return list.map((r) => project(r, select, relations, ctx));
+    },
+    async groupBy({ by }) {
+      const key = by[0];
+      const counts = new Map();
+      for (const r of rows()) counts.set(r[key], (counts.get(r[key]) ?? 0) + 1);
+      return [...counts.entries()].map(([k, c]) => ({ [key]: k, _count: { _all: c } }));
     },
     async findUnique({ where, select } = {}) {
       return project(byWhere(where), select, relations, ctx);
@@ -152,7 +168,7 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
     async create({ data, select } = {}) {
       const row = { ...defaults };
       if (pk.length === 1 && pk[0] === 'id') row.id = nextId();
-      Object.assign(row, data);
+      Object.assign(row, withoutUndefined(data));
       if (breaksUnique(row)) throw Object.assign(new Error('unique'), { code: 'P2002' });
       rows().push(row);
       return project(row, select, relations, ctx);
@@ -162,7 +178,7 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
       for (const d of data) {
         const row = { ...defaults };
         if (pk.length === 1 && pk[0] === 'id') row.id = nextId();
-        Object.assign(row, d);
+        Object.assign(row, withoutUndefined(d));
         if (breaksUnique(row)) {
           if (skipDuplicates) continue;
           throw Object.assign(new Error('unique'), { code: 'P2002' });
@@ -186,7 +202,7 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
       }
       const made = { ...defaults };
       if (pk.length === 1 && pk[0] === 'id') made.id = nextId();
-      Object.assign(made, create);
+      Object.assign(made, withoutUndefined(create));
       rows().push(made);
       return project(made, select, relations, ctx);
     },
@@ -209,10 +225,20 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
   };
 }
 
+/** Prisma `undefined` qiymatni "bu maydonga tegmaslik" deb tushunadi.
+ *  Soxta jadval ham shunday bo'lishi SHART: aks holda DTO dagi to'ldirilmagan
+ *  maydonlar (class-transformer ularni undefined qilib yaratadi) mavjud
+ *  qiymatlarni o'chirib yuboradi va test haqiqatdan uzoqlashadi. */
 function applyData(row, data) {
   for (const [k, v] of Object.entries(data)) {
+    if (v === undefined) continue;
     row[k] = v && typeof v === 'object' && !(v instanceof Date) && 'increment' in v ? (row[k] ?? 0) + v.increment : v;
   }
+}
+
+/** create/upsert uchun: undefined maydonlar standart qiymatni buzmasin. */
+function withoutUndefined(data = {}) {
+  return Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
 }
 
 export function createFakePrisma() {
@@ -387,15 +413,16 @@ export function createFakePrisma() {
         return { count: rows.length };
       },
     },
-    word: {
-      async findUnique({ where }) { return db.words.find((w) => w.id === where.id) ?? null; },
-      async findMany({ orderBy } = {}) {
-        const rows = [...db.words];
-        if (orderBy) rows.sort((a, b) => a.level.localeCompare(b.level) || a.position - b.position);
-        return rows;
+    // Lug'at moduli to'liq CRUD, groupBy va distinct ishlatadi, shuning
+    // uchun qo'lda yozilgan soxta jadval o'rniga umumiysini qo'yamiz.
+    word: collection((c) => c.words, id, db, {
+      uniques: [['turkish', 'uzbek']],
+      defaults: {
+        russian: null, exampleTr: null, exampleUz: null, exampleRu: null, audioUrl: null,
+        category: null, position: 0, partOfSpeech: null, pronunciation: null, tags: [],
+        frequency: null, verified: false, notes: null, createdAt: new Date(), updatedAt: new Date(),
       },
-      async count({ where = {} } = {}) { return db.words.filter((w) => match(w, where)).length; },
-    },
+    }),
     userWord: {
       async findMany({ where, select }) {
         return db.userWords.filter((u) => match(u, where)).map((u) => pick(u, select));
@@ -583,7 +610,11 @@ export function createFakePrisma() {
       pk: ['userId', 'day'],
       defaults: { requests: 0, chars: 0 },
     }),
-    wordSet: collection((c) => c.wordSets, id, db, { uniques: [['slug']], defaults: { description: null, level: null, position: 0, createdAt: new Date() } }),
+    wordSet: collection((c) => c.wordSets, id, db, {
+      uniques: [['slug']],
+      defaults: { description: null, level: null, position: 0, createdAt: new Date() },
+      relations: { items: { kind: 'many', store: (c) => c.wordSetItems, foreign: 'setId', local: 'id' } },
+    }),
     wordSetItem: collection((c) => c.wordSetItems, id, db, { pk: ['setId', 'wordId'], defaults: { position: 0 } }),
     sentence: collection((c) => c.sentences, id, db, { uniques: [['turkish']], defaults: { topic: null, note: null, verified: false, position: 0, createdAt: new Date() } }),
     suffixDrill: collection((c) => c.suffixDrills, id, db, { defaults: { alternates: [], explanation: null, rule: null, verified: false, position: 0, createdAt: new Date() } }),

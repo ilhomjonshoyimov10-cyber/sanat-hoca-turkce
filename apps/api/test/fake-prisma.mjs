@@ -9,10 +9,15 @@ const match = (row, where) =>
     if (k === 'AND') return v.every((cond) => match(row, cond));
     if (v === undefined) return true;
     if (v && typeof v === 'object' && !(v instanceof Date)) {
+      // Prisma'da `{ not: null }` = "bo'sh bo'lmasin". O'qish moduli
+      // nashr qilingan matnlarni aynan shunday tanlaydi.
+      if ('not' in v) return (row[k] ?? null) !== (v.not ?? null);
       if ('gte' in v) return row[k] >= v.gte;
       if ('gt' in v) return row[k] > v.gt;
+      if ('lte' in v) return row[k] <= v.lte;
       if ('lt' in v) return row[k] < v.lt;
       if ('in' in v) return v.in.includes(row[k]);
+      if ('notIn' in v) return !v.notIn.includes(row[k]);
       if ('contains' in v) {
         const hay = String(row[k] ?? '');
         const needle = String(v.contains);
@@ -22,20 +27,198 @@ const match = (row, where) =>
       }
       return false;
     }
+    // Sanalarni QIYMAT bo'yicha solishtiramiz. `===` bilan ikki xil Date
+    // obyekti hech qachon teng chiqmaydi — AiUsage.day kabi sana kalitlari
+    // shu sababli hech topilmay qolgan edi.
+    if (row[k] instanceof Date && v instanceof Date) return row[k].getTime() === v.getTime();
     return (row[k] ?? null) === (v ?? null);
   });
 
 // { groupId_userId: { groupId, userId } } -> { groupId, userId }
+const OPERATORS = ['not', 'gte', 'gt', 'lte', 'lt', 'in', 'notIn', 'contains', 'mode', 'startsWith', 'endsWith', 'equals', 'increment'];
+const isOperatorObject = (v) => Object.keys(v).some((key) => OPERATORS.includes(key));
 const flat = (where) =>
   Object.fromEntries(
     Object.entries(where).flatMap(([k, v]) =>
-      v && typeof v === 'object' && !(v instanceof Date) && !('gte' in v) && !('in' in v) ? Object.entries(v) : [[k, v]],
+      // Qo'shma kalitni ochamiz ({userId_bookId: {...}} -> {userId, bookId}),
+      // lekin operator obyektini ({not: null}) ochmaymiz — aks holda
+      // "not" ustun nomiga aylanib qolardi.
+      v && typeof v === 'object' && !(v instanceof Date) && !Array.isArray(v) && !isOperatorObject(v)
+        ? Object.entries(v)
+        : [[k, v]],
     ),
   );
 const sortDesc = (rows, field = 'createdAt') => [...rows].sort((a, b) => b[field] - a[field]);
 
+
+// ─────────────────────────────────────────────────────────────────────
+//  Umumiy jadval (generic collection)
+//
+//  Loyihada 38 model bor. Har biriga qo'lda soxta jadval yozish — ko'p
+//  kod va ko'p xato. Shuning uchun kitoblar, o'qish matnlari va AI
+//  modellari shu umumiy yordamchi orqali ishlaydi: u Prisma'ning
+//  findMany/findUnique/create/update/upsert/delete/count amallarini,
+//  `select` ichidagi aloqalarni va `_count` ni qo'llab-quvvatlaydi.
+// ─────────────────────────────────────────────────────────────────────
+
+/** Aloqalarni ham hisobga oladigan select. */
+function project(row, select, relations, ctx) {
+  if (!row) return null;
+  if (!select) return row;
+  const out = {};
+  for (const [key, want] of Object.entries(select)) {
+    if (!want) continue;
+    if (key === '_count') {
+      out._count = {};
+      for (const [rel, on] of Object.entries(want.select ?? {})) {
+        if (!on) continue;
+        out._count[rel] = resolveMany(row, rel, relations, ctx).length;
+      }
+      continue;
+    }
+    const rel = relations[key];
+    if (!rel) {
+      out[key] = row[key];
+      continue;
+    }
+    const nested = typeof want === 'object' ? want : {};
+    if (rel.kind === 'many') {
+      let rows = resolveMany(row, key, relations, ctx);
+      if (nested.orderBy) rows = sortBy(rows, nested.orderBy);
+      if (nested.take) rows = rows.slice(0, nested.take);
+      out[key] = rows.map((r) => project(r, nested.select, rel.relations ?? {}, ctx));
+    } else {
+      const target = rel.store(ctx).find((r) => r[rel.foreign ?? 'id'] === row[rel.local]);
+      out[key] = project(target, nested.select, rel.relations ?? {}, ctx);
+    }
+  }
+  return out;
+}
+
+function resolveMany(row, key, relations, ctx) {
+  const rel = relations[key];
+  if (!rel || rel.kind !== 'many') return [];
+  return rel.store(ctx).filter((r) => r[rel.foreign] === row[rel.local ?? 'id']);
+}
+
+function sortBy(rows, orderBy) {
+  const list = Array.isArray(orderBy) ? orderBy : [orderBy];
+  return [...rows].sort((a, b) => {
+    for (const rule of list) {
+      for (const [field, dir] of Object.entries(rule)) {
+        const av = a[field], bv = b[field];
+        if (av === bv) continue;
+        const less = av === null || av === undefined ? true : bv === null || bv === undefined ? false : av < bv;
+        return (less ? -1 : 1) * (dir === 'desc' ? -1 : 1);
+      }
+    }
+    return 0;
+  });
+}
+
+/**
+ * @param store   () => massiv — qatorlar qayerda turadi
+ * @param options defaults: yangi qator uchun standart qiymatlar
+ *                relations: { nom: {kind:'many'|'one', store, local, foreign} }
+ *                uniques: [['slug'], ['textId','turkish']] — P2002 uchun
+ *                pk: ['userId','bookId'] — qo'shma kalit
+ */
+function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques = [], pk = ['id'] } = {}) {
+  const rows = () => store(ctx);
+  const byWhere = (where = {}) => rows().find((r) => match(r, flat(where)));
+  const breaksUnique = (candidate, ignore) =>
+    uniques.some((cols) =>
+      rows().some(
+        (r) => r !== ignore && cols.every((c) => r[c] !== undefined && r[c] !== null && r[c] === candidate[c]),
+      ),
+    );
+
+  return {
+    async findMany({ where = {}, orderBy, take, skip, select } = {}) {
+      let list = rows().filter((r) => match(r, flat(where)));
+      if (orderBy) list = sortBy(list, orderBy);
+      if (skip) list = list.slice(skip);
+      if (take) list = list.slice(0, take);
+      return list.map((r) => project(r, select, relations, ctx));
+    },
+    async findUnique({ where, select } = {}) {
+      return project(byWhere(where), select, relations, ctx);
+    },
+    async findFirst({ where = {}, orderBy, select } = {}) {
+      let list = rows().filter((r) => match(r, flat(where)));
+      if (orderBy) list = sortBy(list, orderBy);
+      return project(list[0], select, relations, ctx);
+    },
+    async create({ data, select } = {}) {
+      const row = { ...defaults };
+      if (pk.length === 1 && pk[0] === 'id') row.id = nextId();
+      Object.assign(row, data);
+      if (breaksUnique(row)) throw Object.assign(new Error('unique'), { code: 'P2002' });
+      rows().push(row);
+      return project(row, select, relations, ctx);
+    },
+    async createMany({ data, skipDuplicates } = {}) {
+      let count = 0;
+      for (const d of data) {
+        const row = { ...defaults };
+        if (pk.length === 1 && pk[0] === 'id') row.id = nextId();
+        Object.assign(row, d);
+        if (breaksUnique(row)) {
+          if (skipDuplicates) continue;
+          throw Object.assign(new Error('unique'), { code: 'P2002' });
+        }
+        rows().push(row);
+        count++;
+      }
+      return { count };
+    },
+    async update({ where, data, select } = {}) {
+      const row = byWhere(where);
+      if (!row) throw Object.assign(new Error('not found'), { code: 'P2025' });
+      applyData(row, data);
+      return project(row, select, relations, ctx);
+    },
+    async upsert({ where, create, update, select } = {}) {
+      const row = byWhere(where);
+      if (row) {
+        applyData(row, update);
+        return project(row, select, relations, ctx);
+      }
+      const made = { ...defaults };
+      if (pk.length === 1 && pk[0] === 'id') made.id = nextId();
+      Object.assign(made, create);
+      rows().push(made);
+      return project(made, select, relations, ctx);
+    },
+    async delete({ where, select } = {}) {
+      const row = byWhere(where);
+      if (!row) throw Object.assign(new Error('not found'), { code: 'P2025' });
+      const list = rows();
+      list.splice(list.indexOf(row), 1);
+      return project(row, select, relations, ctx);
+    },
+    async deleteMany({ where = {} } = {}) {
+      const list = rows();
+      const doomed = list.filter((r) => match(r, flat(where)));
+      for (const r of doomed) list.splice(list.indexOf(r), 1);
+      return { count: doomed.length };
+    },
+    async count({ where = {} } = {}) {
+      return rows().filter((r) => match(r, flat(where))).length;
+    },
+  };
+}
+
+function applyData(row, data) {
+  for (const [k, v] of Object.entries(data)) {
+    row[k] = v && typeof v === 'object' && !(v instanceof Date) && 'increment' in v ? (row[k] ?? 0) + v.increment : v;
+  }
+}
+
 export function createFakePrisma() {
-  const db = { users: [], tokens: [], audits: [], leads: [], recovery: [], words: [], userWords: [], stats: [], results: [], groups: [], members: [], homework: [], submissions: [], attendance: [], messages: [], notifications: [], lessons: [], lessonAttendees: [] };
+  const db = { users: [], tokens: [], audits: [], leads: [], recovery: [], words: [], userWords: [], stats: [], results: [], groups: [], members: [], homework: [], submissions: [], attendance: [], messages: [], notifications: [], lessons: [], lessonAttendees: [],
+    // Yangi modellar — umumiy collection() orqali ishlaydi
+    books: [], bookChapters: [], bookProgress: [], readingTexts: [], readingQuestions: [], readingGlossary: [], readingAttempts: [], aiConversations: [], aiMessages: [], aiUsage: [], wordSets: [], wordSetItems: [], sentences: [], suffixDrills: [] };
   let n = 0;
   const id = () => `id${++n}`;
 
@@ -349,6 +532,57 @@ export function createFakePrisma() {
       },
       async count({ where = {} } = {}) { return db.leads.filter((l) => match(l, where)).length; },
     },
+    // ───────── Yangi modellar (umumiy collection) ─────────
+    book: collection((c) => c.books, id, db, {
+      defaults: { author: null, description: null, kind: 'OTHER', visibility: 'PRIVATE', coverUrl: null, fileUrl: null, fileName: null, fileSize: null, mimeType: null, pageCount: null, groupId: null, createdAt: new Date(), updatedAt: new Date() },
+      relations: {
+        chapters: { kind: 'many', store: (c) => c.bookChapters, foreign: 'bookId', local: 'id' },
+        uploadedBy: { kind: 'one', store: (c) => c.users, local: 'uploadedById' },
+        progress: { kind: 'many', store: (c) => c.bookProgress, foreign: 'bookId', local: 'id' },
+      },
+    }),
+    bookChapter: collection((c) => c.bookChapters, id, db, {
+      defaults: { position: 0, startPage: null },
+    }),
+    bookProgress: collection((c) => c.bookProgress, id, db, {
+      pk: ['userId', 'bookId'],
+      defaults: { lastPage: 1, finishedAt: null, updatedAt: new Date() },
+      relations: { book: { kind: 'one', store: (c) => c.books, local: 'bookId' } },
+    }),
+    readingText: collection((c) => c.readingTexts, id, db, {
+      uniques: [['slug']],
+      defaults: { topic: null, bodyUz: null, wordCount: 0, audioUrl: null, position: 0, publishedAt: null, createdAt: new Date(), updatedAt: new Date() },
+      relations: {
+        questions: { kind: 'many', store: (c) => c.readingQuestions, foreign: 'textId', local: 'id' },
+        glossary: { kind: 'many', store: (c) => c.readingGlossary, foreign: 'textId', local: 'id' },
+        attempts: { kind: 'many', store: (c) => c.readingAttempts, foreign: 'textId', local: 'id' },
+      },
+    }),
+    readingQuestion: collection((c) => c.readingQuestions, id, db, {
+      defaults: { kind: 'MULTIPLE_CHOICE', options: [], correctIndex: null, correctText: [], explanation: null, position: 0 },
+    }),
+    readingGlossary: collection((c) => c.readingGlossary, id, db, {
+      uniques: [['textId', 'turkish']],
+      defaults: { position: 0 },
+    }),
+    readingAttempt: collection((c) => c.readingAttempts, id, db, {
+      defaults: { createdAt: new Date() },
+    }),
+    aiConversation: collection((c) => c.aiConversations, id, db, {
+      defaults: { task: 'CHAT', title: 'Yangi suhbat', createdAt: new Date(), updatedAt: new Date() },
+      relations: { messages: { kind: 'many', store: (c) => c.aiMessages, foreign: 'conversationId', local: 'id' } },
+    }),
+    aiMessage: collection((c) => c.aiMessages, id, db, {
+      defaults: { model: null, createdAt: new Date() },
+    }),
+    aiUsage: collection((c) => c.aiUsage, id, db, {
+      pk: ['userId', 'day'],
+      defaults: { requests: 0, chars: 0 },
+    }),
+    wordSet: collection((c) => c.wordSets, id, db, { uniques: [['slug']], defaults: { description: null, level: null, position: 0, createdAt: new Date() } }),
+    wordSetItem: collection((c) => c.wordSetItems, id, db, { pk: ['setId', 'wordId'], defaults: { position: 0 } }),
+    sentence: collection((c) => c.sentences, id, db, { uniques: [['turkish']], defaults: { topic: null, note: null, verified: false, position: 0, createdAt: new Date() } }),
+    suffixDrill: collection((c) => c.suffixDrills, id, db, { defaults: { alternates: [], explanation: null, rule: null, verified: false, position: 0, createdAt: new Date() } }),
   };
   return self;
 }

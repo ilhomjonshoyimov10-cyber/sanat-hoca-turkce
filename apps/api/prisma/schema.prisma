@@ -59,6 +59,60 @@ enum GameType {
   SENTENCE_BUILDER
   SUFFIX_TRAINER
   DAILY_WORD
+  WORD_CHAIN
+  SPEED_REVIEW
+  READING_QUIZ
+}
+
+enum PartOfSpeech {
+  NOUN // ot
+  VERB // fe'l
+  ADJECTIVE // sifat
+  ADVERB // ravish
+  PRONOUN // olmosh
+  NUMBER // son
+  CONJUNCTION // bog'lovchi
+  POSTPOSITION // ko'makchi
+  INTERJECTION // undov
+  PHRASE // ibora
+}
+
+enum BookKind {
+  TEXTBOOK // darslik
+  READER // o'qish kitobi
+  WORKBOOK // mashq daftari
+  GRAMMAR // grammatika
+  EXAM_PREP // imtihonga tayyorlov
+  OTHER
+}
+
+/// Kitobni kim ko'radi. Mualliflik huquqi uchun muhim: ustoz yuklagan
+/// materialni butun internetga ochib qo'ymaslik kerak.
+enum BookVisibility {
+  PRIVATE // faqat yuklagan ustoz
+  GROUP // bitta guruh
+  LEVEL // shu darajadagi barcha o'quvchilar
+  PUBLIC // kirgan har kim
+}
+
+enum ReadingQuestionKind {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+enum AiRole {
+  USER
+  ASSISTANT
+}
+
+/// AI yordamchining vazifasi. Har biriga alohida ko'rsatma (prompt) va
+/// alohida kunlik limit beriladi.
+enum AiTask {
+  CHAT // erkin suhbat (turkcha mashq qilish)
+  GRAMMAR // yozgan matnni tuzatish
+  EXPLAIN // so'z yoki qoidani tushuntirish
+  EXERCISE // mashq yaratish (ustoz uchun)
 }
 
 enum PaymentProvider {
@@ -156,6 +210,11 @@ model User {
   notifications    Notification[]
   createdLessons   Lesson[]       @relation("LessonCreator")
   lessonAttendance LessonAttendee[]
+  uploadedBooks    Book[]         @relation("BookUploader")
+  bookProgress     BookProgress[]
+  readingAttempts  ReadingAttempt[]
+  aiConversations  AiConversation[]
+  aiUsage          AiUsage[]
 
   @@index([role])
 }
@@ -233,6 +292,7 @@ model Group {
   homeworks   Homework[]
   attendances Attendance[]
   lessons     Lesson[]
+  books       Book[]
 
   @@index([teacherId])
 }
@@ -315,15 +375,35 @@ model Word {
   russian    String?
   exampleTr  String? // Turkcha misol jumla
   exampleUz  String?
+  exampleRu  String?
   audioUrl   String?
   level      Level
   category   String? // masalan: oila, ovqat, sayohat
   position   Int      @default(0) // yangi so'zlar shu tartibda o'rgatiladi
+
+  // ── Lug'atni kuchaytirish ──
+  partOfSpeech  PartOfSpeech? // so'z turkumi: mashqlarni to'g'ri tuzish uchun
+  pronunciation String? // talaffuz izohi (masalan "yumshoq g")
+  /// Mavzu yorliqlari. category bitta, teglar esa bir nechta bo'ladi
+  /// (masalan ["ovqat", "restoran", "A1-majburiy"]).
+  tags          String[] @default([])
+  /// Turkcha matnlarda uchrash chastotasi (1 = eng ko'p). Takrorlash
+  /// navbatida ko'p uchraydigan so'zlar oldinga chiqadi.
+  frequency     Int?
+  /// Ustoz tasdiqlagan yozuvlar. Tasdiqlanmagani o'yinlarga tushmaydi,
+  /// shuning uchun import qilingan xom ma'lumot o'quvchiga xato o'rgatmaydi.
+  verified      Boolean  @default(false)
+  notes         String? // ustoz uchun ichki izoh
+
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt @default(now())
 
   userWords  UserWord[]
+  sets       WordSetItem[]
 
   @@index([level, position])
+  @@index([level, verified, frequency])
+  @@index([category])
   @@unique([turkish, uzbek])
 }
 
@@ -501,4 +581,262 @@ model AuditLog {
 
   @@index([userId, createdAt])
   @@index([action, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  KITOBLAR VA O'QISH
+// ═══════════════════════════════════════════════════════════════════
+
+/// Ustoz yuklagan material (PDF va h.k.) yoki tashqi havola.
+///
+/// MUALLIFLIK HUQUQI: tizim o'zi hech qanday kitob tarqatmaydi. Faqat
+/// ustoz o'zi huquqiga ega bo'lgan yoki o'zi yozgan materialni yuklaydi
+/// va kim ko'rishini (visibility) o'zi belgilaydi. Shuning uchun
+/// `uploadedById` majburiy — har material uchun javobgar odam bor.
+model Book {
+  id          String         @id @default(cuid())
+  title       String
+  author      String?
+  description String?
+  level       Level
+  kind        BookKind       @default(OTHER)
+  coverUrl    String?
+  /// Yuklangan faylning manzili. Tashqi havola bo'lsa shu yerda to'liq URL.
+  fileUrl     String?
+  fileName    String?
+  fileSize    Int? // bayt
+  mimeType    String?
+  pageCount   Int?
+  visibility  BookVisibility @default(PRIVATE)
+
+  uploadedById String
+  uploadedBy   User   @relation("BookUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  /// visibility = GROUP bo'lganda qaysi guruh ko'radi.
+  groupId      String?
+  group        Group?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chapters BookChapter[]
+  progress BookProgress[]
+
+  @@index([level, visibility])
+  @@index([uploadedById])
+  @@index([groupId])
+}
+
+model BookChapter {
+  id        String @id @default(cuid())
+  bookId    String
+  book      Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  title     String
+  position  Int    @default(0)
+  startPage Int?
+
+  @@index([bookId, position])
+}
+
+/// O'quvchi qaysi sahifada qolgani. Telefonda boshlab, kompyuterda davom
+/// etish uchun server tomonda saqlanadi.
+model BookProgress {
+  userId     String
+  bookId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book       Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  lastPage   Int       @default(1)
+  finishedAt DateTime?
+  updatedAt  DateTime  @updatedAt
+
+  @@id([userId, bookId])
+  @@index([userId, updatedAt])
+}
+
+/// Original turkcha o'qish matni + savollar. Bu tizimning o'z kontenti,
+/// hech kimning mualliflik huquqi buzilmaydi.
+model ReadingText {
+  id       String  @id @default(cuid())
+  slug     String  @unique
+  title    String
+  level    Level
+  topic    String?
+  /// Turkcha matn (markdown emas, oddiy matn — paragraflar bo'sh qator bilan).
+  body     String
+  /// O'zbekcha tarjima. O'quvchi avval o'zi o'qiydi, keyin ochadi.
+  bodyUz   String?
+  wordCount Int    @default(0)
+  audioUrl String?
+  position Int     @default(0)
+  /// null = qoralama, ya'ni o'quvchilarga ko'rinmaydi.
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions ReadingQuestion[]
+  glossary  ReadingGlossary[]
+  attempts  ReadingAttempt[]
+
+  @@index([level, position])
+  @@index([publishedAt])
+}
+
+model ReadingQuestion {
+  id       String              @id @default(cuid())
+  textId   String
+  text     ReadingText         @relation(fields: [textId], references: [id], onDelete: Cascade)
+  kind     ReadingQuestionKind @default(MULTIPLE_CHOICE)
+  prompt   String
+  /// MULTIPLE_CHOICE uchun variantlar. TRUE_FALSE va SHORT_ANSWER da bo'sh.
+  options  String[]            @default([])
+  /// MULTIPLE_CHOICE: to'g'ri variant tartibi. TRUE_FALSE: 0 = to'g'ri, 1 = xato.
+  correctIndex Int?
+  /// SHORT_ANSWER uchun qabul qilinadigan javoblar (kichik harfda solishtiriladi).
+  correctText  String[]        @default([])
+  explanation  String?
+  position     Int             @default(0)
+
+  @@index([textId, position])
+}
+
+/// Matndagi qiyin so'zlar. O'quvchi bosganda tarjimasi chiqadi va
+/// so'z uning takrorlash ro'yxatiga qo'shiladi.
+model ReadingGlossary {
+  id       String      @id @default(cuid())
+  textId   String
+  text     ReadingText @relation(fields: [textId], references: [id], onDelete: Cascade)
+  turkish  String
+  uzbek    String
+  position Int         @default(0)
+
+  @@index([textId, position])
+  @@unique([textId, turkish])
+}
+
+model ReadingAttempt {
+  id        String      @id @default(cuid())
+  userId    String
+  textId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      ReadingText @relation(fields: [textId], references: [id], onDelete: Cascade)
+  score     Int
+  total     Int
+  createdAt DateTime    @default(now())
+
+  @@index([userId, createdAt])
+  @@index([textId])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  LUG'AT TO'PLAMLARI VA YANGI O'YINLAR
+// ═══════════════════════════════════════════════════════════════════
+
+/// Mavzuli so'z to'plami ("Restoranda", "Shifokorda"). Ustoz guruhga
+/// aynan shu to'plamni berishi mumkin.
+model WordSet {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  title       String
+  description String?
+  level       Level?
+  position    Int     @default(0)
+  createdAt   DateTime @default(now())
+
+  items WordSetItem[]
+
+  @@index([level, position])
+}
+
+model WordSetItem {
+  setId    String
+  wordId   String
+  set      WordSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  word     Word    @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  position Int     @default(0)
+
+  @@id([setId, wordId])
+  @@index([setId, position])
+}
+
+/// SENTENCE_BUILDER o'yini uchun: o'quvchi aralashtirilgan so'zlardan
+/// to'g'ri gap tuzadi.
+model Sentence {
+  id       String  @id @default(cuid())
+  turkish  String
+  uzbek    String
+  level    Level
+  topic    String?
+  /// Grammatik izoh (masalan "-de/-da o'rin kelishigi").
+  note     String?
+  verified Boolean @default(false)
+  position Int     @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([level, verified, position])
+  @@unique([turkish])
+}
+
+/// SUFFIX_TRAINER o'yini uchun: turkcha qo'shimchalar mashqi.
+/// Masalan base="ev", prompt="uyDA", answer="evde".
+model SuffixDrill {
+  id          String  @id @default(cuid())
+  level       Level
+  base        String // asos so'z
+  prompt      String // o'zbekcha topshiriq
+  answer      String // kutilgan turkcha shakl
+  /// Qabul qilinadigan boshqa to'g'ri javoblar (imlo variantlari).
+  alternates  String[] @default([])
+  explanation String? // nega shunday: unlilar moslashuvi va h.k.
+  rule        String? // qoida nomi, filtrlash uchun ("locative")
+  verified    Boolean @default(false)
+  position    Int     @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([level, verified, position])
+  @@index([rule])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  AI YORDAMCHI
+// ═══════════════════════════════════════════════════════════════════
+
+model AiConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task      AiTask   @default(CHAT)
+  title     String   @default("Yangi suhbat")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages AiMessage[]
+
+  @@index([userId, updatedAt])
+}
+
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           AiRole
+  content        String
+  /// Qaysi model javob bergani — provayder almashsa tarix tushunarli qolsin.
+  model          String?
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+/// Kunlik AI limiti. Bepul tierda kunlik kvota bor, shuning uchun bitta
+/// foydalanuvchi hammaning kvotasini yeb qo'ymasligi kerak.
+model AiUsage {
+  userId   String
+  day      DateTime @db.Date
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requests Int      @default(0)
+  /// Taxminiy belgi soni — xarajatni kuzatish uchun.
+  chars    Int      @default(0)
+
+  @@id([userId, day])
+  @@index([day])
 }

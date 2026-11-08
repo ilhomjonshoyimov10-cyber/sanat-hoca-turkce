@@ -1,0 +1,14 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm yangi versiyalarda o'rnatish skriptlarini sukut bo'yicha bloklaydi.
+# Prisma o'z dvigatelini shu skript orqali yuklaydi, shuning uchun ruxsat beramiz.
+allowBuilds:
+  "@prisma/client": true
+  "@prisma/engines": true
+  prisma: true
+  argon2: false # tayyor (prebuilt) ikkilik fayl bilan ishlaydi
+  sharp: false
+  unrs-resolver: false
+  esbuild: true

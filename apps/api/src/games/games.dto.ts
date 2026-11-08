@@ -1,0 +1,54 @@
+import { Level } from '@prisma/client';
+import { Type } from 'class-transformer';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+
+export class QuizQueryDto {
+  @IsOptional() @IsEnum(Level)
+  level?: Level;
+
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(20)
+  limit?: number;
+}
+
+export class AnswerDto {
+  @IsString() @MaxLength(800)
+  token!: string;
+
+  @IsInt() @Min(0) @Max(3)
+  choice!: number;
+}
+
+export class OptInDto {
+  @IsBoolean()
+  optIn!: boolean;
+}
+
+export class SetQueryDto {
+  @IsOptional() @IsEnum(Level)
+  level?: Level;
+
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(10)
+  limit?: number;
+}
+
+export class PairDto {
+  @IsInt() @Min(0) @Max(5) left!: number;
+  @IsInt() @Min(0) @Max(5) right!: number;
+}
+
+export class MatchAnswerDto {
+  @IsString() @MaxLength(1200)
+  token!: string;
+
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(6) @ValidateNested({ each: true }) @Type(() => PairDto)
+  pairs!: PairDto[];
+}
+
+/** "Harflardan so'z yig'ish" va "Tinglab yozish" uchun */
+export class TypedAnswerDto {
+  @IsString() @MaxLength(800)
+  token!: string;
+
+  @IsString() @MaxLength(40)
+  answer!: string;
+}

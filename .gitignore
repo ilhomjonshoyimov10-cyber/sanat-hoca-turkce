@@ -1,0 +1,23 @@
+# Bog'liqliklar va yig'malar
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+
+# Maxfiy sozlamalar: HECH QACHON git'ga tushmasin
+.env
+.env.*
+!.env.example
+!deploy/.env.production.example
+
+# Zaxira nusxalar va loglar
+*.log
+backups/
+deploy/backup/
+
+# Tizim fayllari
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel/

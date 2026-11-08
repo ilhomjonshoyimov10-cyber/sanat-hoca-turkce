@@ -1,0 +1,2 @@
+# Bu fayl Prisma uchun: migratsiyalar qaysi baza turiga mo'ljallangani.
+provider = "postgresql"

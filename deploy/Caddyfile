@@ -1,0 +1,40 @@
+# Caddy: HTTPS sertifikatini o'zi oladi va yangilab turadi (Let's Encrypt).
+# O'zgaruvchilar docker-compose.prod.yml orqali .env dan keladi.
+
+{
+	email {$ACME_EMAIL}
+	# Sertifikat olishni sinash uchun quyidagi qatorni vaqtincha oching (limitlar yumshoqroq):
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+# ───────── Sayt ─────────
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		# HTTPS ni majburiy qilish (brauzer keyingi safar ham HTTPS ishlatadi)
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Server haqidagi ortiqcha ma'lumotni bermaslik
+		-Server
+	}
+
+	reverse_proxy web:3000
+}
+
+# www bilan kirganlarni asosiy manzilga yo'naltirish
+www.{$SITE_DOMAIN} {
+	redir https://{$SITE_DOMAIN}{uri} permanent
+}
+
+# ───────── API ─────────
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	# Qolgan xavfsizlik sarlavhalarini API ning o'zi (helmet) qo'yadi
+	reverse_proxy api:4000
+}

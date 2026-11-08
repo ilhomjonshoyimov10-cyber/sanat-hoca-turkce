@@ -1,0 +1,707 @@
+﻿turkish,uzbek,level,category
+Abone,obuna,B1,Ünite 1
+Acil,"shoshilinch, tez",B1,Ünite 1
+Adım,qadam,B1,Ünite 1
+Araç,"transport vositasi, vosita",B1,Ünite 1
+Arıza,"xato, (buzilish holati)",B1,Ünite 1
+Bedel,"badal, to'lov",B1,Ünite 1
+Bilek,bilak,B1,Ünite 1
+Borç,qarz,B1,Ünite 1
+Boru,quvur,B1,Ünite 1
+Büyüklük,"kattalik,",B1,Ünite 1
+Büyüleyici,kattalashtiradigan,B1,Ünite 1
+Civar,atrof (çevre-atrof),B1,Ünite 1
+Çöp,axlat,B1,Ünite 1
+Dahil,"shu jumladan,",B1,Ünite 1
+Davranış,"xulq-atvor,",B1,Ünite 1
+Deneyim,tajriba,B1,Ünite 1
+Depozito,depozit (kamissiyoniskiy),B1,Ünite 1
+Doğalgaz,tabiiy gaz (oqma gaz),B1,Ünite 1
+Döşeme,pol,B1,Ünite 1
+Durum,"vaziyat, holat",B1,Ünite 1
+Eğitim,ta'lim,B1,Ünite 1
+Emlak,ko'chmas mulk,B1,Ünite 1
+Endişeli,"xovotirli, tashvishli",B1,Ünite 1
+Etki,ta'sir,B1,Ünite 1
+Evlilik,"oila qurish, nikoh",B1,Ünite 1
+Fatura,hisob-faktura,B1,Ünite 1
+Fiyat,narx,B1,Ünite 1
+Fonksiyon,funksiya,B1,Ünite 1
+Garip,g'alati,B1,Ünite 1
+Günlük,kunlik,B1,Ünite 1
+Güvenlik,ishonchli,B1,Ünite 1
+Halat,arqon,B1,Ünite 1
+Ham,xom,B1,Ünite 1
+Isıtma,isitish,B1,Ünite 1
+Islak,ho'l,B1,Ünite 1
+İçerik,tarkibi,B1,Ünite 1
+İhtiyaç,extiyoj,B1,Ünite 1
+İlan,e'lon,B1,Ünite 1
+İmdat,yordam,B1,Ünite 1
+iş bölümü,ish taqsimoti,B1,Ünite 1
+işlem,jarayon,B1,Ünite 1
+jandarma,ichki ishlar jandarmi,B1,Ünite 1
+kaban,palto,B1,Ünite 1
+kanat,"qanot, dalil",B1,Ünite 1
+kiralık,"ijaraga beriladigan (olinadigan, qöyiladigan…)",B1,Ünite 1
+kombi,kombi (uy va shu suvini isistish moslamasi),B1,Ünite 1
+konum,joylashuv,B1,Ünite 1
+koza,pilla,B1,Ünite 1
+lavabo,qo'l yuviladigan unitaz (xojatxona),B1,Ünite 1
+lüks,"hashamat, luks",B1,Ünite 1
+manzara,"ko'rinish, manzara",B1,Ünite 1
+masrafsız,"xarajatsiz, bepul",B1,Ünite 1
+mevki,"mavqe, pozitsiya",B1,Ünite 1
+muhit,muhit,B1,Ünite 1
+müstakil,xususiy,B1,Ünite 1
+nezih,yaxshi,B1,Ünite 1
+ödeme,to'lov,B1,Ünite 1
+ömür,umr,B1,Ünite 1
+özellik,xususiyat,B1,Ünite 1
+pazarlık,savdolashish,B1,Ünite 1
+pil,batareka,B1,Ünite 1
+sahip,"ega, sohib",B1,Ünite 1
+satır,chizziq,B1,Ünite 1
+satış,sotish,B1,Ünite 1
+sızıntı,"oqish, sizib chiqish",B1,Ünite 1
+sigorta,"sug'urta, (elektr avtomati)",B1,Ünite 1
+sözleşme,shartnoma,B1,Ünite 1
+şofben,suv isitgich,B1,Ünite 1
+tarife,"retsept, toifa",B1,Ünite 1
+taşınma,ko'chish,B1,Ünite 1
+temel,asos,B1,Ünite 1
+tesisatçı,santexnik,B1,Ünite 1
+tuhaf,g'alati,B1,Ünite 1
+tüketim,iste'mol,B1,Ünite 1
+ulaşım,"transport, ulashish yo'li",B1,Ünite 1
+uygun,"uyg'un, mos",B1,Ünite 1
+uyum,"moslik, uyum",B1,Ünite 1
+vali,hokim,B1,Ünite 1
+vana,"vena, klapan",B1,Ünite 1
+vergi,soliq,B1,Ünite 1
+yakınlık,yaqinlik,B1,Ünite 1
+yapışık,"yopishgan,",B1,Ünite 1
+yuva,"uya, in",B1,Ünite 1
+zam,"narx oshishi, oylik oshishi",B1,Ünite 1
+acele etmek,shoshilmoq,B1,Ünite 1
+akıtmak,"drenaj, oqizmoq",B1,Ünite 1
+atıştırmak,"aperatif ovqatlanish, tezlikda u bu narsa yengilgina yeb olish",B1,Ünite 1
+ayırmak,ayirmoq,B1,Ünite 1
+basmak,"bosmoq, kimnidir ayb ustida ushlash, to'satdan bostirib kelmoq",B1,Ünite 1
+benzemek,o'xshamoq,B1,Ünite 1
+boşaltmak,boshatmoq,B1,Ünite 1
+bozulmak,"aynimoq, achimoq, buzilmoq",B1,Ünite 1
+burkmak,"paylarning shikastlanishi, lat yemoq",B1,Ünite 1
+değerlendirmek,"qadrlantirmoq, baholash",B1,Ünite 1
+dikkat çekmek,"boshqalarni diqqatini jalb qilish, diqqatini tormoq",B1,Ünite 1
+doldurmak,to'ldirmoq,B1,Ünite 1
+eğmek,"egmoq, bo'ysuntirmoq",B1,Ünite 1
+fışkırmak,"otilib chiqmoq, fishqirib chiqmoq",B1,Ünite 1
+harcamak,"xarjlamoq, sarflamoq",B1,Ünite 1
+ısınmak,isinmoq,B1,Ünite 1
+ilerletmek,"oldinga olib chiqmoq, ilgarilatmoq",B1,Ünite 1
+karşılaşmak,"uchrashib qolmoq, qarshilashmoq",B1,Ünite 1
+kopmak,uzulmoq,B1,Ünite 1
+kurtulmak,"qutilmoq, ozod bo'lmoq",B1,Ünite 1
+önermek,"taklif qilmoq, tavsiya qilmoq",B1,Ünite 1
+patlamak,portlamoq,B1,Ünite 1
+sığmak,sig'moq,B1,Ünite 1
+sıkışmak,"tiqilib qolmoq, siqishmoq",B1,Ünite 1
+sızdırmak,sizdirmoq,B1,Ünite 1
+söndürmek,"so'diqmoq, o'chirmoq",B1,Ünite 1
+takip etmek,"taqib qilmoq, kuzatmoq",B1,Ünite 1
+tartışmak,tortishmoq,B1,Ünite 1
+telaşlanmak,"xovotir olmoq, tashvishlanmoq",B1,Ünite 1
+tercih etmek,"tanmaloq, maqul ko'rmoq",B1,Ünite 1
+teslim etmek,"taslim qilmoq, toshirmoq",B1,Ünite 1
+tıkanmak,"tiqilmoq, tiqilib qolmoq",B1,Ünite 1
+uğraşmak,"o'ralashmoq, ovora bo'lmoq",B1,Ünite 1
+yadırgamak,"g'alati bo'lib qolmoq, g'alatib deb bilmoq, g'alati harakatlar qilmoq",B1,Ünite 1
+yansıtmak,"aks etirmoq,",B1,Ünite 1
+yardımcı olmak,yordam bermoq,B1,Ünite 1
+yığmak,"toplamoq, yig'moq",B1,Ünite 1
+zenginleşmek,boyimoq,B1,Ünite 1
+başının etini yemek,ming'irlab boshini og'ritib yubormoq,B1,Ünite 1
+kalbini fethetmek,yuragini zabt qilmoq,B1,Ünite 1
+Abur cubur,mayda chuyda,B1,Ünite 2
+Esnek,"moslashuvchan, ergiluvchan",B1,Ünite 2
+Metabolizma,metobolizm,B1,Ünite 2
+Verimsiz,samarasiz,B1,Ünite 2
+izin vermek,ruxsat bermoq,B1,Ünite 2
+amaç,maqsad,B1,Ünite 2
+etkileyici,"tasir o'tqazadigan, tasir qiluvchi",B1,Ünite 2
+nakış,naqsh,B1,Ünite 2
+yağ,yog',B1,Ünite 2
+kaçınmak,qochish,B1,Ünite 2
+ambalaj,qadoq,B1,Ünite 2
+etkin,"samarali, tasir qiladigan",B1,Ünite 2
+organizasyon,"tashkilot, tashkil qilingan",B1,Ünite 2
+yaradılış,yaratilish,B1,Ünite 2
+kanıtlamak,"isbatlash, …ga dalil keltirmoq",B1,Ünite 2
+amiral,admiral,B1,Ünite 2
+farklılık,"farqlilik, farq",B1,Ünite 2
+ortam,muhit,B1,Ünite 2
+yaşayış,yashash holati,B1,Ünite 2
+kaptırmak,"tutilmoq,",B1,Ünite 2
+arzu,orzu,B1,Ünite 2
+fırsat,"fursat, shans",B1,Ünite 2
+ödül,"mukofot, sovrin",B1,Ünite 2
+yenik,mag'lub,B1,Ünite 2
+kırılmak,sinmoq,B1,Ünite 2
+asgari,eng kam,B1,Ünite 2
+firma,firma,B1,Ünite 2
+öğe,element,B1,Ünite 2
+yenilikçi,yangilikchi,B1,Ünite 2
+kurmak,"qurmoq, tashkil qilmoq",B1,Ünite 2
+aşağılama,"pastga urmoq, obro'sizlantirmoq",B1,Ünite 2
+fiziksel,jismoniy,B1,Ünite 2
+örgüt,tashkilot (ğayri tashkilot. Terör örgütü-terorizm tashkiloti),B1,Ünite 2
+yetenek,iste'dot,B1,Ünite 2
+kurtarmak,"qutqarmoq, saqlab qolmoq",B1,Ünite 2
+aşırı,"oshiri daraja, haddan ortiq",B1,Ünite 2
+fizyolojik,fiziologik,B1,Ünite 2
+özellik,xususiyat,B1,Ünite 2
+yetişkin,voyaga yetgan,B1,Ünite 2
+motive etmek,"ruhlantirmoq, mativatsiya",B1,Ünite 2
+ayrıntı,batafsil,B1,Ünite 2
+geçici,vaqtinchalik,B1,Ünite 2
+özenli,g'amxo'r,B1,Ünite 2
+zafer,g'alaba,B1,Ünite 2
+paylaşmak,baham ko'rmoq,B1,Ünite 2
+azim,qaror,B1,Ünite 2
+geleneksel,an'anaviy,B1,Ünite 2
+özgü,o'ziga xoslik,B1,Ünite 2
+zahmetli,"zahmatli, mashaqqatli",B1,Ünite 2
+rica etmek,"arzimaydi, iltimos qilish",B1,Ünite 2
+baskı,"nashr, zulm",B1,Ünite 2
+gıda,oziq-ovqat,B1,Ünite 2
+paralel,paralel,B1,Ünite 2
+zorluk,qiyinchilik,B1,Ünite 2
+başarı,"yutuq, muvafaqqiyat",B1,Ünite 2
+girişimci,kirishuvchan,B1,Ünite 2
+parlak,yaltiroqlik,B1,Ünite 2
+sağlamak,tanminlash,B1,Ünite 2
+başlık,sarlavha,B1,Ünite 2
+görev,"vazifa, yumush",B1,Ünite 2
+performans,"layoqat, g'ayrat",B1,Ünite 2
+beklenti,umidvorlik,B1,Ünite 2
+görünüm,ko'rinish,B1,Ünite 2
+planlama,rejalashtirish,B1,Ünite 2
+akıldan geçirmek,hayoldan o'tqazmoq,B1,Ünite 2
+saymak,sanamoq,B1,Ünite 2
+benzerlik,o'xshashlik,B1,Ünite 2
+görünüş,go'rinish,B1,Ünite 2
+püf noktası,fokus (ishni közi),B1,Ünite 2
+aklına getirmek,hayoliga keltirish,B1,Ünite 2
+sıyrılmak,"chiqib ketmoq, siyrilmoq",B1,Ünite 2
+beslenme,oziqlanish,B1,Ünite 2
+güç,kuch,B1,Ünite 2
+rastgele,rostdan ham,B1,Ünite 2
+aksamak,oqsamoq,B1,Ünite 2
+söz,va'da,B1,Ünite 2
+tutmak,"ushlamoq, tutmoq",B1,Ünite 2
+birey,shaxs,B1,Ünite 2
+günlük,kunlik,B1,Ünite 2
+rastlantı,tasodifan qarshilashish,B1,Ünite 2
+anımsamak,eslamoq,B1,Ünite 2
+şikayet etmek,shikoyat qilmoq,B1,Ünite 2
+cazip,"jozibali, jozibador",B1,Ünite 2
+hastalık,kasallik,B1,Ünite 2
+risk,"xavf, risk",B1,Ünite 2
+artmak,ko'paymoq,B1,Ünite 2
+tamamlamak,"tamomlamoq, bitirmoq",B1,Ünite 2
+çalışan,"ishlaygigan ishchi, ishchi",B1,Ünite 2
+hedef,"maqsad, nishon",B1,Ünite 2
+saklı,yashirin,B1,Ünite 2
+aşmak,ochmoq,B1,Ünite 2
+tanımlamak,"aniqlamoq,",B1,Ünite 2
+danışman,ilmiy rahbar,B1,Ünite 2
+hizmet,hizmat,B1,Ünite 2
+satış,sotish,B1,Ünite 2
+bahsetmek,"haqida gapirmoq,",B1,Ünite 2
+tüketmek,istemoq qilmoq,B1,Ünite 2
+davranış,munosabatda bo'lish,B1,Ünite 2
+huy,odat,B1,Ünite 2
+saygın,"hurmatli, baobro'li",B1,Ünite 2
+belirlemek,bildirmoq,B1,Ünite 2
+ulaşmak,"bog'lanmoq, yetishmoq",B1,Ünite 2
+değişiklik,farqlilik,B1,Ünite 2
+ikramiye,"bonus, ikrom qilinadigan narsa",B1,Ünite 2
+seçim,"tanlov, saylov",B1,Ünite 2
+bocalamak,qimirlatmoq,B1,Ünite 2
+denizaltı,dengiz tagi,B1,Ünite 2
+iştah,ishtaha,B1,Ünite 2
+sorumlu,mas'ulyatli,B1,Ünite 2
+cesaret etmek,"jasorat qilmoq, botinmoq",B1,Ünite 2
+uzaklaşmak,uzoqlashmoq,B1,Ünite 2
+departman,bo'lim,B1,Ünite 2
+itibar,e'tibor,B1,Ünite 2
+sürekli,muntazam,B1,Ünite 2
+değerlendirmek,"qadrlantirmoq, qiymatli qilmoq",B1,Ünite 2
+uzamak,uzalmoq,B1,Ünite 2
+destek,yordam,B1,Ünite 2
+izin,ruxsat,B1,Ünite 2
+sürekli,tinimsiz,B1,Ünite 2
+yaratmak,yaratmoq,B1,Ünite 2
+depolamak,arxivlamoq,B1,Ünite 2
+devlet,davlat,B1,Ünite 2
+katkı,hissa,B1,Ünite 2
+şart,shart,B1,Ünite 2
+yenilemek,yangilamoq,B1,Ünite 2
+dokunmak,teginmoq,B1,Ünite 2
+dikiş,tikish,B1,Ünite 2
+kazanç,"qozonilgan narsa, foyda",B1,Ünite 2
+şikayetçi,shikoyat qilgan odam,B1,Ünite 2
+yıpratmak,"ekirtirib tashlamoq, iritib yubormoq",B1,Ünite 2
+doğrultu,yo'nalish,B1,Ünite 2
+kıdemli,"tajribali, stajli",B1,Ünite 2
+tanıdık,tanish,B1,Ünite 2
+dönüşmek,aylanish,B1,Ünite 2
+yol açmak,yul ochmoq,B1,Ünite 2
+dolgun,"to'la, to'liq",B1,Ünite 2
+kişilik,shaxiyat,B1,Ünite 2
+tanım,ta'rif,B1,Ünite 2
+eleştirmek,tanqid qilmoq,B1,Ünite 2
+yönetmek,boshqarmoq,B1,Ünite 2
+dönüm noktası,o'zgarish nuqtasi,B1,Ünite 2
+konteynır,kanteynir,B1,Ünite 2
+toptancı,ulgurcu savdogar,B1,Ünite 2
+geliştirmek,rivojlantirmoq,B1,Ünite 2
+gerektirmek,"kerakli bo'lish, talab qilish",B1,Ünite 2
+yönlendirmek,yo'naltirmoq,B1,Ünite 2
+duruş,turish,B1,Ünite 2
+korkunç,"qo'rquv, qo'rqinch",B1,Ünite 2
+tarz,uslub,B1,Ünite 2
+düşük,past,B1,Ünite 2
+liderlik,"liderlik, yetakchilik",B1,Ünite 2
+tehlike,"tahlika, xavf-xatar",B1,Ünite 2
+görevlendirmek,malum vazifa bilan bilan tayinlanmoq,B1,Ünite 2
+yüceltmek,ulug'lash,B1,Ünite 2
+editör,tahrirchi,B1,Ünite 2
+temel,"asos, tamal",B1,Ünite 2
+gütmek,"(hayvonlarni oldiga bitta yetakchi qöyib boqmoq, bir ishni amalga oshirishga harakat qilmoq, taqib qilib bormoq)",B1,Ünite 2
+yükseltmek,"yuksaltish, oshirish",B1,Ünite 2
+maaş,"oylik, maosh",B1,Ünite 2
+eksiklik,kamchilik,B1,Ünite 2
+güvenmek,ishonmoq,B1,Ünite 2
+zorlamak,majburlamoq,B1,Ünite 2
+macera,sarguzasht,B1,Ünite 2
+tempo,tezlik,B1,Ünite 2
+elverişsiz,noqulay,B1,Ünite 2
+mandıracılık,"mol fermachiligi bilan shug'ullanmoq, sut fermasi",B1,Ünite 2
+usul,usul,B1,Ünite 2
+ilgi çekmek,e'tiborni jalb qilmoq,B1,Ünite 2
+zorlaştırmak,qiyinlashtirmoq,B1,Ünite 2
+engel,to'siq,B1,Ünite 2
+memnuniyetsiz,norozi,B1,Ünite 2
+ücra,"ko'zga tashlanmaydigan, juda uzoqda bo'lgan, juda chekkada bo'lgan",B1,Ünite 2
+imza atmak,imzolamoq,B1,Ünite 2
+engelli,nogiron,B1,Ünite 2
+mesai,ish vaqti,B1,Ünite 2
+ümit,umit,B1,Ünite 2
+incelemek,"tekshirmoq, sinchiklab qaramoq (tekshirmoq, axtarmoq)",B1,Ünite 2
+Adalet,adolat,B1,Ünite 3
+Gen,gen,B1,Ünite 3
+Nalın,taqa (eski vaqtda hamomda kiyilgan yoğoch oyoq kiyim),B1,Ünite 3
+tavsiye,tavsiye,B1,Ünite 3
+kavuşmak,"birlashmoq, bir biriga yetishmoq, qovushmoq",B1,Ünite 3
+ahşap,"yog'och, taxta",B1,Ünite 3
+genetik,nasliy (nasldan naslga ötuvchi),B1,Ünite 3
+nazar,"nazar, ko'z (nazar deydi-ko'z tegdi",B1,Ünite 3
+tedavi,"muolaja, davo",B1,Ünite 3
+keşfetmek,Kashf etmoq,B1,Ünite 3
+akılcı,"oqil, oqilona, dono",B1,Ünite 3
+gerekçe,sabab,B1,Ünite 3
+nüfus,aholi soni,B1,Ünite 3
+tedbir,ehtiyot chorasi,B1,Ünite 3
+kutlamak,nishonlamoq,B1,Ünite 3
+akik,haqiq (aqiq toshi),B1,Ünite 3
+gergin,"asabiy, asabi tarang holat",B1,Ünite 3
+obezite,semirish,B1,Ünite 3
+tere,kreslo,B1,Ünite 3
+netleşmek,aniqlashmoq,B1,Ünite 3
+akuamarin,akuamarin tooshi,B1,Ünite 3
+görüş,"qarash, fikr",B1,Ünite 3
+obur,ochko'z,B1,Ünite 3
+tıp,tibbiyot,B1,Ünite 3
+not etmek,"qayd olmoq, zametka, kanspekt qilish",B1,Ünite 3
+ametist,ametist qimmatbaho toshi,B1,Ünite 3
+hamilelik,homilalil,B1,Ünite 3
+odun,o'tin,B1,Ünite 3
+tiroit bezleri,qalqonsimon bez,B1,Ünite 3
+odaklanmak,"diqqat qaratmoq, fikrni bir nuqtaga jamlash",B1,Ünite 3
+antrenman,"trenirovka, shug'ullasnish",B1,Ünite 3
+hamur,xamir,B1,Ünite 3
+okyanus,okean,B1,Ünite 3
+toplum,"jamoa, jamiyat",B1,Ünite 3
+ovmak,tarash,B1,Ünite 3
+arkeoloji,arxeologik,B1,Ünite 3
+hatmi,zefir guli,B1,Ünite 3
+oran,nisbat (oranda-nisbatda),B1,Ünite 3
+tutanak,"miqdor , tutib ketishi (bu işin tutanak orani yüzde kaç-bu ishning tutib ketish miqdori yuzda nechi nisbatda)",B1,Ünite 3
+aytaşı,oy toshi,B1,Ünite 3
+hormon,garmon,B1,Ünite 3
+ortalama,o'rtachasi (benim puan ortalamam 4 üzerinden -mening ballim örtachasi 4dan 3.93),B1,Ünite 3
+tutsak,mahbus,B1,Ünite 3
+pıhtılaşmak,"quyuqlashmoq, (qonning quyuqlashib tiqlib qolishi)",B1,Ünite 3
+baca,tutun,B1,Ünite 3
+hücre,hujra,B1,Ünite 3
+oyun,o'yin,B1,Ünite 3
+tüccar,"tujjor, savdogar",B1,Ünite 3
+saklamak,"saqlamoq, yashirmoq",B1,Ünite 3
+bağlam,kontekst,B1,Ünite 3
+ıssız,egasiz (usmonli davrida),B1,Ünite 3
+öğün,"Mahal, marta; ovqat(lanish) vaqti",B1,Ünite 3
+uğraş,"Mashg'ulot, ish, yumush, kasb; Sa'y-harakat, urinish",B1,Ünite 3
+saklanmak,"Yashirinmoq, berkinmoq; Yashirilmoq",B1,Ünite 3
+bahane,"Bahona, vaj",B1,Ünite 3
+ilerleme,"o'sish, rivojlanish, taraqqiyot",B1,Ünite 3
+öneri,Taklif,B1,Ünite 3
+uğur,"Baxt, tole, omad; Xosiyat",B1,Ünite 3
+şifayı kapmak,kasal bo'lish,B1,Ünite 3
+başkan,"Boshliq, rais, rahbar; Prezident, yurtboshi",B1,Ünite 3
+ilginç,"Qiziq, g'alati, ajablanarli",B1,Ünite 3
+özgün,"o'ziga xos, boshlarga o'xshamaydigan; Asl nusxa",B1,Ünite 3
+uzman,Mutaxassis,B1,Ünite 3
+tazelemek,Tozalamoq; Yangilamoq,B1,Ünite 3
+bereket,"Baraka, barakat, mo'l-ko'llik; Yomg'ir; Yaxshiyamki",B1,Ünite 3
+iyimserlik,"Optimistik, nekbinlik",B1,Ünite 3
+özgüven,O'ziga ishonch,B1,Ünite 3
+virüs,Virus,B1,Ünite 3
+uyarlamak,"Moslanmoq, mos qilmoq, muvofiqlashtirilmoq",B1,Ünite 3
+berrak,"Tiniq, sof, toza",B1,Ünite 3
+kalite,"Sifat, nav",B1,Ünite 3
+peştamal,Lungi; Peshband; Peshgir,B1,Ünite 3
+vücut,"Vujud, kishining joni-tani, a'zoyi badan; mavjudlik",B1,Ünite 3
+yaramak,"Yaramoq, asqatmoq, ish bermoq; Yaroqli bo'lmoq",B1,Ünite 3
+biçim,"Bichim, shakl; Qiyofa, afzo, sumbat",B1,Ünite 3
+kaplıca,Qaynarbuloq; Sihatgoh,B1,Ünite 3
+pıhtı,"Quyqa, quyqum, quyqindi",B1,Ünite 3
+yaratıcılık,"Yaratuvchilik, ijodkorlik",B1,Ünite 3
+yedeklemek,zaxiralamoq,B1,Ünite 3
+bileşim,"Birikma, tarkib",B1,Ünite 3
+karaciğer,Jigar(anat),B1,Ünite 3
+pişmanlık,Pushaymonlik,B1,Ünite 3
+yaşam,"yashash, hayot, umr",B1,Ünite 3
+yitirmek,"yo'qotmoq; g'oyib bo'lmoq; ajralmoq, mahrum bo'lmoq",B1,Ünite 3
+biyokimya,biokimyo,B1,Ünite 3
+karanfil,chinnigul; qalampirmunchoq,B1,Ünite 3
+prensip,"Nuqtayi nazar, tamoyil",B1,Ünite 3
+yaşantı,Hayot tarzi,B1,Ünite 3
+yitmek,"Yitmoq, yo'qolmoq; dom-daraksiz ketmoq",B1,Ünite 3
+boyut,"O'lcham, ko'lam",B1,Ünite 3
+karbonhidrat,uglevodlar,B1,Ünite 3
+protein,oqsil,B1,Ünite 3
+yaygın,"Ommalashgan, yoyilgan, tarqalgan; Dong'i ketgan",B1,Ünite 3
+yüreklendirmek,"jasorat bermoq, jasoratlantirmoq",B1,Ünite 3
+böbrek,Buyrak,B1,Ünite 3
+kas,"Muskul, mushak",B1,Ünite 3
+radyasyon,"Nurlanish, radiatsiya",B1,Ünite 3
+yayın evi,Nashriyot,B1,Ünite 3
+cesaret,"Jasorat, mardlik, dovyuraklik",B1,Ünite 3
+keçe,"Kigiz, namat",B1,Ünite 3
+rakam,"Rakam, son(mat); Miqdor",B1,Ünite 3
+yeşim,Yashma(rangdor tosh),B1,Ünite 3
+çadır,"chodir, o'tov",B1,Ünite 3
+keyif,"Kayf, kayfiyat; rohat, huzur",B1,Ünite 3
+rapor,"Axborot, ma'lumot, hisobot; Ma'ruza; Ma'lumotnoma",B1,Ünite 3
+zencefil,Zanjabil,B1,Ünite 3
+çukur,chuqur,B1,Ünite 3
+kısım,"qism, bo'lak; Qisim sigim",B1,Ünite 3
+reçete,"Shifokorning dori tarkibi, qo'llanish miqdori va qanday foydolanish kerakligi haqida bemorga beradigan yozma ko'rsatmasi",B1,Ünite 3
+çuvaldız,Juvoldiz,B1,Ünite 3
+kısırlık,Qisirlik,B1,Ünite 3
+rehber,"Rahbar, yo'l boshlovchi, yo'l ko'rsatuvchi",B1,Ünite 3
+çürük,"chirik, chirigan; Mahkam bo'lmagan",B1,Ünite 3
+kibir,"Kibr, kibru havo, takabburlik",B1,Ünite 3
+rekor,"Misli ko'rilmagan muvaffaqiyat, erishhilgan eng katta ko'rsatich, eng yuqori natija",B1,Ünite 3
+artırmak,Orttirmoq,B1,Ünite 3
+açıklığa kavuşmak,"yoritilishi kerak bo'lgan mavzu yoki muammo, noaniqlikdan qutulish, tushunarli qilish",B1,Ünite 3
+dal,"Shox, buta, butoq; Soha, tarmoq; bo'lim",B1,Ünite 3
+kolesterol,Xolesterin,B1,Ünite 3
+röportaj,"ayakta kalmak: yiqilmaslik,",B1,Ünite 3
+dalak,Taloq,B1,Ünite 3
+komite,Qo'mita,B1,Ünite 3
+sayesinde,"Soyasida, tufayli, orqasida, orqali, sharofati bilan",B1,Ünite 3
+benimsemek,"Qabul qilmoq, o'zlashtirmoq; Bog'lanmoq",B1,Ünite 3
+can pazarı,Har bir inson o'z hayoti haqida qayg'uradi va o'zini qutqarishga harakat qiladigan ahvol,B1,Ünite 3
+damar,Tomir,B1,Ünite 3
+konferans,"Nutq, ma'ruza. 2 Konferensiya",B1,Ünite 3
+sezgi,Sezgi ichki his; fahm-farosat,B1,Ünite 3
+berraklaştırmak,Tiniqlashtirmoq,B1,Ünite 3
+dizini dövmek,"pushaymon bo'lish, tavba qilmoq",B1,Ünite 3
+davetli,"Da'vat qilingan, chaqirilgan",B1,Ünite 3
+konsantrasyon,Kontsentratsiya; diqqatini jalb qilish,B1,Ünite 3
+sıkıntı,"Aziyat ranj, azob; Mashaqqat, qiyinchilik",B1,Ünite 3
+beslenmek,Oziqlanmoq,B1,Ünite 3
+enine boyuna,denizci :Dengizchi,B1,Ünite 3
+kraliyet,Qirollik,B1,Ünite 3
+sıra,"Sira, qator; Navbat, gal; parta; tartib, qator, saf",B1,Ünite 3
+dinç,"Sog'lom, baquvvat",B1,Ünite 3
+kramp,"Tomir tortishish, tirishish, changak bo'lish",B1,Ünite 3
+çırpmak,"Silkimoq, silkitmoq, tebratmoq; Aralashtirmoq, qorishtirmoq",B1,Ünite 3
+güzellik salonu,go'zallik markazi,B1,Ünite 3
+sıvı,Suyuq; suyuqlik,B1,Ünite 3
+diyetisyen,Parhez bo'yicha mutaxassis,B1,Ünite 3
+kristal,Billur,B1,Ünite 3
+soba,Pechka,B1,Ünite 3
+etki etmek,Ta'sir etmoq,B1,Ünite 3
+kabuklu yemiş,"Yong'oq, yerfistig'i, qovurilgan nohut kabi nonushta ovqatlar",B1,Ünite 3
+doçent,Dotsent,B1,Ünite 3
+kulübe,Kulba; Uycha,B1,Ünite 3
+süreç,Jarayon,B1,Ünite 3
+gerçekleşmek,"Haqiqatqa aylanmoq, amalga oshmoq",B1,Ünite 3
+kafa karışıklığı,Adashgan,B1,Ünite 3
+doğurganlık,"Tug'aloqlik, ko'p bola tug'ishlik; Sermashullik, unumdorlik",B1,Ünite 3
+kuşkusuz,"shubhasiz; muqarrar ravishda, albatta, so'zsiz",B1,Ünite 3
+sürme,surish; lo'kidon; surma; surma(pardoz bo'yog'i),B1,Ünite 3
+görev almak,Vazifa olmoq,B1,Ünite 3
+katkı,maddesi: Har qanday aralashmaga modda qo'shilish,B1,Ünite 3
+dönem,Davr,B1,Ünite 3
+kuvars,chaqmoqtosh,B1,Ünite 3
+şaşırtıcı,"Kutilmagan holat, kutilmagan vaziyat",B1,Ünite 3
+hedeflemek,"hadafga olmoq; mo'ljallamoq; maqsad qilmoq, bel bog'lamoq",B1,Ünite 3
+keyfine varmak,Bahramand bo'lmoq,B1,Ünite 3
+düğün,to'y,B1,Ünite 3
+lif,Uzun tola; dastmolqovoq,B1,Ünite 3
+şefkat,"Shafqat, rahimdillik, achinish",B1,Ünite 3
+ikna etmek,Ishontirish,B1,Ünite 3
+keyfini çıkarmak,biror narsadan lazzatlanish,B1,Ünite 3
+düşkün,"mehr qo'ygan, berilgan; kembag'allashgan; Axloqsiz",B1,Ünite 3
+lohusa,"chillali ayol, yangi ko'zi yorigan ayol",B1,Ünite 3
+şifa,"Shifo, kasallikdan sog'ayish, tuzalish",B1,Ünite 3
+istifa etmek,Iste'fo etmoq/qilmoq,B1,Ünite 3
+masaya yatırmak,mavzu yoki hodisani tekshirish yoki tekshirish,B1,Ünite 3
+düzensizlik,"Pala-partishlik, tartibsizlik",B1,Ünite 3
+mantık,Mantiq,B1,Ünite 3
+şikayet,"Shikoyat, arz",B1,Ünite 3
+izne çıkmak,ish joyida yuqori organlarning roziligi bilan ma'lum vaqtga ishdan ketish,B1,Ünite 3
+yaşam koçu,Odamlarning hayot sifatini yaxshilash uchun maslahat va yo'l -yo'riq ko'rsatuvchi shaxs,B1,Ünite 3
+empati,hamdardlik,B1,Ünite 3
+mecburiyet,Majburiyat,B1,Ünite 3
+şömine,O'choqsimon uy pechkasi,B1,Ünite 3
+kabullenmek,Qabullanmoq,B1,Ünite 3
+federasyon,"ittifoq, birlik; ayrim jamiyatlar va tashkilotlar uyushmasi",B1,Ünite 3
+metin,Matn; Metin,B1,Ünite 3
+tansiyon,"qon bosimi; tazyiq, siquv, taranglik",B1,Ünite 3
+katılmak,"Qo'silmoq; Qatnashmoq, ishtirok etmoq",B1,Ünite 3
+felç,"Falaj, shol",B1,Ünite 3
+mineral,Mineral,B1,Ünite 3
+tarçın,Dolchin,B1,Ünite 3
+katmak,"Qo'shmoq, aralashtirmoq; Birga (yonida) yubormoq",B1,Ünite 3
+gelin,Kelin,B1,Ünite 3
+molekül,Molekula,B1,Ünite 3
+tasarruf,Tasarruf; tejam; jamg'arma,B1,Ünite 3
+Algı,"Idrok, zehn, fahm; Daromad; Pora; Soliq",B1,Ünite 4
+Anadili,Ona tili,B1,Ünite 4
+Analiz,Tahlil,B1,Ünite 4
+Ayakta,"Oyoqda, oyoq ustida, tikka turgan holda",B1,Ünite 4
+Bağlılık,"Bog'liqlik, bog'liq bo'lishlik; Sadoqat",B1,Ünite 4
+Belirgin,"Ma'lum, aniq, ravshan",B1,Ünite 4
+Çağ,"Chog', vaqt, davr",B1,Ünite 4
+Çizelge,"Grafik, jadval",B1,Ünite 4
+Dağarcık,"Xalta, sumka",B1,Ünite 4
+Dağcılık,"Alpinizm, tog'chilik",B1,Ünite 4
+Denge,Muvozanat,B1,Ünite 4
+Dolayısıyla,Bilvosita; Sababi bilan,B1,Ünite 4
+Dönemeç,"Burilish, muyulish",B1,Ünite 4
+Gerçekçi,"Haqiqatchi, realist",B1,Ünite 4
+Hâkim,"Hokim; Prokuror; Boshqaruvchi, boshliq",B1,Ünite 4
+Harita,Xarita,B1,Ünite 4
+İşe yarar,Ishbop,B1,Ünite 4
+İşlem,"Jarayon; Muomala; Harakat, faoliyat",B1,Ünite 4
+İşlev,"Ishlov( Xom ashyodan mahsulot tayyorlash uchun qilingan mehnat jarayoni va unibg natijasi); Vazifa, ish, xizmat; Ish va faoliyat doirasi",B1,Ünite 4
+Jest,"Imo, ishora, imo- ishora; Kutilmagan takalluf, kutilmagan mulazamat",B1,Ünite 4
+Karar,Qaror,B1,Ünite 4
+Kazanç,"Foyda, daromad; Naf, manfaat",B1,Ünite 4
+Koordinasyon,"Koordinatsiya, o'zaro muvofiqlashtirish",B1,Ünite 4
+Mekanizma,Mexanizatsiya,B1,Ünite 4
+Mesafe,Masofa; Rasmiyat (munosabat),B1,Ünite 4
+Mimik,Mimika; Imo-ishora,B1,Ünite 4
+Monte,O'rnatish,B1,Ünite 4
+Mümkün,Mumkin,B1,Ünite 4
+Ölçüm,"O'lchash; O'lcham, o'lchov",B1,Ünite 4
+Ölçüt,"Mezon, me'yor",B1,Ünite 4
+Platform,"Platforma; Plato, yuksak tekislik",B1,Ünite 4
+Potansiyel,"Salohiyat, imkoniyatlar va kuch-qudrat darajasi",B1,Ünite 4
+Siyaset,Siyosat,B1,Ünite 4
+Somut,Aniq,B1,Ünite 4
+Soyut,"Mavhum; Mujmal, noaniq",B1,Ünite 4
+Strateji,Strategiya,B1,Ünite 4
+Süngerli,"Mo'chalkali, bulutli",B1,Ünite 4
+Tablo,"Rasm, surat; Manzara, tasvir",B1,Ünite 4
+Tekerleme,qofiyali gap bilan bo'lgan she'r,B1,Ünite 4
+Telaffuz,Talaffuz,B1,Ünite 4
+Ustalık,"Ustalik, usta ekanlik; Ustaga xos mahorat, mohirlik",B1,Ünite 4
+Uyumlu,"Hamohang, uyg'un, mutanosib, mos",B1,Ünite 4
+Uzay,"Olam, koinot, fazo",B1,Ünite 4
+Üretken,"Sermahsul, mahsuldor",B1,Ünite 4
+Varlık,"borliq, bor bo'lishlik, mavjudlik; Borliq, mavjudot; Boylik, mulk",B1,Ünite 4
+Veri,"Ma'lumot; Asos, tamal, negiz",B1,Ünite 4
+Verimli,"Unumdor, mahsuldor, samarali, samarador",B1,Ünite 4
+Yaklaşım,Yaqinlashuv; Yondashuv,B1,Ünite 4
+Yokuş,"Qiyalik, nishab",B1,Ünite 4
+Yorucu,charchatadigan,B1,Ünite 4
+Zekâ,"Zako, aql, farosat, zakiylik, zakovat, zehn",B1,Ünite 4
+Zihin,"Zehn, idrok, fahm",B1,Ünite 4
+Ağırlık vermek,Algilamak: Idrok qilmoq,B1,Ünite 4
+Ayrılmak,Ayrilmoq,B1,Ünite 4
+Dikiş tutturmak,"(ibora) Ishda yoki joyda uzoq vaqt qolish, doimiy bo'lish; Muvaffaqiyatli bo'lish",B1,Ünite 4
+Hatır sormak,Kishiga qanday bo'lishini so'rmoq,B1,Ünite 4
+İstekte bulunmak,"Istamoq, ixtiyor etmoq, xohlamoq",B1,Ünite 4
+Kaynaklanmak,Sabab bo'lmoq,B1,Ünite 4
+Kımıldamak,"Qimirlamoq, tebranmoq; Jojidan qo'zg'almoq, jilmoq, siljimoq",B1,Ünite 4
+Köreltmek,O'tmashlashmoq; Qobiliyatini yo'qottirmoq,B1,Ünite 4
+Mâl olmak,"Xarajat qilmoq; bitta faoliyat, ish natijasida zarar ko'rmoq",B1,Ünite 4
+Mantık yürütmek,"Fikrlash,",B1,Ünite 4
+Meydana gelmek,Yuzaga kelmoq,B1,Ünite 4
+Saptamak,"Belgilamoq, aniqlamoq; Mustahkamlamoq, mahkamlamoq",B1,Ünite 4
+Sönmek,"O'chmoq; So'nmoq; Xiralashmoq; Shiddati pasaymoq, susaymoq; Yo'qolmoq",B1,Ünite 4
+Tespit etmek,Mustahkamlash; Aniqlash,B1,Ünite 4
+Yer almak,qatnashmoq; ishtirok etmoq,B1,Ünite 4
+Yorumlamak,"Tushuntirmoq, izohlamoq, Sharhlamoq",B1,Ünite 4
+Kalıp İfadeler,Alameti farika: (Ayırıcı özellik),B1,Ünite 4
+Bakış açısı,Nuqtayi nazar,B1,Ünite 4
+Beden dili,Tana tili,B1,Ünite 4
+İlgi alanı,"Qiziqish, qiziqtiruvchi ishlar",B1,Ünite 4
+Anonim,anonim(nomalum),B1,Ünite 5
+Çekirge,chigirtka,B1,Ünite 5
+Detoks,detoks(parhez),B1,Ünite 5
+İnanç,"ishonch, etiqod",B1,Ünite 5
+Karamsarlık,pessimizm(pessimistik),B1,Ünite 5
+Kasaba,"shahar, shaharcha",B1,Ünite 5
+Kutsal,muqaddas,B1,Ünite 5
+Martı,baliqchi,B1,Ünite 5
+Martı,chayqa,B1,Ünite 5
+Meteliksiz,buzildi,B1,Ünite 5
+Piyango,lotereya,B1,Ünite 5
+Slogan,shiori,B1,Ünite 5
+Şerit,tasma,B1,Ünite 5
+Talihsiz,baxtsiz,B1,Ünite 5
+Tebessüm,tabassum,B1,Ünite 5
+Tekne,qayiq,B1,Ünite 5
+Teori,nazariya,B1,Ünite 5
+Tesadüf,tasodif,B1,Ünite 5
+Toksin,toksin,B1,Ünite 5
+Tura,tanganing rasmli tarafi,B1,Ünite 5
+Yonca,beda,B1,Ünite 5
+Arınmak,qutulmoq,B1,Ünite 5
+Çıldırtmak,aqldan ozish,B1,Ünite 5
+Halsız kalmak,charchamoq,B1,Ünite 5
+Hayal kurmak,orzu qilmoq,B1,Ünite 5
+Olgunlaşmak,yetuklashmoq,B1,Ünite 5
+Öfkelenmek,g'azablanmoq,B1,Ünite 5
+Batıl inanç,bid'at,B1,Ünite 5
+Can atmak,intilmoq,B1,Ünite 5
+Gözdek çıkarmak,"biror narsadan voz kechmoq, yo'qlikka rozi bo'lmoq",B1,Ünite 5
+İç hesaplaşma,biznes ko'rgazmasi,B1,Ünite 5
+İçini çekmek,xo'rsinmoq,B1,Ünite 5
+Konsantre olmak,diqqatni jamlamoq,B1,Ünite 5
+Tadını çıkarmak,rohatlanmoq,B1,Ünite 5
+Vicdan meselesi,vijdon masalasi,B1,Ünite 5
+Ağırlama,"Hurmatini joyiga qo'ymoq, izzatlamoq, izzat-ikrom ko'rsatmoq, siylamoq",B1,Ünite 6
+Ahretlik,"Oxiratlik, qiyomatlik; Asrandi qiz",B1,Ünite 6
+Anayasa,"Konstitutsiya, bosh qomus, asosiy qonun",B1,Ünite 6
+Aşama,"Martaba, rutba; Bosqich, palla",B1,Ünite 6
+Atılgan,"Dovyurak, o'ktam, mardonavor; Abjir, chapdast, uddaburon",B1,Ünite 6
+Bağımsız,"Mustakil, erkin; Ozod, hur",B1,Ünite 6
+Bazlama,"Obinon, tova (da pishirilgan) non",B1,Ünite 6
+Birim,Birlik (o'lchov birligi),B1,Ünite 6
+Birleşim,"Birlashgan, birlashik",B1,Ünite 6
+Bürokratik,"Qog'ozbozlik, to'rachilik, rasmiyatchilik",B1,Ünite 6
+Cıvıl cıvıl,"Ehtirosli, qaynoq. 2. Sho'x, nash'ali. 3. Gavjum, jo'shqin. 4. chug'ur chug'ur sas",B1,Ünite 6
+Çarpıcı,"Kutilmaganda sodir bo'ladigan , kishilarni hayratga soladigan, shov--shuvli; Hayratangiz, hayratomuz",B1,Ünite 6
+Çıkar,"Manfaat, foyda",B1,Ünite 6
+Ekonomik,"Iqtisodiy, iqtisodga oid",B1,Ünite 6
+Felaket,"Falokat, musibat, baxtsizlik",B1,Ünite 6
+Gelenek,"An'ana, urf-odat, rasm-rusum",B1,Ünite 6
+Gölet,Ko'lmak,B1,Ünite 6
+Görenek,"Urf- odar, rasm, taomil",B1,Ünite 6
+Güçlü,"Kuchli, baquvvat; Qudratli; Qattiq, shiddatli; Katta quvvatga ega bo'lgan, quvvatli",B1,Ünite 6
+Harem,"Haram, haramxona",B1,Ünite 6
+Humma,"Issig'i chiqqan; Bezgakli , isitmali; Davomli, haroratli",B1,Ünite 6
+Huzur,"Huzur, rohat, halovat",B1,Ünite 6
+İbadet,Ibodat,B1,Ünite 6
+İçtenlik,Samimiylik samimiyat,B1,Ünite 6
+İfade,Ifoda; Tushuntirish; Bayon; Izoh,B1,Ünite 6
+İlgi,"Aloqa, muomala, munosabat; Qiziqish",B1,Ünite 6
+İşteş,o'zaro,B1,Ünite 6
+Karşılıklı,"O'zaro, ikki tomonlama, har ikki tomonga tegishli",B1,Ünite 6
+Kayıtsız,"Qaydsiz, qayd qilinmagan, yozib qo'yilmagan; E'tiborsiz, loqayd",B1,Ünite 6
+Kin,"Kin, kek, adovat",B1,Ünite 6
+Kişisel,Shaxsiy; Insoniy insonga xos,B1,Ünite 6
+Komik,Kulgili,B1,Ünite 6
+Kurum,"Qurum; Jamiyat, tashkilot muassasa, uyushma, qurulush, qurum",B1,Ünite 6
+Kül,Kul,B1,Ünite 6
+Madde,"modda; Modda, band, bo'lim; Mohiyat; Moddiyat",B1,Ünite 6
+Mangal,"Manqal, manqaldon, kabob qo'ra",B1,Ünite 6
+Muhtaç,Muhtoj,B1,Ünite 6
+Müessese,"Muassasa, qo'mita",B1,Ünite 6
+Nadiren,"Siyrak, onda-sonda",B1,Ünite 6
+Nefret,Nafrat,B1,Ünite 6
+Nimet,"Ne'mat, in'om, hadya, sovga, siylov; Tabiat in'om etgan yegulik narsalar, noz-ne'matlar; Yaxshilik, ezgulik",B1,Ünite 6
+Öğretim,"Malaka, ta'lim",B1,Ünite 6
+Ölçülü,"O'lchovli, o'lchalgan; Mezonli, muvozanatli",B1,Ünite 6
+Önlem,"Tadbir, chora",B1,Ünite 6
+Özne,Ega,B1,Ünite 6
+Posa,"Qobiq, po'st, po'stloq; Quyga, quyqum",B1,Ünite 6
+Sakar,"Qashqa; Kalvak, noshud, epsiz, epashang, lavang",B1,Ünite 6
+Sakin,"Sokin; Qo'zg'almas, harakatsiz; Tinch; Sukutga cho'mgan, jimjit",B1,Ünite 6
+Samimiyet,Samimiyat,B1,Ünite 6
+Sanık,Ayblanuvchi,B1,Ünite 6
+Saygı,"Hurmat, izzat, ehtirom",B1,Ünite 6
+Selamlık,Salomxona,B1,Ünite 6
+Seminer,Anjuman,B1,Ünite 6
+Sevecenlik,"Mushfiqlik, mehribonlik, shafqatlik",B1,Ünite 6
+Sırdaş,Sirdosh,B1,Ünite 6
+Sistem,"Sistema, tizim; Tushunchalar tasnifi; Tamoyillar majmuyi; Tartib- uslublar majmuyi; jarayon",B1,Ünite 6
+Sohbet,Suhbat,B1,Ünite 6
+Soy,"Sulola; Qavm, urug'; Ajdod; Avlod; Nasl, zot, zurriyot",B1,Ünite 6
+Sülale,Sulola,B1,Ünite 6
+Tandır,Tandir,B1,Ünite 6
+Unsur,"Unsur, modda, tarkibiy qism",B1,Ünite 6
+Üstünlük,"Ustunlik, afzallik",B1,Ünite 6
+Vefa,Vafo,B1,Ünite 6
+Vize,Viza,B1,Ünite 6
+Yargıç,Sudya (sud organlarida sudga tushgan ishlarni ko'ruvchi va shu ishlar bo'yicha hukm chiqaruvchi lavozimidagi shaxs.),B1,Ünite 6
+Zahmet,"Zahmat, og'ir mehnat, qiyinchilik",B1,Ünite 6
+Çekinmek,"Uyalmoq, begonasiramoq, iymanmoq, tortinmoq",B1,Ünite 6
+Dinmek,"Tinmoq, to'xtamoq",B1,Ünite 6
+Esirgemek,"Qo'riqlamoq, saqlamoq, himoya qilmoq; Qizg'anmoq",B1,Ünite 6
+Geçmek,"Kechmoq, o'tmoq",B1,Ünite 6
+İncitmek,Og'ritmoq; Ranjitmoq,B1,Ünite 6
+İnkâr etmek,"qabul qilmaslik, rad etmoq",B1,Ünite 6
+Katlanmak,"Qanlanmoq, buklanmoq; chidamoq, bardosh bermoq",B1,Ünite 6
+Kaytarmak,"Qaytarmoq, qaytarib bermoq; Ishdan qochmoq",B1,Ünite 6
+Kötüleşmek,"Yomonlashmoq; Yomon tomonga o'zgarmoq, qiyinlashmoq; Og'irlasmoq",B1,Ünite 6
+Küsmek,"Arazlamoq, ranjimoq; Rivojlanmay (o'smay) qolmoq",B1,Ünite 6
+Rahatlamak,"Rohatlamoq, rahot qilmoq; Taskin topmoq, xotirjamlashmoq",B1,Ünite 6
+Sarsılmak,"Silkinmoq, tebranmoq; Kuchsizlanmooq; Larzaga tushmoq",B1,Ünite 6
+Sinirlenmek,"Asabiylashmoq, asabiylanmoq",B1,Ünite 6
+Yogunlaşmak,"Quyuqlashmoq, zichlashmoq; Jalb etmoq, to'plamoq, qaratmoq",B1,Ünite 6
+Kalıp İfadeler,"Adet yerini bulmak: zarur bo'lgani uchun emas, balki odatiy bo'lgani uchun"" ma'nosida ishlatilgan so'z",B1,Ünite 6
+Alçak gönüllü,"Mutavoze, shikastanafs, kamtar xokisor",B1,Ünite 6
+Alım gücü,sotib olish imkoniyati,B1,Ünite 6
+Ayakta durmak,"yiqilmaslik, qulab tushmaslik",B1,Ünite 6
+Aynı çatı altında yaşamak,Bir chuval inciri berbat etmek:,B1,Ünite 6
+Çevre kirliliği,Tabiiy resurslardan haddan tashqari va noto'g'ri foydalanish va yo'q qilish natijasida atrofdagi muvozanat salbiy tarzda buziladi va ba'zi muammolar paydo bo'lishi,B1,Ünite 6
+Üstünlük kurmak,hukmronlik qilmoq,B1,Ünite 6
+Dert yanmak,biror narsadan shikoyat qilish,B1,Ünite 6
+Eli boş gitmek,tashrif buyurishda sovg'a olmaslik,B1,Ünite 6
+Fazla gelmek,Sizni charchatadigan va bezovta qiladigan vaziyatda bo'lish,B1,Ünite 6
+Hoş karşılamak,"qabul qilmoq, yoqmoq, asrab olish; g'amxo'rlik qilish",B1,Ünite 6
+Hoşpeş etmek,Suhbatlashmoq,B1,Ünite 6
+İçini boşaltmak,muammolarini aytmoq; g'azabini ko'rsatish,B1,Ünite 6
+Kara günler,Qara kun,B1,Ünite 6
+Kârlı çıkmak,Kendini dishari atmak:,B1,Ünite 6
+İki yüzlü,"Ikkiyuzlama, munofiq, riyokor",B1,Ünite 6
+Kuşak çatışması,"Miadi dolmak: muddati tugaydigan narsa, eskirgan",B1,Ünite 6
+Peşinde koşmak,kimnidir yoki biror narsani juda xohlash,B1,Ünite 6
+Romantik takılmak,romantik holatda bo'lmoq,B1,Ünite 6
+Sıkı fıkı olmak,"Qalin do'st, juda samimiy bo'lish",B1,Ünite 6
+Uygun görmek,mos kelishini ko'rish,B1,Ünite 6
+Vaaz vermek,va'z qilish,B1,Ünite 6
+Yakından tanımak,kimnidir yoki nimanidir butun xususiyatlari bilan bilish,B1,Ünite 6
+Yer almak,qatnashmoq; ishtirok etmoq; bir ishi tayyorlaydiganlar qatorida bo'lish,B1,Ünite 6
+Yol açmak,sabab bo'lmoq,B1,Ünite 6
+Yüreği hop etmek,"Birdan qo'rqib, hayajonlanib ketmoq",B1,Ünite 6

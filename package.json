@@ -1,0 +1,15 @@
+{
+  "name": "sanat-hoca-turkce",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter @sanat/api start:dev",
+    "build": "pnpm -r build",
+    "test": "pnpm --filter @sanat/api test && pnpm --filter @sanat/api test:e2e",
+    "lint": "pnpm -r lint",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "demo": "pnpm --filter @sanat/api demo"
+  },
+  "packageManager": "pnpm@12.11.2"
+}

@@ -12,20 +12,27 @@ function linksFor(role: string): { href: string; label: string }[] {
     return [
       { href: "/admin", label: "Boshqaruv" },
       { href: "/groups", label: "Guruhlar" },
+      { href: "/kitoblar", label: "Materiallar" },
+      { href: "/oqish", label: "O'qish" },
       { href: "/arizalar", label: "Arizalar" },
-      { href: "/games", label: "O'yinlar" },
     ];
   }
   if (role === "TEACHER") {
     return [
       { href: "/ustoz", label: "Panel" },
       { href: "/groups", label: "Guruhlar" },
+      { href: "/kitoblar", label: "Materiallar" },
+      { href: "/oqish", label: "O'qish" },
+      { href: "/ai", label: "AI" },
       { href: "/arizalar", label: "Arizalar" },
     ];
   }
   return [
     { href: "/dashboard", label: "Kabinet" },
     { href: "/games", label: "O'yinlar" },
+    { href: "/oqish", label: "O'qish" },
+    { href: "/kitoblar", label: "Materiallar" },
+    { href: "/ai", label: "AI" },
     { href: "/groups", label: "Guruhlarim" },
   ];
 }

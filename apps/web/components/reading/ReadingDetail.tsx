@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { TextAdmin } from "./ReadingEditor";
 
 type Glossary = { id: string; turkish: string; uzbek: string };
 type Question = { id: string; kind: "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER"; prompt: string; options: string[] };
@@ -52,6 +53,7 @@ function useHighlighter(glossary: Glossary[]) {
 
 export function ReadingDetail() {
   const params = useParams<{ slug: string }>();
+  const { user } = useAuth();
   const [text, setText] = useState<Text | null>(null);
   const [error, setError] = useState("");
   const [showUz, setShowUz] = useState(false);
@@ -63,12 +65,14 @@ export function ReadingDetail() {
 
   const hl = useHighlighter(text?.glossary ?? []);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     if (!params?.slug) return;
     void api<Text>(`/reading/${params.slug}`)
       .then(setText)
       .catch((e) => setError(e instanceof ApiError ? e.message : "Matn topilmadi"));
   }, [params?.slug]);
+
+  useEffect(reload, [reload]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -116,6 +120,7 @@ export function ReadingDetail() {
   if (!text) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
 
   const resultFor = (id: string) => results?.find((r) => r.questionId === id);
+  const canEdit = user?.role === "TEACHER" || user?.role === "ADMIN";
 
   return (
     <div>
@@ -180,6 +185,17 @@ export function ReadingDetail() {
       )}
 
       {/* Savollar */}
+      {canEdit && (
+        <TextAdmin
+          textId={text.id}
+          slug={text.slug}
+          isDraft={text.isDraft}
+          questions={text.questions}
+          glossary={text.glossary}
+          onChanged={reload}
+        />
+      )}
+
       {text.questions.length > 0 && (
         <section className="mt-10">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { NewTextForm } from "./ReadingEditor";
 
 type Item = {
   id: string;
@@ -26,6 +28,7 @@ export function ReadingList() {
   const [level, setLevel] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     setLoading(true);
@@ -37,6 +40,8 @@ export function ReadingList() {
 
   return (
     <div>
+      {canEdit && <NewTextForm onCreated={(slug) => router.push(`/oqish/${slug}`)} />}
+
       <div className="segment mb-6 flex flex-wrap gap-1" role="tablist" aria-label="Daraja">
         <button type="button" role="tab" aria-selected={level === ""} onClick={() => setLevel("")} className="min-h-10 px-3 text-sm">
           Hammasi

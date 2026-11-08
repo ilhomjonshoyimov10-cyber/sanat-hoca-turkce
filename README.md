@@ -2,6 +2,8 @@
 
 Turk tili o'quv markazi uchun web platforma: kurslar, o'yinlar, guruhlar, ustoz paneli.
 
+**Jonli:** https://sanat-hoca-turkce.vercel.app
+
 **Texnologiyalar:** Next.js 16 + Tailwind 4 (frontend) · NestJS 12 (backend) · PostgreSQL + Prisma 6 · Redis · Docker
 
 ## Holat
@@ -13,6 +15,16 @@ Turk tili o'quv markazi uchun web platforma: kurslar, o'yinlar, guruhlar, ustoz 
 - [x] 6. **O'yinlar**: so'z mashqi (oraliqli takrorlash), XP, daraja, seriya, haftalik reyting
 - [x] 6b. **Dizayn**: "Gece Çini" tizimi (İznik palitrasi, Fraunces tipografikasi, mehrob ravog'i), 3D masjid (three.js), 0 ta accessibility xatosi
 - [ ] 7. Email/SMS/Telegram orqali tasdiqlash (keyingi navbatda: provayder tanlash kerak)
+- [x] 13. **Panellar**: admin, ustoz va o'quvchi uchun alohida kirish va panel, profil, bildirishnomalar
+- [x] 14. **Chat va video darslar**: guruh chati, e'lonlar, Jitsi video dars (xona nomi serverda yaratiladi)
+- [x] 15. **Kitoblar/materiallar**: ustoz yuklaydi (fayl brauzerdan to'g'ridan-to'g'ri saqlagichga), ko'rinish darajalari, o'qilgan sahifa
+- [x] 16. **O'qish matnlari**: 6 original turkcha matn (A1-B2) + savollar + bosiladigan lug'at; ustoz uchun muharrir
+- [x] 17. **Lug'at boshqaruvi**: so'z turkumi, talaffuz, teglar, chastota, tasdiqlash, mavzuli to'plamlar
+- [x] 18. **Yangi o'yinlar**: gap tuzish, qo'shimchalar mashqi, so'z zanjiri (jami 7 o'yin)
+- [x] 19. **AI yordamchi**: suhbat, grammatika tuzatish, so'z tushuntirish, ustoz uchun mashq yaratish.
+      Provayder almashtiriladigan (Gemini/Groq/OpenAI/Anthropic), kalit serverda qoladi,
+      shaxsiy ma'lumot yuborilmaydi, kunlik limit rollar bo'yicha
+- [x] 20. **Vercel deploy**: jonli havola, Neon Postgres, migratsiya va kontent seedi build paytida
 - [x] 8. **Guruhlar**: guruh yaratish, o'quvchi qo'shish (18 yoshgacha: ota-ona roziligi), uy vazifalari, baholash, davomat
 - [x] 9a. **Ustoz lug'ati** (A1, A2, B1, B2: ~2750 so'z) o'yinlarga qo'shildi, daraja tanlash, import vositasi (`docs/lugat/README.md`)
 - [x] 9. **Yangi o'yinlar**: juftlikni top, harflardan so'z yig'ish, tinglab yozish (brauzer ovozi). Keyingi: qo'shimchalar mashqi, jumla tuzish
@@ -29,11 +41,14 @@ Tekshirish — `node -v` 22 dan katta bo'lsin. pnpm o'rnatilmagan bo'lsa:
 npm install -g pnpm
 ```
 
-> ### ⚠️ Eng ko'p uchraydigan xato: `localhost` va `127.0.0.1`
-> Saytni brauzerda **`http://localhost:3000`** manzilida oching.
-> `http://127.0.0.1:3000` da ochsangiz **kirish ishlamaydi**: brauzer bu ikkisini
-> boshqa-boshqa sayt deb biladi, shuning uchun CORS so'rovni to'sadi va kirish
-> cookie'si saqlanmaydi. Backend ham `localhost:4000` bo'lishi shart.
+> ### Manzil haqida
+> `http://localhost:3000` ham, `http://127.0.0.1:3000` ham ishlaydi.
+>
+> Avval bu muammo edi (brauzer ikkisini boshqa sayt deb bilib, cookie'ni
+> saqlamasdi). Endi frontend `/api/*` so'rovlarini o'zi backend'ga uzatadi
+> (Next.js rewrite), shuning uchun brauzer faqat bitta domen ko'radi:
+> CORS kerak emas, cookie ishonchli. Sozlama: `apps/web/.env.local` dagi
+> `API_ORIGIN`.
 
 ---
 

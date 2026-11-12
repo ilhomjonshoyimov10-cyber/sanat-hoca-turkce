@@ -5,22 +5,28 @@
 # oshmasligi kerak — va bu yerda izoh yozish mumkin.
 set -euo pipefail
 
-echo "1/5 Prisma mijozini yaratish"
+# Kontent xatosi deploy'ga CHIQMASIN. Bu tekshiruv bazani talab
+# qilmaydi, shuning uchun eng boshida ishlaydi va xato bo'lsa
+# qurilish shu yerda to'xtaydi.
+echo "1/6 Kontentni tekshirish"
+pnpm exec tsx prisma/check-content.ts
+
+echo "2/6 Prisma mijozini yaratish"
 pnpm exec prisma generate
 
-echo "2/5 Migratsiyalarni qo'llash"
+echo "3/6 Migratsiyalarni qo'llash"
 pnpm exec prisma migrate deploy
 
 if [ "${VERCEL_ENV:-}" = "production" ]; then
-  echo "3/5 So'zlar va birinchi admin"
+  echo "4/6 So'zlar va birinchi admin"
   pnpm exec tsx prisma/seed.ts
-  echo "4/5 O'quv kontenti (matnlar, gaplar, mashqlar)"
+  echo "5/6 O'quv kontenti (matnlar, gaplar, mashqlar)"
   pnpm exec tsx prisma/seed-content.ts
 else
-  echo "3-4/5 seed o'tkazib yuborildi (faqat production uchun)"
+  echo "4-5/6 seed o'tkazib yuborildi (faqat production uchun)"
 fi
 
-echo "5/5 TypeScript -> dist, so'ngra bitta ESM faylga yig'ish"
+echo "6/6 TypeScript -> dist, so'ngra bitta ESM faylga yig'ish"
 pnpm exec nest build
 node bundle.mjs
 

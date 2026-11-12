@@ -13,6 +13,11 @@
 import { PrismaClient } from '@prisma/client';
 import { READING_TEXTS } from './content/reading-texts.js';
 import { DRILLS, SENTENCES } from './content/drills.js';
+import { clozeItems } from './content/cloze.js';
+import { dialogues } from './content/dialogues.js';
+import { antonyms } from './content/pairs.js';
+import { topics, topicWordCount } from './content/topics.js';
+import { verbForms } from './content/verbs.js';
 
 const prisma = new PrismaClient();
 
@@ -144,18 +149,157 @@ async function seedDrills() {
   console.log(`Qo'shimcha mashqlari: ${n} ta`);
 }
 
+/**
+ * Ma'no bo'yicha mavzu teglari.
+ *
+ * Lug'at darslikdan import qilingan va u yerdagi `category` — "Ünite 1",
+ * ya'ni darslik bo'limi, mavzu emas. "Ortiqcha so'zni top" o'yiniga esa
+ * haqiqiy mavzu kerak. Shuning uchun:
+ *   • so'z bazada bo'lsa (turkcha yozilishi bo'yicha) — unga teg qo'shamiz
+ *   • bo'lmasa — yangi so'z qilib qo'shamiz
+ * Mavjud lug'at BUZILMAYDI, faqat boyitiladi.
+ */
+async function seedTopics() {
+  let tagged = 0;
+  let added = 0;
+
+  for (const topic of topics) {
+    const tag = `mavzu:${topic.slug}`;
+    for (const [i, w] of topic.words.entries()) {
+      // Turkcha yozilish bo'yicha qidiramiz: o'zbekcha tarjima
+      // darslikda boshqacha bo'lishi mumkin, turkchasi esa bir xil.
+      const existing = await prisma.word.findFirst({
+        where: { turkish: { equals: w.turkish, mode: 'insensitive' } },
+        select: { id: true, tags: true, verified: true },
+      });
+
+      if (existing) {
+        if (existing.tags.includes(tag) && existing.verified) continue;
+        await prisma.word.update({
+          where: { id: existing.id },
+          data: {
+            tags: existing.tags.includes(tag) ? existing.tags : [...existing.tags, tag],
+            // O'yinga tushishi uchun tasdiqlangan bo'lishi kerak
+            verified: true,
+          },
+        });
+        tagged++;
+      } else {
+        await prisma.word.create({
+          data: {
+            turkish: w.turkish,
+            uzbek: w.uzbek,
+            level: w.level,
+            category: topic.title,
+            tags: [tag],
+            verified: true,
+            position: i,
+          },
+        });
+        added++;
+      }
+    }
+  }
+  console.log(`Mavzular: ${topics.length} ta mavzu, ${tagged} so'zga teg qo'yildi, ${added} yangi so'z (ro'yxatda ${topicWordCount} ta)`);
+}
+
+async function seedCloze() {
+  for (const [i, c] of clozeItems.entries()) {
+    await prisma.clozeItem.upsert({
+      where: { masked_answer: { masked: c.masked, answer: c.answer } },
+      create: {
+        full: c.full, masked: c.masked, answer: c.answer, options: c.options,
+        uzbek: c.uzbek, explanation: c.explanation, topic: c.topic,
+        level: c.level, verified: true, position: i,
+      },
+      update: {
+        full: c.full, options: c.options, uzbek: c.uzbek,
+        explanation: c.explanation, topic: c.topic, level: c.level, position: i,
+      },
+    });
+  }
+  console.log(`Bo'shliq mashqlari: ${clozeItems.length} ta`);
+}
+
+async function seedVerbs() {
+  for (const [i, v] of verbForms.entries()) {
+    await prisma.verbForm.upsert({
+      where: {
+        infinitive_person_tense_negative: {
+          infinitive: v.infinitive, person: v.person, tense: v.tense, negative: v.negative,
+        },
+      },
+      create: {
+        infinitive: v.infinitive, person: v.person, tense: v.tense, negative: v.negative,
+        answer: v.answer, uzbek: v.uzbek, explanation: v.explanation,
+        level: v.level, verified: true, position: i,
+      },
+      update: {
+        answer: v.answer, uzbek: v.uzbek, explanation: v.explanation,
+        level: v.level, position: i,
+      },
+    });
+  }
+  console.log(`Fe'l mashqlari: ${verbForms.length} ta`);
+}
+
+async function seedDialogues() {
+  for (const [i, d] of dialogues.entries()) {
+    await prisma.dialogueItem.upsert({
+      where: { prompt_answer: { prompt: d.prompt, answer: d.answer } },
+      create: {
+        prompt: d.prompt, answer: d.answer, options: d.options,
+        situation: d.situation, uzbek: d.uzbek,
+        level: d.level, verified: true, position: i,
+      },
+      update: {
+        options: d.options, situation: d.situation, uzbek: d.uzbek,
+        level: d.level, position: i,
+      },
+    });
+  }
+  console.log(`Suhbat mashqlari: ${dialogues.length} ta`);
+}
+
+async function seedPairs() {
+  for (const [i, p] of antonyms.entries()) {
+    await prisma.wordPair.upsert({
+      where: { kind_first_second: { kind: 'ANTONYM', first: p.first, second: p.second } },
+      create: {
+        kind: 'ANTONYM', first: p.first, second: p.second, uzbek: p.uzbek,
+        level: p.level, verified: true, position: i,
+      },
+      update: { uzbek: p.uzbek, level: p.level, position: i },
+    });
+  }
+  console.log(`Zid ma'noli juftliklar: ${antonyms.length} ta`);
+}
+
 async function main() {
   await seedReading();
   await seedSentences();
   await seedDrills();
+  await seedTopics();
+  await seedCloze();
+  await seedVerbs();
+  await seedDialogues();
+  await seedPairs();
 
-  const [texts, questions, sentences, drills] = await Promise.all([
+  const [texts, questions, sentences, drills, cloze, verbs, dlg, pairs, words] = await Promise.all([
     prisma.readingText.count(),
     prisma.readingQuestion.count(),
     prisma.sentence.count(),
     prisma.suffixDrill.count(),
+    prisma.clozeItem.count(),
+    prisma.verbForm.count(),
+    prisma.dialogueItem.count(),
+    prisma.wordPair.count(),
+    prisma.word.count(),
   ]);
-  console.log(`\nJami: ${texts} matn, ${questions} savol, ${sentences} gap, ${drills} mashq`);
+  console.log(
+    `\nJami: ${texts} matn, ${questions} savol, ${sentences} gap, ${drills} qo'shimcha mashqi, ` +
+    `${cloze} bo'shliq, ${verbs} fe'l, ${dlg} suhbat, ${pairs} juftlik, ${words} so'z`,
+  );
 }
 
 main()

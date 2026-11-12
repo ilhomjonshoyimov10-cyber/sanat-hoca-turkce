@@ -18,6 +18,10 @@ const match = (row, where) =>
       if ('lt' in v) return row[k] < v.lt;
       if ('in' in v) return v.in.includes(row[k]);
       if ('notIn' in v) return !v.notIn.includes(row[k]);
+      // Massiv maydonlar uchun (Word.tags): bo'sh emasmi, ichida bormi
+      if ('isEmpty' in v) return Array.isArray(row[k]) && (row[k].length === 0) === v.isEmpty;
+      if ('hasSome' in v) return Array.isArray(row[k]) && v.hasSome.some((x) => row[k].includes(x));
+      if ('has' in v) return Array.isArray(row[k]) && row[k].includes(v.has);
       if ('contains' in v) {
         const hay = String(row[k] ?? '');
         const needle = String(v.contains);
@@ -35,7 +39,7 @@ const match = (row, where) =>
   });
 
 // { groupId_userId: { groupId, userId } } -> { groupId, userId }
-const OPERATORS = ['not', 'gte', 'gt', 'lte', 'lt', 'in', 'notIn', 'contains', 'mode', 'startsWith', 'endsWith', 'equals', 'increment'];
+const OPERATORS = ['not', 'gte', 'gt', 'lte', 'lt', 'in', 'notIn', 'contains', 'mode', 'startsWith', 'endsWith', 'equals', 'increment', 'isEmpty', 'hasSome', 'has'];
 const isOperatorObject = (v) => Object.keys(v).some((key) => OPERATORS.includes(key));
 const flat = (where) =>
   Object.fromEntries(

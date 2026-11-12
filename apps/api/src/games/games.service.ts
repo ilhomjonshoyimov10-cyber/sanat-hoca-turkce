@@ -33,6 +33,9 @@ const CHAIN_LENGTH = 10;
  */
 const DAILY_XP_CAP_PER_GAME = 120;
 
+/** Ma'no bo'yicha mavzu tegining boshlanishi, masalan "mavzu:ovqat". */
+const TOPIC_TAG = 'mavzu:';
+
 interface MatchPayload { u: string; e: number; w: string[]; m: number[] }
 interface TypedPayload { u: string; e: number; w: string }
 interface SentencePayload { u: string; e: number; s: string }
@@ -717,23 +720,37 @@ export class GamesService {
 
   // ═══════════════ 13) Ortiqcha so'zni top ═══════════════
   //
-  // Bu o'yin uchun alohida material KERAK EMAS: lug'atdagi `category`
-  // maydonidan foydalanamiz. Uchta so'z bir mavzudan, bittasi boshqadan.
+  // MUHIM: mavzu `category` dan OLINMAYDI. Lug'at darslikdan import
+  // qilingan va u yerda category = "Ünite 1", ya'ni darslik bo'limi.
+  // Bir bo'limda "salom", "qalam" va "dushanba" birga turishi mumkin —
+  // bunday guruhdan "ortiqchasini top" savoli ma'nosiz chiqadi.
+  //
+  // Shuning uchun faqat MA'NO bo'yicha teglangan so'zlar ishlatiladi:
+  // teg "mavzu:" bilan boshlanadi (masalan "mavzu:ovqat"). Teg qo'yilgan
+  // so'zlar prisma/content/topics.ts da.
 
   async oddSet(userId: string, level: Level | undefined, limit = 5) {
     const words = await this.prisma.word.findMany({
-      where: { verified: true, category: { not: null }, ...(level ? { level } : {}) },
-      select: { id: true, turkish: true, uzbek: true, category: true },
-      take: 1500,
+      where: {
+        verified: true,
+        // Prisma massiv ichidagi "shu bilan boshlanadi" ni qo'llab-quvvatlamaydi,
+        // shuning uchun tegi borlarini olamiz va prefiksni pastda tekshiramiz.
+        tags: { isEmpty: false },
+        ...(level ? { level } : {}),
+      },
+      select: { id: true, turkish: true, uzbek: true, tags: true },
+      take: 2000,
     });
 
     // Mavzular bo'yicha guruhlaymiz; kamida 3 so'zi borlari yaroqli
     const byCategory = new Map<string, typeof words>();
     for (const w of words) {
-      const key = w.category as string;
-      const list = byCategory.get(key) ?? [];
-      list.push(w);
-      byCategory.set(key, list);
+      for (const tag of w.tags) {
+        if (!tag.startsWith(TOPIC_TAG)) continue;
+        const list = byCategory.get(tag) ?? [];
+        list.push(w);
+        byCategory.set(tag, list);
+      }
     }
     const usable = [...byCategory.entries()].filter(([, list]) => list.length >= 3);
     if (usable.length < 2) return { items: [] };
@@ -757,7 +774,7 @@ export class GamesService {
         // Mavzu nomi ID o'rnida — bu o'yinda saqlanadigan element yo'q
         token: this.seal(PURPOSE_ODD, { u: userId, i: category, c: correctIndex }),
         options,
-        hint: category,
+        hint: category.slice(TOPIC_TAG.length),
       };
     });
     return { items };

@@ -18,6 +18,8 @@ export type SeedQuestion = {
   explanation?: string;
 };
 
+import { READING_TEXTS_2 } from './reading-texts-2.js';
+
 export type SeedText = {
   slug: string;
   title: string;
@@ -29,7 +31,7 @@ export type SeedText = {
   questions: SeedQuestion[];
 };
 
-export const READING_TEXTS: SeedText[] = [
+const TEXTS_1: SeedText[] = [
   // ───────────────────────── A1 ─────────────────────────
   {
     slug: 'benim-ailem',
@@ -462,3 +464,8 @@ Xo'sh, sir qayerda? Aslida yo'q. Muntazamlik, xato qilish jasorati va yoqtirgan 
     ],
   },
 ];
+
+// Ikkinchi to'plam alohida faylda (bitta fayl juda uzayib ketmasin).
+// Ro'yxat tartibi = o'quvchiga ko'rinadigan tartib, shuning uchun
+// darajama-daraja qo'shiladi.
+export const READING_TEXTS: SeedText[] = [...TEXTS_1, ...READING_TEXTS_2];

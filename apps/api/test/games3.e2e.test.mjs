@@ -76,7 +76,12 @@ before(async () => {
     });
   });
 
-  // ── Lug'at: "ortiqcha so'zni top" uchun mavzular kerak ──
+  // ── Lug'at: "ortiqcha so'zni top" uchun MA'NO bo'yicha teg kerak ──
+  //
+  // DIQQAT: o'yin `category` ni ishlatmaydi. Lug'at darslikdan import
+  // qilingan va u yerda category = "Ünite 1" — darslik bo'limi, mavzu
+  // emas. Shuning uchun faqat "mavzu:" bilan boshlanadigan teg hisobga
+  // olinadi. Test ham shuni tekshiradi.
   const vocab = [
     ['elma', 'olma', 'meva'], ['armut', 'nok', 'meva'], ['üzüm', 'uzum', 'meva'], ['kiraz', 'gilos', 'meva'],
     ['kedi', 'mushuk', 'hayvon'], ['köpek', 'it', 'hayvon'], ['kuş', 'qush', 'hayvon'], ['balık', 'baliq', 'hayvon'],
@@ -86,7 +91,8 @@ before(async () => {
     prisma.db.words.push({
       id: `w${i}`, turkish, uzbek, russian: null, exampleTr: null, exampleUz: null, exampleRu: null,
       audioUrl: null, level: 'A1', category, position: i, partOfSpeech: null, pronunciation: null,
-      tags: [], frequency: null, verified: true, notes: null, createdAt: new Date(), updatedAt: new Date(),
+      tags: [`mavzu:${category}`], frequency: null, verified: true, notes: null,
+      createdAt: new Date(), updatedAt: new Date(),
     });
   });
 

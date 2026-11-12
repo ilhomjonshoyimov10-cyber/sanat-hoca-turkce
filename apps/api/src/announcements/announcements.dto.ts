@@ -1,5 +1,8 @@
 import {
   IsBoolean,
+  IsInt,
+  Max,
+  Min,
   IsDateString,
   IsIn,
   IsOptional,
@@ -35,6 +38,13 @@ export const BLOB_IMAGE = /^https:\/\/[A-Za-z0-9.-]+\.(?:public\.)?blob\.vercel-
 
 const LINK_MSG = "Havola sayt ichidagi yo'l (/kurslar) yoki https:// bilan boshlanishi kerak";
 const IMAGE_MSG = "Rasm faqat saytning o'z fayl omboridan bo'lishi mumkin";
+
+/** Reklama rasmini yuklash uchun token so'rovi. */
+export class ImageTokenDto {
+  @IsString() @Length(1, 255) fileName!: string;
+  @IsString() @Length(3, 60) contentType!: string;
+  @IsInt() @Min(1) @Max(5 * 1024 * 1024) size!: number;
+}
 
 export class CreateAnnouncementDto {
   @IsOptional() @IsIn(KINDS) kind?: (typeof KINDS)[number];

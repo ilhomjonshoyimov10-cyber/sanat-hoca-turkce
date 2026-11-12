@@ -2,7 +2,8 @@
 
 // E'lon va reklamalarni boshqarish. Faqat admin ko'radi.
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
 import { useHydrated } from "@/lib/hydrated";
 import { errorText } from "../groups/shared";
@@ -33,6 +34,11 @@ export function AnnouncementsTab({ onError }: { onError: (m: string) => void }) 
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  // Yuklangan reklama rasmi. Fayl API dan o'tmaydi — brauzer uni
+  // to'g'ridan-to'g'ri omborga yuklaydi, bu yerda faqat manzil qoladi.
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -58,6 +64,7 @@ export function AnnouncementsTab({ onError }: { onError: (m: string) => void }) 
           audience: String(f.get("audience")),
           title: String(f.get("title")),
           body: String(f.get("body")),
+          imageUrl: imageUrl ?? undefined,
           linkUrl: String(f.get("linkUrl") ?? "").trim() || undefined,
           linkLabel: String(f.get("linkLabel") ?? "").trim() || undefined,
           dismissible: f.get("dismissible") === "on",
@@ -67,12 +74,36 @@ export function AnnouncementsTab({ onError }: { onError: (m: string) => void }) 
         },
       });
       form.reset();
+      setImageUrl(null);
       setNote("E'lon joylashtirildi — barcha foydalanuvchilar ekranida ko'rinadi.");
       await load();
     } catch (err) {
       onError(errorText(err));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function pickImage(file: File) {
+    onError("");
+    if (file.size > 5 * 1024 * 1024) {
+      onError("Rasm juda katta. Eng ko'pi 5 MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const { token, pathname } = await api<{ token: string; pathname: string }>(
+        "/announcements/image-token",
+        { method: "POST", body: { fileName: file.name, contentType: file.type, size: file.size } },
+      );
+      const { put } = await import("@vercel/blob");
+      const blob = await put(pathname, file, { access: "public", token, contentType: file.type });
+      setImageUrl(blob.url);
+    } catch (e) {
+      onError(errorText(e));
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
@@ -130,6 +161,48 @@ export function AnnouncementsTab({ onError }: { onError: (m: string) => void }) 
           <div>
             <label htmlFor="a-body" className="label">Matn</label>
             <textarea id="a-body" name="body" required maxLength={2000} rows={3} className="input resize-y" />
+          </div>
+
+          <div>
+            <span className="label">Reklama rasmi (ixtiyoriy)</span>
+            <div className="flex flex-wrap items-center gap-3">
+              {imageUrl && (
+                <Image
+                  src={imageUrl}
+                  alt="Yuklangan reklama rasmi"
+                  width={96}
+                  height={96}
+                  className="h-20 w-20 rounded-[var(--r-tile)] border border-cobalt/30 object-cover"
+                />
+              )}
+              <button
+                type="button"
+                className="btn btn-outline"
+                disabled={uploading}
+                onClick={() => fileRef.current?.click()}
+              >
+                {uploading ? "Yuklanmoqda..." : imageUrl ? "Rasmni almashtirish" : "Rasm yuklash"}
+              </button>
+              {imageUrl && (
+                <button type="button" className="btn btn-quiet" onClick={() => setImageUrl(null)}>
+                  Olib tashlash
+                </button>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void pickImage(f);
+                }}
+              />
+            </div>
+            <p className="help">
+              PNG, JPEG yoki WebP, eng ko&apos;pi 5 MB. Rasm saytning o&apos;z omboriga yuklanadi —
+              begona saytdagi rasm foydalanuvchilarning IP manzilini o&apos;sha saytga beradi.
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

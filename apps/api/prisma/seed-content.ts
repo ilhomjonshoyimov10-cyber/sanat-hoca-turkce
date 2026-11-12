@@ -160,32 +160,43 @@ async function seedDrills() {
  * Mavjud lug'at BUZILMAYDI, faqat boyitiladi.
  */
 async function seedTopics() {
+  // TEZLIK: ilgari har bir so'z uchun alohida so'rov yuborilardi
+  // (264 ta so'z x 2 so'rov). Neon'ga har so'rov ~150 ms, ya'ni
+  // har deployda bir daqiqadan ko'p vaqt behuda ketardi.
+  // Endi lug'at BIR MARTA o'qiladi va faqat o'zgarishi kerak
+  // bo'lganlariga yoziladi.
+  const all = await prisma.word.findMany({
+    select: { id: true, turkish: true, tags: true, verified: true },
+  });
+  const byTurkish = new Map(all.map((w) => [w.turkish.toLocaleLowerCase('tr'), w]));
+
   let tagged = 0;
   let added = 0;
 
   for (const topic of topics) {
     const tag = `mavzu:${topic.slug}`;
     for (const [i, w] of topic.words.entries()) {
-      // Turkcha yozilish bo'yicha qidiramiz: o'zbekcha tarjima
-      // darslikda boshqacha bo'lishi mumkin, turkchasi esa bir xil.
-      const existing = await prisma.word.findFirst({
-        where: { turkish: { equals: w.turkish, mode: 'insensitive' } },
-        select: { id: true, tags: true, verified: true },
-      });
+      const existing = byTurkish.get(w.turkish.toLocaleLowerCase('tr'));
 
       if (existing) {
-        if (existing.tags.includes(tag) && existing.verified) continue;
+        const needsTag = !existing.tags.includes(tag);
+        // O'yinga tushishi uchun tasdiqlangan bo'lishi kerak
+        const needsVerify = !existing.verified;
+        if (!needsTag && !needsVerify) continue;
         await prisma.word.update({
           where: { id: existing.id },
           data: {
-            tags: existing.tags.includes(tag) ? existing.tags : [...existing.tags, tag],
-            // O'yinga tushishi uchun tasdiqlangan bo'lishi kerak
+            tags: needsTag ? [...existing.tags, tag] : undefined,
             verified: true,
           },
         });
+        // Xotiradagi nusxani ham yangilaymiz: bir so'z ikki mavzuda
+        // bo'lsa (tekshiruv buni taqiqlaydi, lekin ehtiyot shart)
+        existing.tags = needsTag ? [...existing.tags, tag] : existing.tags;
+        existing.verified = true;
         tagged++;
       } else {
-        await prisma.word.create({
+        const created = await prisma.word.create({
           data: {
             turkish: w.turkish,
             uzbek: w.uzbek,
@@ -195,12 +206,17 @@ async function seedTopics() {
             verified: true,
             position: i,
           },
+          select: { id: true, turkish: true, tags: true, verified: true },
         });
+        byTurkish.set(w.turkish.toLocaleLowerCase('tr'), created);
         added++;
       }
     }
   }
-  console.log(`Mavzular: ${topics.length} ta mavzu, ${tagged} so'zga teg qo'yildi, ${added} yangi so'z (ro'yxatda ${topicWordCount} ta)`);
+  console.log(
+    `Mavzular: ${topics.length} ta mavzu, ${tagged} so'zga teg qo'yildi, ${added} yangi so'z ` +
+      `(ro'yxatda ${topicWordCount} ta)`,
+  );
 }
 
 async function seedCloze() {

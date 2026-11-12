@@ -14,13 +14,18 @@ Turk tili o'quv markazi uchun web platforma: kurslar, o'yinlar, guruhlar, ustoz 
 - [x] 5. **2FA (TOTP)**: ustoz va admin uchun majburiy, tiklash kodlari, replay himoyasi
 - [x] 6. **O'yinlar**: so'z mashqi (oraliqli takrorlash), XP, daraja, seriya, haftalik reyting
 - [x] 6b. **Dizayn**: "Gece Çini" tizimi (İznik palitrasi, Fraunces tipografikasi, mehrob ravog'i), 3D masjid (three.js), 0 ta accessibility xatosi
-- [ ] 7. Email/SMS/Telegram orqali tasdiqlash (keyingi navbatda: provayder tanlash kerak)
+- [x] 7. **Email va Telegram orqali tasdiqlash**: kod xeshlanadi (HMAC + server kaliti), 10 daqiqa,
+      5 urinish. SMS YO'Q — provayder pullik va operator shartnomasi kerak, shuning uchun telefon
+      raqami "tasdiqlangan" deb BELGILANMAYDI. Ishlashi uchun `RESEND_API_KEY` yoki
+      `TELEGRAM_BOT_TOKEN` kerak
 - [x] 13. **Panellar**: admin, ustoz va o'quvchi uchun alohida kirish va panel, profil, bildirishnomalar
 - [x] 14. **Chat va video darslar**: guruh chati, e'lonlar, Jitsi video dars (xona nomi serverda yaratiladi)
 - [x] 15. **Kitoblar/materiallar**: ustoz yuklaydi (fayl brauzerdan to'g'ridan-to'g'ri saqlagichga), ko'rinish darajalari, o'qilgan sahifa
-- [x] 16. **O'qish matnlari**: 6 original turkcha matn (A1-B2) + savollar + bosiladigan lug'at; ustoz uchun muharrir
+- [x] 16. **O'qish matnlari**: 20 original turkcha matn (A1-C1, qiyinlik darajama-daraja oshadi) + savollar + bosiladigan lug'at; ustoz uchun muharrir
 - [x] 17. **Lug'at boshqaruvi**: so'z turkumi, talaffuz, teglar, chastota, tasdiqlash, mavzuli to'plamlar
-- [x] 18. **Yangi o'yinlar**: gap tuzish, qo'shimchalar mashqi, so'z zanjiri (jami 7 o'yin)
+- [x] 18. **O'yinlar — jami 12 ta**, ko'nikma bo'yicha uch guruhda: so'z boyligi, grammatika, jonli til.
+      Yangilari: bo'shliqni to'ldirish, fe'l shakli, suhbat, zid ma'no, ortiqcha so'zni top.
+      Material TAKRORLANMAYDI: avval ko'rilmagani, keyin eng uzoq vaqt oldin ko'rilgani beriladi
 - [x] 19. **AI yordamchi**: suhbat, grammatika tuzatish, so'z tushuntirish, ustoz uchun mashq yaratish.
       Provayder almashtiriladigan (Gemini/Groq/OpenAI/Anthropic), kalit serverda qoladi,
       shaxsiy ma'lumot yuborilmaydi, kunlik limit rollar bo'yicha
@@ -28,7 +33,17 @@ Turk tili o'quv markazi uchun web platforma: kurslar, o'yinlar, guruhlar, ustoz 
 - [x] 8. **Guruhlar**: guruh yaratish, o'quvchi qo'shish (18 yoshgacha: ota-ona roziligi), uy vazifalari, baholash, davomat
 - [x] 9a. **Ustoz lug'ati** (A1, A2, B1, B2: ~2750 so'z) o'yinlarga qo'shildi, daraja tanlash, import vositasi (`docs/lugat/README.md`)
 - [x] 9. **Yangi o'yinlar**: juftlikni top, harflardan so'z yig'ish, tinglab yozish (brauzer ovozi). Keyingi: qo'shimchalar mashqi, jumla tuzish
-- [ ] 10. Chat, to'lov (Payme/Click), Telegram bot
+- [x] 21. **E'lonlar va reklama**: faqat admin, auditoriya tanlanadi, muddatli, yopiladigan
+- [x] 22. **Adminga murojaat**: mavzu bo'yicha, yozishma bilan
+- [x] 23. **Profil**: rasm yuklash, kirgan qurilmalar (vaqt/IP/brauzer), chiqish tugmasi
+- [x] 24. **Sessiya 1 kun, suriladigan**: har kirishda yangilanadi; bir kun kirmasa login+parol
+- [x] 25. **Bepul dars**: admin video kutubxonasi -> ustoz arizachiga biriktiradi -> chat.
+      Ariza telefon raqami bo'yicha hisobga avtomatik bog'lanadi
+- [x] 26. **Jonli efir**: guruhga bog'liq bo'lmagan ochiq dars, darajaga qarab
+- [x] 27. **Biz haqimizda**: ustoz, telefon, Telegram kanal, Buxoro Savdo majmuasi xaritada
+- [ ] 10. To'lov (Payme/Click) — merchant shartnomasi va sandbox kalitlari kerak, ularsiz
+      bitta qator ham sinab ko'rib bo'lmaydi
+- [ ] 28. Ustoz turkcha kontentni tekshirishi (`docs/KONTENT.md`)
 - [x] 11. **Deploy**: Docker + Caddy (HTTPS avtomatik), migratsiyalar, zaxira skripti, `docs/DEPLOY.md`
 - [ ] 12. Nazorat (monitoring), xatolarni yig'ish, xavfsizlik auditi
 

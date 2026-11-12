@@ -117,7 +117,22 @@ describe("o'yin: savollar va javoblar", () => {
 
   it("o'rganilgan so'zlar yangi savollarda takrorlanmaydi; vaqti kelgan so'z birinchi chiqadi", async () => {
     let r = await a.get('/games/quiz?limit=20');
-    assert.equal(r.body.questions.length, 10); // 12 - 2 (ikkalasi hali "vaqti kelmagan")
+    // ANIQ SON TEKSHIRILMAYDI. Sabab: endi javob berilgan so'zlar ham,
+    // shunchaki KO'RSATILGAN so'zlar ham darhol qaytmaydi (takrorlanishdan
+    // himoya). Avvalgi testlar bir nechta so'zni ko'rsatgan, shuning uchun
+    // son ularning sonidan kelib chiqadi. Qoidaning o'zi tekshiriladi:
+    //   • o'rganilgan (javob berilgan) so'z yangi savolda chiqmasin
+    //   • bitta to'plam ichida so'z ikki marta bo'lmasin
+    const learnedIds = new Set(ctx.prisma.db.userWords.map((u) => u.wordId));
+    const learnedWords = new Set(
+      ctx.prisma.db.words.filter((w) => learnedIds.has(w.id)).map((w) => w.turkish),
+    );
+    const prompts = r.body.questions.map((q) => q.prompt);
+    assert.ok(prompts.length > 0, 'savollar umuman kelmadi');
+    assert.equal(new Set(prompts).size, prompts.length, "bitta to'plamda so'z takrorlandi");
+    for (const p of prompts) {
+      assert.ok(!learnedWords.has(p), `o'rganilgan so'z yana chiqdi: ${p}`);
+    }
     assert.equal(r.body.dueCount, 0);
 
     const wrongWord = ctx.prisma.db.userWords.find((u) => u.box === 1);

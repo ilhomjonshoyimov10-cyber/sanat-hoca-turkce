@@ -84,3 +84,12 @@ export class ChainAnswerDto {
   @IsString() @MaxLength(40)
   answer!: string;
 }
+
+/** Variant tanlanadigan o'yinlar uchun javob (bo'shliq, suhbat, zid ma'no, ortiqcha so'z). */
+export class ChoiceAnswerDto {
+  @IsString() @MaxLength(1200)
+  token!: string;
+
+  @IsInt() @Min(0) @Max(9)
+  choice!: number;
+}

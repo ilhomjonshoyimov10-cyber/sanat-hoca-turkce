@@ -34,6 +34,59 @@ export class UsersService {
   }
 
   /**
+   * Profil rasmini saqlash.
+   *
+   * Fayl bu yerdan o'tmaydi — brauzer uni to'g'ridan-to'g'ri omborga
+   * yuklaydi (kitoblardagi bilan bir xil mantiq). Bu yerda faqat
+   * manzil saqlanadi, va u albatta bizning omborimizdan bo'lishi
+   * DTO darajasida tekshirilgan.
+   */
+  async setAvatar(userId: string, url: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: url },
+      select: PUBLIC_FIELDS,
+    });
+  }
+
+  /** Rasmni olib tashlash — profil yana bosh harflar bilan ko'rinadi. */
+  async removeAvatar(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: null },
+      select: PUBLIC_FIELDS,
+    });
+  }
+
+  /**
+   * Foydalanuvchining ochiq sessiyalari: qachon, qaysi qurilmadan.
+   *
+   * Foydalanuvchining o'zi ham ko'rishi kerak — begona kirishni
+   * birinchi bo'lib egasi sezadi.
+   */
+  async sessions(userId: string) {
+    const rows = await this.prisma.refreshToken.findMany({
+      where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      select: { id: true, userAgent: true, ip: true, createdAt: true, expiresAt: true },
+    });
+    return rows;
+  }
+
+  /** Boshqa barcha qurilmalardan chiqish. */
+  async revokeOtherSessions(userId: string, ip?: string) {
+    const { count } = await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    await this.prisma.auditLog
+      .create({ data: { action: 'SESSIONS_REVOKED', userId, ip, meta: { count } } })
+      .catch(() => undefined);
+    return { revoked: count };
+  }
+
+  /**
    * Parolni almashtirish. Joriy parol tekshiriladi, yangi parol siyosatdan
    * o'tadi, so'ng BARCHA refresh tokenlar bekor qilinadi — parol o'g'irlangan
    * bo'lsa, o'g'ri sessiyasi ham uziladi.

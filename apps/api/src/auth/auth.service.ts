@@ -85,6 +85,18 @@ export class AuthService {
       throw e;
     }
 
+    // Bepul darsga shu raqam bilan ariza qoldirgan bo'lsa, arizani hisobga
+    // bog'laymiz. Shundan keyin u saytda ustoz bilan yozisha oladi va
+    // biriktirilgan dars videolarini ko'radi.
+    //
+    // Nega raqam bo'yicha: raqam ham User'da, ham Lead'da yagona aloqa
+    // nuqtasi, va User.phone ro'yxatdan o'tishda noyob bo'lishi tekshiriladi.
+    if (phone) {
+      await this.prisma.lead
+        .updateMany({ where: { phone, userId: null }, data: { userId: user.id } })
+        .catch(() => undefined);
+    }
+
     await this.audit('REGISTER', user.id, meta);
     const session = await this.issueSession(user.id, meta);
     return {

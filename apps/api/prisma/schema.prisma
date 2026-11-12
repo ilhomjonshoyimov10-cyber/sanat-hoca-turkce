@@ -62,6 +62,11 @@ enum GameType {
   WORD_CHAIN
   SPEED_REVIEW
   READING_QUIZ
+  FILL_GAP      // bo'shliqni to'ldirish
+  VERB_FORM     // fe'l shaklini topish
+  DIALOGUE      // suhbatda to'g'ri javob
+  ANTONYM       // zid ma'noli so'z
+  ODD_ONE_OUT   // ortiqcha so'zni topish
 }
 
 enum PartOfSpeech {
@@ -104,6 +109,17 @@ enum ReadingQuestionKind {
 enum AiRole {
   USER
   ASSISTANT
+}
+
+/// Tasdiqlash qanday kanal orqali o'tadi.
+///
+/// DIQQAT: SMS yo'q. SMS provayderi pullik va O'zbekistonda operator
+/// shartnomasi talab qiladi, shuning uchun telefon raqami TASDIQLANMAYDI —
+/// ustoz uni qo'lda qo'ng'iroq qilib tekshiradi. Telegram esa Telegram
+/// hisobini bog'laydi (telefonni emas), buni ochiq aytamiz.
+enum VerifyChannel {
+  EMAIL
+  TELEGRAM
 }
 
 /// AI yordamchining vazifasi. Har biriga alohida ko'rsatma (prompt) va
@@ -164,9 +180,13 @@ model User {
   locale           Locale    @default(UZ)
   birthDate        DateTime?
   avatarUrl        String?
-  telegramId       String?   @unique
   isActive         Boolean   @default(true)
   emailVerifiedAt  DateTime?
+  /// Telegram hisobi bog'langan vaqti. Telefon raqamini TASDIQLAMAYDI —
+  /// faqat Telegram hisobi haqiqiyligini ko'rsatadi.
+  telegramVerifiedAt DateTime?
+  /// Telegram chat id: bot shu id ga xabar yuboradi.
+  telegramChatId     String?   @unique
   parentConsent    Boolean   @default(false) // 18 yoshgacha bo'lganlar uchun ota-ona roziligi
   leaderboardOptIn Boolean   @default(false) // umumiy reytingda ismi ko'rinishiga rozilik
 
@@ -215,6 +235,21 @@ model User {
   readingAttempts  ReadingAttempt[]
   aiConversations  AiConversation[]
   aiUsage          AiUsage[]
+  verificationCodes VerificationCode[]
+
+  // ── E'lon, murojaat, bepul dars, jonli efir ──
+  announcements     Announcement[]          @relation("AnnouncementAuthor")
+  dismissedAnnouncements AnnouncementDismissal[]
+  supportRequests   SupportRequest[]        @relation("SupportAuthor")
+  handledRequests   SupportRequest[]        @relation("SupportHandler")
+  supportReplies    SupportReply[]
+  lessonVideos      LessonVideo[]           @relation("LessonVideoAuthor")
+  assignedLeadVideos LeadVideo[]            @relation("LeadVideoAssigner")
+  leadMessages      LeadMessage[]           @relation("LeadMessageSender")
+  myLeads           Lead[]                  @relation("LeadApplicant")
+  hostedLive        LiveSession[]           @relation("LiveHost")
+  seenItems         SeenItem[]
+  liveAttendance    LiveAttendee[]
 
   @@index([role])
 }
@@ -512,7 +547,16 @@ model Lead {
   status    LeadStatus @default(NEW)
   createdAt DateTime   @default(now())
 
+  /// Arizachi keyinchalik ro'yxatdan o'tsa, admin arizani hisobga bog'laydi.
+  /// Shundan keyingina u bilan sayt ichida yozishish mumkin bo'ladi.
+  userId    String?
+  user      User?      @relation("LeadApplicant", fields: [userId], references: [id], onDelete: SetNull)
+
+  videos    LeadVideo[]
+  messages  LeadMessage[]
+
   @@index([status, createdAt])
+  @@index([userId])
 }
 
 // Muhim harakatlar jurnali (kim, nima, qachon)
@@ -842,4 +886,383 @@ model AiUsage {
 
   @@id([userId, day])
   @@index([day])
+}
+
+
+/// Bir martalik tasdiqlash kodi (email) yoki Telegram bog'lash tokeni.
+///
+/// Kodning O'ZI saqlanmaydi — faqat xeshi. Baza o'qilib ketsa ham
+/// kodlardan foydalanib bo'lmaydi (parollar bilan bir xil mantiq).
+model VerificationCode {
+  id      String        @id @default(cuid())
+  userId  String
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel VerifyChannel
+
+  /// Kod qayerga yuborilgan: email manzili yoki "telegram".
+  /// Foydalanuvchi emailini almashtirsa, eski kod yaramay qolishi uchun kerak.
+  target    String
+  codeHash  String
+  expiresAt DateTime
+  /// Noto'g'ri urinishlar soni. Chegaradan oshsa kod kuyadi (brute force).
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, channel, createdAt])
+  @@index([expiresAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  E'LONLAR VA REKLAMA (faqat admin)
+// ═══════════════════════════════════════════════════════════════════
+
+enum AnnouncementKind {
+  INFO     // oddiy xabar
+  PROMO    // reklama, chegirma
+  EVENT    // tadbir, ochiq dars
+  WARNING  // muhim ogohlantirish (texnik ishlar va h.k.)
+}
+
+/// E'lon kimga ko'rinadi.
+enum AnnouncementAudience {
+  ALL
+  STUDENTS
+  PARENTS
+  TEACHERS
+}
+
+/// Sayt bo'ylab ko'rinadigan e'lon yoki reklama.
+///
+/// NEGA FAQAT ADMIN: bu blok har bir foydalanuvchining ekranida chiqadi.
+/// Agar ustozlar ham yoza olsa, o'quvchi ekranini kim to'ldirgani
+/// nazoratdan chiqadi. Guruh ichidagi e'lon uchun Message.isAnnouncement bor.
+model Announcement {
+  id       String               @id @default(cuid())
+  kind     AnnouncementKind     @default(INFO)
+  audience AnnouncementAudience @default(ALL)
+  title    String
+  body     String
+
+  /// Reklama rasmi. Faqat o'zimizning fayl omborimizdan (Vercel Blob) —
+  /// begona saytdagi rasm foydalanuvchi IP sini o'sha saytga oshkor qiladi.
+  imageUrl String?
+  /// Havola. Sayt ichida ("/kurslar") yoki tashqi ("https://t.me/...").
+  linkUrl   String?
+  linkLabel String?
+
+  /// Foydalanuvchi yopib qo'ya oladimi. Muhim ogohlantirishni yopib
+  /// bo'lmasligi mumkin, lekin reklamani — albatta.
+  dismissible Boolean @default(true)
+  /// Yuqorida, kattaroq ko'rinishda chiqsin.
+  pinned      Boolean @default(false)
+
+  startsAt DateTime  @default(now())
+  endsAt   DateTime?
+  isActive Boolean   @default(true)
+
+  createdById String
+  createdBy   User     @relation("AnnouncementAuthor", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
+
+  dismissals AnnouncementDismissal[]
+
+  /// Faol e'lonlarni tanlash eng tez-tez bajariladigan so'rov
+  @@index([isActive, startsAt])
+  @@index([createdAt])
+}
+
+/// Kim qaysi e'lonni yopib qo'ygani. Yopilgan e'lon qayta chiqmaydi.
+model AnnouncementDismissal {
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dismissedAt    DateTime     @default(now())
+
+  @@id([announcementId, userId])
+  @@index([userId])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ADMINGA MUROJAAT
+// ═══════════════════════════════════════════════════════════════════
+
+enum SupportTopic {
+  PROFILE   // ism, rasm, ma'lumotni o'zgartirish
+  LESSON    // dars, guruh, jadval
+  PAYMENT   // to'lov
+  TECHNICAL // sayt ishlamayapti
+  OTHER
+}
+
+enum SupportStatus {
+  OPEN
+  ANSWERED
+  RESOLVED
+  CLOSED
+}
+
+/// Foydalanuvchining adminga murojaati.
+///
+/// NEGA KERAK: profildagi ba'zi maydonlarni foydalanuvchi o'zi
+/// o'zgartira olmaydi (ism, daraja, guruh) — aks holda reyting va
+/// davomat yozuvlari buziladi. Shuning uchun "adminga murojaat"
+/// tugmasi: o'zgartirishni odam tasdiqlaydi.
+model SupportRequest {
+  id      String        @id @default(cuid())
+  userId  String
+  user    User          @relation("SupportAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  topic   SupportTopic  @default(OTHER)
+  subject String
+  body    String
+  status  SupportStatus @default(OPEN)
+
+  handledById String?
+  handledBy   User?   @relation("SupportHandler", fields: [handledById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+
+  replies SupportReply[]
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
+model SupportReply {
+  id        String         @id @default(cuid())
+  requestId String
+  request   SupportRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime       @default(now())
+
+  @@index([requestId, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  BEPUL DARS: VIDEO VA SUHBAT
+// ═══════════════════════════════════════════════════════════════════
+
+/// Admin biriktiradigan bepul dars videosi (1-dars, 2-dars...).
+///
+/// Video fayl bu yerda saqlanmaydi — faqat havola (YouTube, Telegram
+/// yoki o'zimizning ombor). Video faylni serverda saqlash qimmat va
+/// bepul tierda imkonsiz.
+model LessonVideo {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  url         String
+  /// Muqova rasmi (ixtiyoriy)
+  coverUrl    String?
+  level       Level?
+  position    Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdById String
+  createdBy   User     @relation("LessonVideoAuthor", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
+
+  assignments LeadVideo[]
+
+  @@index([isActive, position])
+}
+
+/// Qaysi arizachiga qaysi video berilgani.
+model LeadVideo {
+  id           String    @id @default(cuid())
+  leadId       String
+  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  videoId      String
+  video        LessonVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  assignedById String
+  assignedBy   User      @relation("LeadVideoAssigner", fields: [assignedById], references: [id])
+  assignedAt   DateTime  @default(now())
+  watchedAt    DateTime?
+
+  @@unique([leadId, videoId])
+  @@index([leadId])
+}
+
+/// Ariza bo'yicha yozishma (arizachi ↔ admin/ustoz).
+///
+/// Yozishish uchun arizachi ro'yxatdan o'tgan bo'lishi SHART
+/// (Lead.userId to'ldirilgan bo'lishi). Hisobsiz odam bilan chatda
+/// gaplashish — uni kim ekanini tekshirmasdan yozishmoq degani.
+model LeadMessage {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation("LeadMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  body      String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  JONLI EFIR
+// ═══════════════════════════════════════════════════════════════════
+
+/// Ustozning ochiq jonli darsi (guruhga bog'liq emas).
+///
+/// Lesson modelidan farqi: Lesson bitta guruhga tegishli, bu esa
+/// hammaga yoki bir darajaga ochiq. Xona nomi baribir serverda
+/// yaratiladi — begona odam taxmin qilib kira olmasin.
+model LiveSession {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  roomName    String       @unique
+  status      LessonStatus @default(SCHEDULED)
+  startsAt    DateTime
+  durationMin Int          @default(60)
+  /// Ro'yxatdan o'tgan hamma kira oladimi, yoki faqat shu daraja.
+  level       Level?
+  /// Faqat o'quvchilar uchunmi yoki mehmonlar ham (kelajak uchun)
+  isPublic    Boolean      @default(false)
+  hostId      String
+  host        User         @relation("LiveHost", fields: [hostId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt @default(now())
+
+  attendees LiveAttendee[]
+
+  @@index([status, startsAt])
+}
+
+model LiveAttendee {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt  DateTime    @default(now())
+
+  @@unique([sessionId, userId])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  YANGI O'YINLAR UCHUN MATERIAL
+// ═══════════════════════════════════════════════════════════════════
+
+/// Bo'shliq to'ldirish: "Ben okul__ gidiyorum" -> "a".
+///
+/// Jumla Sentence modelida emas, chunki bu yerda qaysi joy
+/// bo'sh ekani va chalg'ituvchi variantlar ham kerak.
+model ClozeItem {
+  id       String   @id @default(cuid())
+  /// To'liq jumla (javob bilan) — izoh va tekshirish uchun
+  full     String
+  /// Bo'shliqli jumla. Bo'shliq "___" bilan belgilanadi.
+  masked   String
+  answer   String
+  /// Noto'g'ri variantlar (3 ta tavsiya etiladi)
+  options  String[] @default([])
+  uzbek    String?
+  explanation String?
+  topic    String?
+  level    Level
+  verified Boolean  @default(false)
+  position Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([masked, answer])
+  @@index([level, verified, position])
+}
+
+/// Fe'l shakli: "gitmek" + "ben" + "şimdiki zaman" -> "gidiyorum".
+model VerbForm {
+  id        String   @id @default(cuid())
+  /// Masdar shakli: gitmek, gelmek, yazmak
+  infinitive String
+  /// Shaxs: ben, sen, o, biz, siz, onlar
+  person     String
+  /// Zamon nomi (turkcha): şimdiki zaman, geniş zaman, geçmiş zaman...
+  tense      String
+  /// Bo'lishsiz shaklmi
+  negative   Boolean  @default(false)
+  answer     String
+  uzbek      String?
+  explanation String?
+  level      Level
+  verified   Boolean  @default(false)
+  position   Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@unique([infinitive, person, tense, negative])
+  @@index([level, verified, position])
+}
+
+/// Suhbatda to'g'ri javobni tanlash: "Nasılsın?" -> "İyiyim, teşekkürler".
+model DialogueItem {
+  id       String   @id @default(cuid())
+  /// Kim nima dedi (savol tomoni)
+  prompt   String
+  /// To'g'ri javob
+  answer   String
+  /// Chalg'ituvchi javoblar
+  options  String[] @default([])
+  /// Vaziyat: do'konda, shifokorda, telefonda...
+  situation String?
+  uzbek     String?
+  level     Level
+  verified  Boolean  @default(false)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([prompt, answer])
+  @@index([level, verified, position])
+}
+
+enum WordPairKind {
+  ANTONYM // zid ma'noli
+  SYNONYM // yaqin ma'noli
+}
+
+/// Zid yoki yaqin ma'noli so'z juftligi.
+model WordPair {
+  id        String       @id @default(cuid())
+  kind      WordPairKind
+  first     String
+  second    String
+  uzbek     String?
+  level     Level
+  verified  Boolean      @default(false)
+  position  Int          @default(0)
+  createdAt DateTime     @default(now())
+
+  @@unique([kind, first, second])
+  @@index([kind, level, verified])
+}
+
+/// Foydalanuvchi qaysi mashq elementini ko'rganini eslab qoladi.
+///
+/// MUAMMO: mashqlar tasodifiy tanlanardi, shuning uchun bitta so'z yoki
+/// jumla ketma-ket bir necha marta chiqishi mumkin edi — o'quvchi uchun
+/// zerikarli va foydasiz.
+///
+/// YECHIM: avval umuman ko'rilmagan elementlar beriladi. Hammasi
+/// ko'rilgan bo'lsa, eng uzoq vaqt oldin ko'rilgani navbatga chiqadi.
+/// Shunday qilib material aylanib turadi, lekin takrorlanish eng oxirida.
+///
+/// `kind` — material turi ("word", "sentence", "cloze", ...). Bitta
+/// jadvalda saqlanadi, chunki mantiq hammasi uchun bir xil.
+model SeenItem {
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind   String
+  itemId String
+  /// Necha marta chiqqani — kam uchragani oldinroq beriladi
+  times  Int      @default(1)
+  seenAt DateTime @default(now())
+
+  @@id([userId, kind, itemId])
+  @@index([userId, kind, seenAt])
 }

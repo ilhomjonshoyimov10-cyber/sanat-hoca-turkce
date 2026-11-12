@@ -86,13 +86,24 @@ function project(row, select, relations, ctx) {
       let rows = resolveMany(row, key, relations, ctx);
       if (nested.orderBy) rows = sortBy(rows, nested.orderBy);
       if (nested.take) rows = rows.slice(0, nested.take);
-      out[key] = rows.map((r) => project(r, nested.select, rel.relations ?? {}, ctx));
+      out[key] = rows.map((r) =>
+        view(r, { select: nested.select, include: nested.include }, rel.relations ?? {}, ctx),
+      );
     } else {
       const target = rel.store(ctx).find((r) => r[rel.foreign ?? 'id'] === row[rel.local]);
-      out[key] = project(target, nested.select, rel.relations ?? {}, ctx);
+      out[key] = view(target, { select: nested.select, include: nested.include }, rel.relations ?? {}, ctx);
     }
   }
   return out;
+}
+
+/** Prisma `include` — "hamma oddiy maydon + sanab o'tilgan bog'lanishlar".
+ *  `select` esa faqat sanab o'tilganini qaytaradi. Ikkisi ham kerak. */
+function view(row, opts, relations, ctx) {
+  if (!row) return null;
+  if (opts.select) return project(row, opts.select, relations, ctx);
+  if (opts.include) return { ...row, ...project(row, opts.include, relations, ctx) };
+  return row;
 }
 
 function resolveMany(row, key, relations, ctx) {
@@ -125,7 +136,37 @@ function sortBy(rows, orderBy) {
  */
 function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques = [], pk = ['id'] } = {}) {
   const rows = () => store(ctx);
-  const byWhere = (where = {}) => rows().find((r) => match(r, flat(where)));
+
+  /** Prisma bog'lanish bo'yicha ham filtrlaydi: `{ dismissals: { none: {...} } }`.
+   *  Shart oddiy maydonlar va bog'lanishlarga ajratiladi. */
+  const splitWhere = (where = {}) => {
+    const scalar = {};
+    const rels = [];
+    for (const [k, v] of Object.entries(where)) {
+      if (relations[k] && v && typeof v === 'object' && !(v instanceof Date)) rels.push([k, v]);
+      else scalar[k] = v;
+    }
+    return { scalar, rels };
+  };
+
+  const relOk = (row, rels) =>
+    rels.every(([key, cond]) => {
+      const children = resolveMany(row, key, relations, ctx);
+      return Object.entries(cond).every(([op, sub]) => {
+        const hit = (c) => match(c, flat(sub ?? {}));
+        if (op === 'none') return !children.some(hit);
+        if (op === 'some') return children.some(hit);
+        if (op === 'every') return children.every(hit);
+        return true;
+      });
+    });
+
+  const hit = (r, where = {}) => {
+    const { scalar, rels } = splitWhere(where);
+    return match(r, flat(scalar)) && relOk(r, rels);
+  };
+
+  const byWhere = (where = {}) => rows().find((r) => hit(r, where));
   const breaksUnique = (candidate, ignore) =>
     uniques.some((cols) =>
       rows().some(
@@ -134,8 +175,8 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
     );
 
   return {
-    async findMany({ where = {}, orderBy, take, skip, select, distinct } = {}) {
-      let list = rows().filter((r) => match(r, flat(where)));
+    async findMany({ where = {}, orderBy, take, skip, select, include, distinct } = {}) {
+      let list = rows().filter((r) => hit(r, where));
       if (orderBy) list = sortBy(list, orderBy);
       if (distinct) {
         const keys = Array.isArray(distinct) ? distinct : [distinct];
@@ -149,7 +190,7 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
       }
       if (skip) list = list.slice(skip);
       if (take) list = list.slice(0, take);
-      return list.map((r) => project(r, select, relations, ctx));
+      return list.map((r) => view(r, { select, include }, relations, ctx));
     },
     async groupBy({ by }) {
       const key = by[0];
@@ -157,21 +198,26 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
       for (const r of rows()) counts.set(r[key], (counts.get(r[key]) ?? 0) + 1);
       return [...counts.entries()].map(([k, c]) => ({ [key]: k, _count: { _all: c } }));
     },
-    async findUnique({ where, select } = {}) {
-      return project(byWhere(where), select, relations, ctx);
+    async findUnique({ where, select, include } = {}) {
+      return view(byWhere(where), { select, include }, relations, ctx);
     },
-    async findFirst({ where = {}, orderBy, select } = {}) {
-      let list = rows().filter((r) => match(r, flat(where)));
+    async findUniqueOrThrow({ where, select, include } = {}) {
+      const row = byWhere(where);
+      if (!row) throw Object.assign(new Error('not found'), { code: 'P2025' });
+      return view(row, { select, include }, relations, ctx);
+    },
+    async findFirst({ where = {}, orderBy, select, include } = {}) {
+      let list = rows().filter((r) => hit(r, where));
       if (orderBy) list = sortBy(list, orderBy);
-      return project(list[0], select, relations, ctx);
+      return view(list[0], { select, include }, relations, ctx);
     },
-    async create({ data, select } = {}) {
+    async create({ data, select, include } = {}) {
       const row = { ...defaults };
       if (pk.length === 1 && pk[0] === 'id') row.id = nextId();
       Object.assign(row, withoutUndefined(data));
       if (breaksUnique(row)) throw Object.assign(new Error('unique'), { code: 'P2002' });
       rows().push(row);
-      return project(row, select, relations, ctx);
+      return view(row, { select, include }, relations, ctx);
     },
     async createMany({ data, skipDuplicates } = {}) {
       let count = 0;
@@ -188,11 +234,11 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
       }
       return { count };
     },
-    async update({ where, data, select } = {}) {
+    async update({ where, data, select, include } = {}) {
       const row = byWhere(where);
       if (!row) throw Object.assign(new Error('not found'), { code: 'P2025' });
       applyData(row, data);
-      return project(row, select, relations, ctx);
+      return view(row, { select, include }, relations, ctx);
     },
     async upsert({ where, create, update, select } = {}) {
       const row = byWhere(where);
@@ -213,14 +259,19 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
       list.splice(list.indexOf(row), 1);
       return project(row, select, relations, ctx);
     },
+    async updateMany({ where = {}, data } = {}) {
+      const doomed = rows().filter((r) => hit(r, where));
+      for (const r of doomed) applyData(r, data);
+      return { count: doomed.length };
+    },
     async deleteMany({ where = {} } = {}) {
       const list = rows();
-      const doomed = list.filter((r) => match(r, flat(where)));
+      const doomed = list.filter((r) => hit(r, where));
       for (const r of doomed) list.splice(list.indexOf(r), 1);
       return { count: doomed.length };
     },
     async count({ where = {} } = {}) {
-      return rows().filter((r) => match(r, flat(where))).length;
+      return rows().filter((r) => hit(r, where)).length;
     },
   };
 }
@@ -244,7 +295,10 @@ function withoutUndefined(data = {}) {
 export function createFakePrisma() {
   const db = { users: [], tokens: [], audits: [], leads: [], recovery: [], words: [], userWords: [], stats: [], results: [], groups: [], members: [], homework: [], submissions: [], attendance: [], messages: [], notifications: [], lessons: [], lessonAttendees: [],
     // Yangi modellar — umumiy collection() orqali ishlaydi
-    books: [], bookChapters: [], bookProgress: [], readingTexts: [], readingQuestions: [], readingGlossary: [], readingAttempts: [], aiConversations: [], aiMessages: [], aiUsage: [], wordSets: [], wordSetItems: [], sentences: [], suffixDrills: [] };
+    books: [], bookChapters: [], bookProgress: [], readingTexts: [], readingQuestions: [], readingGlossary: [], readingAttempts: [], aiConversations: [], aiMessages: [], aiUsage: [], wordSets: [], wordSetItems: [], sentences: [], suffixDrills: [], verificationCodes: [],
+    announcements: [], announcementDismissals: [], supportRequests: [], supportReplies: [],
+    lessonVideos: [], leadVideos: [], leadMessages: [], liveSessions: [], liveAttendees: [],
+    clozeItems: [], verbForms: [], dialogueItems: [], wordPairs: [], seenItems: [] };
   let n = 0;
   const id = () => `id${++n}`;
 
@@ -274,6 +328,7 @@ export function createFakePrisma() {
         const row = {
           id: id(), email: null, phone: null, role: 'STUDENT', locale: 'UZ', avatarUrl: null, isActive: true,
           twoFactorEnabled: false, twoFactorSecret: null, twoFactorLastStep: null, leaderboardOptIn: false, parentConsent: false, failedLoginCount: 0, lockedUntil: null, lastLoginAt: null,
+          emailVerifiedAt: null, telegramVerifiedAt: null, telegramChatId: null,
           createdAt: new Date(), ...rest,
         };
         db.users.push(row);
@@ -394,6 +449,13 @@ export function createFakePrisma() {
         const rows = db.tokens.filter((t) => match(t, where));
         rows.forEach((r) => Object.assign(r, data));
         return { count: rows.length };
+      },
+      // Profildagi "qaysi qurilmadan kirilgan" ro'yxati shu so'rovni yuboradi
+      async findMany({ where = {}, orderBy, take, select } = {}) {
+        let list = db.tokens.filter((t) => match(t, where));
+        if (orderBy) list = sortBy(list, orderBy);
+        if (take) list = list.slice(0, take);
+        return list.map((t) => pick(t, select));
       },
     },
 
@@ -549,20 +611,20 @@ export function createFakePrisma() {
       },
       async count({ where = {} } = {}) { return db.audits.filter((a) => match(a, where)).length; },
     },
-    lead: {
-      async findFirst({ where, select }) {
-        return pick(db.leads.find((l) => match(l, where)), select);
+    lead: collection((c) => c.leads, id, db, {
+      defaults: { status: 'NEW', level: null, message: null, userId: null, createdAt: new Date() },
+      relations: {
+        user: { kind: 'one', store: (c) => c.users, local: 'userId' },
+        videos: {
+          kind: 'many', store: (c) => c.leadVideos, foreign: 'leadId', local: 'id',
+          relations: { video: { kind: 'one', store: (c) => c.lessonVideos, local: 'videoId' } },
+        },
+        messages: {
+          kind: 'many', store: (c) => c.leadMessages, foreign: 'leadId', local: 'id',
+          relations: { sender: { kind: 'one', store: (c) => c.users, local: 'senderId' } },
+        },
       },
-      async create({ data }) {
-        const row = { id: id(), status: 'NEW', createdAt: new Date(), ...data };
-        db.leads.push(row);
-        return row;
-      },
-      async findMany({ take }) {
-        return [...db.leads].reverse().slice(0, take);
-      },
-      async count({ where = {} } = {}) { return db.leads.filter((l) => match(l, where)).length; },
-    },
+    }),
     // ───────── Yangi modellar (umumiy collection) ─────────
     book: collection((c) => c.books, id, db, {
       defaults: { author: null, description: null, kind: 'OTHER', visibility: 'PRIVATE', coverUrl: null, fileUrl: null, fileName: null, fileSize: null, mimeType: null, pageCount: null, groupId: null, createdAt: new Date(), updatedAt: new Date() },
@@ -618,6 +680,80 @@ export function createFakePrisma() {
     wordSetItem: collection((c) => c.wordSetItems, id, db, { pk: ['setId', 'wordId'], defaults: { position: 0 } }),
     sentence: collection((c) => c.sentences, id, db, { uniques: [['turkish']], defaults: { topic: null, note: null, verified: false, position: 0, createdAt: new Date() } }),
     suffixDrill: collection((c) => c.suffixDrills, id, db, { defaults: { alternates: [], explanation: null, rule: null, verified: false, position: 0, createdAt: new Date() } }),
+    verificationCode: collection((c) => c.verificationCodes, id, db, {
+      defaults: { attempts: 0, usedAt: null, createdAt: new Date() },
+    }),
+    announcement: collection((c) => c.announcements, id, db, {
+      defaults: {
+        kind: 'INFO', audience: 'ALL', imageUrl: null, linkUrl: null, linkLabel: null,
+        dismissible: true, pinned: false, startsAt: new Date(), endsAt: null, isActive: true,
+        createdAt: new Date(), updatedAt: new Date(),
+      },
+      relations: {
+        createdBy: { kind: 'one', store: (c) => c.users, local: 'createdById' },
+        dismissals: { kind: 'many', store: (c) => c.announcementDismissals, foreign: 'announcementId', local: 'id' },
+      },
+    }),
+    announcementDismissal: collection((c) => c.announcementDismissals, id, db, {
+      pk: ['announcementId', 'userId'],
+      defaults: { dismissedAt: new Date() },
+    }),
+    supportRequest: collection((c) => c.supportRequests, id, db, {
+      defaults: { topic: 'OTHER', status: 'OPEN', handledById: null, createdAt: new Date(), updatedAt: new Date() },
+      relations: {
+        user: { kind: 'one', store: (c) => c.users, local: 'userId' },
+        replies: { kind: 'many', store: (c) => c.supportReplies, foreign: 'requestId', local: 'id' },
+      },
+    }),
+    supportReply: collection((c) => c.supportReplies, id, db, {
+      defaults: { createdAt: new Date() },
+      relations: { author: { kind: 'one', store: (c) => c.users, local: 'authorId' } },
+    }),
+    lessonVideo: collection((c) => c.lessonVideos, id, db, {
+      defaults: { description: null, coverUrl: null, level: null, position: 0, isActive: true, createdAt: new Date(), updatedAt: new Date() },
+      relations: { assignments: { kind: 'many', store: (c) => c.leadVideos, foreign: 'videoId', local: 'id' } },
+    }),
+    leadVideo: collection((c) => c.leadVideos, id, db, {
+      uniques: [['leadId', 'videoId']],
+      defaults: { assignedAt: new Date(), watchedAt: null },
+      relations: { video: { kind: 'one', store: (c) => c.lessonVideos, local: 'videoId' } },
+    }),
+    leadMessage: collection((c) => c.leadMessages, id, db, {
+      defaults: { readAt: null, createdAt: new Date() },
+      relations: { sender: { kind: 'one', store: (c) => c.users, local: 'senderId' } },
+    }),
+    liveSession: collection((c) => c.liveSessions, id, db, {
+      uniques: [['roomName']],
+      defaults: { description: null, status: 'SCHEDULED', durationMin: 60, level: null, isPublic: false, createdAt: new Date(), updatedAt: new Date() },
+      relations: {
+        host: { kind: 'one', store: (c) => c.users, local: 'hostId' },
+        attendees: { kind: 'many', store: (c) => c.liveAttendees, foreign: 'sessionId', local: 'id' },
+      },
+    }),
+    liveAttendee: collection((c) => c.liveAttendees, id, db, {
+      uniques: [['sessionId', 'userId']],
+      defaults: { joinedAt: new Date() },
+    }),
+    clozeItem: collection((c) => c.clozeItems, id, db, {
+      uniques: [['masked', 'answer']],
+      defaults: { options: [], uzbek: null, explanation: null, topic: null, verified: false, position: 0, createdAt: new Date() },
+    }),
+    verbForm: collection((c) => c.verbForms, id, db, {
+      uniques: [['infinitive', 'person', 'tense', 'negative']],
+      defaults: { negative: false, uzbek: null, explanation: null, verified: false, position: 0, createdAt: new Date() },
+    }),
+    dialogueItem: collection((c) => c.dialogueItems, id, db, {
+      uniques: [['prompt', 'answer']],
+      defaults: { options: [], situation: null, uzbek: null, verified: false, position: 0, createdAt: new Date() },
+    }),
+    wordPair: collection((c) => c.wordPairs, id, db, {
+      uniques: [['kind', 'first', 'second']],
+      defaults: { uzbek: null, verified: false, position: 0, createdAt: new Date() },
+    }),
+    seenItem: collection((c) => c.seenItems, id, db, {
+      pk: ['userId', 'kind', 'itemId'],
+      defaults: { times: 1, seenAt: new Date() },
+    }),
   };
   return self;
 }

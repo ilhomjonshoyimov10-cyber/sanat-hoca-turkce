@@ -4,21 +4,26 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AdminModule } from './admin/admin.module.js';
 import { AiModule } from './ai/ai.module.js';
+import { AnnouncementsModule } from './announcements/announcements.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BooksModule } from './books/books.module.js';
 import { ChatModule } from './chat/chat.module.js';
 import { DictionaryModule } from './dictionary/dictionary.module.js';
 import { CsrfGuard } from './common/csrf.guard.js';
 import { validateEnv } from './config/env.validation.js';
+import { FreeLessonModule } from './freelesson/freelesson.module.js';
 import { GamesModule } from './games/games.module.js';
 import { HealthModule } from './health/health.module.js';
 import { GroupsModule } from './groups/groups.module.js';
 import { LeadsModule } from './leads/leads.module.js';
 import { LessonsModule } from './lessons/lessons.module.js';
+import { LiveModule } from './live/live.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ReadingModule } from './reading/reading.module.js';
+import { SupportModule } from './support/support.module.js';
 import { UsersModule } from './users/users.module.js';
+import { VerifyModule } from './verify/verify.module.js';
 
 @Module({
   imports: [
@@ -37,6 +42,11 @@ import { UsersModule } from './users/users.module.js';
     ReadingModule,
     DictionaryModule,
     AiModule,
+    VerifyModule,
+    AnnouncementsModule,
+    SupportModule,
+    FreeLessonModule,
+    LiveModule,
     AdminModule,
     HealthModule,
   ],

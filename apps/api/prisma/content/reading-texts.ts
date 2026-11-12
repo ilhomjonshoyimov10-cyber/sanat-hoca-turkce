@@ -380,7 +380,7 @@ Hammaga qishloqqa ko'chishni tavsiya qilmayman. Bu men uchun to'g'ri bo'ldi, bos
     topic: 'ta\'lim',
     body: `İnternette sık sık şöyle başlıklar görüyoruz: "Otuz günde akıcı İngilizce", "Beyninizi hackleyin, bir ayda dil öğrenin". Bu vaatler kulağa hoş geliyor, ama dil öğrenmenin gerçeği biraz daha sıkıcı.
 
-Araştırmalar, dil öğrenmede en belirleyici etkenin yetenek değil, düzenli temas olduğunu gösteriyor. Günde yirmi dakika çalışan biri, haftada bir kez üç saat çalışan birinden genellikle daha hızlı ilerliyor. Çünkü beyin, bilgiyi tekrar tekrar gördüğünde onu önemli sayıyor ve uzun süreli hafızaya aktarıyor.
+Dil öğrenimi üzerine yapılan çalışmalar, en belirleyici etkenin yetenek değil, düzenli temas olduğuna işaret ediyor. Günde yirmi dakika çalışan biri, haftada bir kez üç saat çalışan birinden genellikle daha hızlı ilerliyor. Çünkü beyin, bilgiyi tekrar tekrar gördüğünde onu önemli sayıyor ve uzun süreli hafızaya aktarıyor.
 
 İkinci önemli nokta, hata yapma özgürlüğü. Konuşmaktan çekinen öğrenciler, dilbilgisini çok iyi bilseler bile konuşmada geride kalıyor. Hata, öğrenmenin yan etkisi değil, bizzat yöntemidir.
 
@@ -389,7 +389,7 @@ Araştırmalar, dil öğrenmede en belirleyici etkenin yetenek değil, düzenli 
 Peki sır nerede? Aslında yok. Düzenlilik, hata yapma cesareti ve sevdiğiniz içerik. Bunlar sıkıcı görünebilir, ama işleyen tek yol bu.`,
     bodyUz: `Internetda tez-tez shunday sarlavhalarni ko'ramiz: "O'ttiz kunda ravon ingliz tili", "Miyangizni hack qiling, bir oyda til o'rganing". Bu va'dalar quloqqa yoqimli, lekin til o'rganishning haqiqati bir oz zerikarliroq.
 
-Tadqiqotlar til o'rganishda eng belgilovchi omil qobiliyat emas, balki muntazam muloqot ekanini ko'rsatadi. Kuniga yigirma daqiqa shug'ullanadigan odam, haftada bir marta uch soat shug'ullanadiganga qaraganda odatda tezroq rivojlanadi. Chunki miya ma'lumotni qayta-qayta ko'rganda uni muhim deb hisoblaydi va uzoq muddatli xotiraga o'tkazadi.
+Til o'rganish bo'yicha olib borilgan tadqiqotlar eng belgilovchi omil qobiliyat emas, balki muntazam muloqot ekaniga ishora qiladi. Kuniga yigirma daqiqa shug'ullanadigan odam, haftada bir marta uch soat shug'ullanadiganga qaraganda odatda tezroq rivojlanadi. Chunki miya ma'lumotni qayta-qayta ko'rganda uni muhim deb hisoblaydi va uzoq muddatli xotiraga o'tkazadi.
 
 Ikkinchi muhim nuqta — xato qilish erkinligi. Gapirishdan qo'rqadigan o'quvchilar grammatikani juda yaxshi bilsalar ham, gapirishda orqada qoladi. Xato — o'rganishning yon ta'siri emas, aynan uslubi.
 
@@ -418,7 +418,7 @@ Xo'sh, sir qayerda? Aslida yo'q. Muntazamlik, xato qilish jasorati va yoqtirgan 
         prompt: 'Metne göre dil öğrenmede en belirleyici etken nedir?',
         options: ['Doğal yetenek', 'Düzenli temas', 'İyi bir öğretmen'],
         correctIndex: 1,
-        explanation: '"en belirleyici etkenin yetenek değil, düzenli temas olduğunu gösteriyor".',
+        explanation: '"en belirleyici etkenin yetenek değil, düzenli temas olduğuna işaret ediyor".',
       },
       {
         kind: 'MULTIPLE_CHOICE',

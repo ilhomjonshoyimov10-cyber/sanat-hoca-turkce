@@ -5,6 +5,7 @@ import { decrypt, encrypt } from '../auth/crypto.js';
 import { calcAge } from '../auth/auth.utils.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { AnswerDto, MatchAnswerDto, TypedAnswerDto } from './games.dto.js';
+import { dropRecentlySeen, markSeen, pickFresh } from './rotation.js';
 import { dayBefore, levelFromXp, nextState, nextStreak, shuffle, tashkentDay, XP_PER_CORRECT } from './srs.js';
 
 const QUESTION_TTL_MS = 10 * 60 * 1000;
@@ -15,6 +16,11 @@ const PURPOSE_LISTEN = 'listen';
 const PURPOSE_SENTENCE = 'sentence';
 const PURPOSE_SUFFIX = 'suffix';
 const PURPOSE_CHAIN = 'chain';
+const PURPOSE_CLOZE = 'cloze';
+const PURPOSE_VERB = 'verb';
+const PURPOSE_DIALOGUE = 'dialogue';
+const PURPOSE_PAIR = 'pair';
+const PURPOSE_ODD = 'odd';
 
 /** So'z zanjiri necha qadamda tugaydi. Tokenning hajmini ham cheklaydi. */
 const CHAIN_LENGTH = 10;
@@ -31,6 +37,8 @@ interface MatchPayload { u: string; e: number; w: string[]; m: number[] }
 interface TypedPayload { u: string; e: number; w: string }
 interface SentencePayload { u: string; e: number; s: string }
 interface SuffixPayload { u: string; e: number; d: string }
+/** Variantli o'yinlar: i = element ID si, c = to'g'ri variant indeksi */
+interface ChoicePayload { u: string; e: number; i: string; c: number }
 /** c = hozirgi so'z, used = ishlatilgan so'zlar, n = qadam raqami */
 interface ChainPayload { u: string; e: number; c: string; used: string[]; n: number }
 
@@ -62,26 +70,12 @@ export class GamesService {
    * To'g'ri javob klientga YUBORILMAYDI, u shifrlangan tokenda turadi.
    */
   async quiz(userId: string, level: Level | undefined, limit = 10) {
-    const now = new Date();
-    const learned = await this.prisma.userWord.findMany({
-      where: { userId },
-      select: { wordId: true, nextReviewAt: true },
-    });
-    const learnedIds = new Set(learned.map((u) => u.wordId));
-    const dueIds = learned
-      .filter((u) => u.nextReviewAt <= now)
-      .sort((a, b) => a.nextReviewAt.getTime() - b.nextReviewAt.getTime())
-      .map((u) => u.wordId);
-
-    const allWords = await this.prisma.word.findMany({ orderBy: [{ level: 'asc' }, { position: 'asc' }] });
+    // DIQQAT: bu yerda avval o'z nusxasidagi tanlash mantig'i bor edi.
+    // Natijada takrorlanishdan himoya `pickTargets` ga qo'shilganda
+    // aynan shu o'yin — eng ko'p o'ynaladigani — tashqarida qolgan edi.
+    // Endi hamma o'yin bitta manbadan foydalanadi.
+    const { allWords, targets, dueCount } = await this.pickTargets(userId, level, limit);
     if (allWords.length < 4) throw new BadRequestException("So'zlar yetarli emas. Ustoz so'z qo'shishi kerak");
-
-    const byId = new Map(allWords.map((w) => [w.id, w]));
-    const due = dueIds.map((id) => byId.get(id)).filter((w) => !!w).slice(0, limit);
-    const fresh = allWords
-      .filter((w) => !learnedIds.has(w.id) && (!level || w.level === level))
-      .slice(0, Math.max(0, limit - due.length));
-    const targets = [...due, ...fresh];
 
     const questions = targets.map((w) => {
       const others = allWords.filter((o) => o.id !== w.id && o.uzbek !== w.uzbek);
@@ -103,7 +97,7 @@ export class GamesService {
       };
     });
 
-    return { questions, dueCount: dueIds.length };
+    return { questions, dueCount };
   }
 
   // ───────── Umumiy yordamchilar ─────────
@@ -144,8 +138,21 @@ export class GamesService {
     const byId = new Map(allWords.map((w) => [w.id, w]));
     const ok = (w: Word) => !only || only(w);
     const due = dueIds.map((id) => byId.get(id)).filter((w): w is Word => !!w && ok(w)).slice(0, limit);
-    const fresh = allWords.filter((w) => !learnedIds.has(w.id) && (!level || w.level === level) && ok(w)).slice(0, Math.max(0, limit - due.length));
-    return { allWords, targets: [...due, ...fresh], dueCount: dueIds.length };
+
+    // Yangi so'zlar: dars tartibida, lekin yaqinda ko'rsatilganlari
+    // o'tkazib yuboriladi — javobsiz qolgan so'z keyingi safar yana
+    // birinchi bo'lib chiqmasin.
+    const freshPool = allWords.filter(
+      (w) => !learnedIds.has(w.id) && (!level || w.level === level) && ok(w),
+    );
+    const need = Math.max(0, limit - due.length);
+    const fresh = need > 0
+      ? (await dropRecentlySeen(this.prisma, userId, 'word', freshPool)).slice(0, need)
+      : [];
+
+    const targets = [...due, ...fresh];
+    await markSeen(this.prisma, userId, 'word', targets.map((w) => w.id));
+    return { allWords, targets, dueCount: dueIds.length };
   }
 
   /**
@@ -522,5 +529,244 @@ export class GamesService {
       capped,
       stats: await this.myStats(userId),
     };
+  }
+
+  // ═══════════════ 9) Bo'shliqni to'ldirish ═══════════════
+  //
+  // Bu va keyingi to'rt o'yin bir xil naqsh bo'yicha ishlaydi:
+  //   • material darajaga qarab tanlanadi,
+  //   • TAKRORLANMASLIK uchun pickFresh ishlatiladi,
+  //   • to'g'ri javob indeksi SHIFRLANGAN tokenda ketadi — brauzer uni
+  //     ko'ra olmaydi, shuning uchun javobni oldindan bilib bo'lmaydi,
+  //   • mukofot settleFree orqali, kunlik chegara bilan.
+
+  /** Variantlarni aralashtirib, to'g'ri javob indeksini qaytaradi. */
+  private mixOptions(answer: string, wrong: string[], max = 4) {
+    const picked = shuffle(wrong.filter((w) => w && w !== answer)).slice(0, max - 1);
+    const options = shuffle([answer, ...picked]);
+    return { options, correctIndex: options.indexOf(answer) };
+  }
+
+  async clozeSet(userId: string, level: Level | undefined, limit = 5) {
+    const pool = await this.prisma.clozeItem.findMany({
+      where: { verified: true, ...(level ? { level } : {}) },
+      orderBy: { position: 'asc' },
+      take: 300,
+    });
+    const chosen = await pickFresh(this.prisma, userId, 'cloze', pool, limit);
+    await markSeen(this.prisma, userId, 'cloze', chosen.map((c) => c.id));
+
+    return {
+      items: chosen.map((c) => {
+        const { options, correctIndex } = this.mixOptions(c.answer, c.options);
+        return {
+          token: this.seal(PURPOSE_CLOZE, { u: userId, i: c.id, c: correctIndex }),
+          masked: c.masked,
+          uzbek: c.uzbek,
+          topic: c.topic,
+          options,
+        };
+      }),
+    };
+  }
+
+  async clozeAnswer(userId: string, dto: { token: string; choice: number }) {
+    const p = this.validOrThrow<ChoicePayload>(PURPOSE_CLOZE, dto.token, userId);
+    const item = await this.prisma.clozeItem.findUnique({
+      where: { id: p.i },
+      select: { full: true, answer: true, explanation: true },
+    });
+    if (!item) throw new BadRequestException('Mashq topilmadi');
+    const correct = dto.choice === p.c;
+    const { xpGained, capped } = await this.settleFree(userId, 'FILL_GAP', correct);
+    return {
+      correct,
+      correctIndex: p.c,
+      answer: item.answer,
+      full: item.full,
+      explanation: item.explanation,
+      xpGained,
+      capped,
+      stats: await this.myStats(userId),
+    };
+  }
+
+  // ═══════════════ 10) Fe'l shakli ═══════════════
+
+  async verbSet(userId: string, level: Level | undefined, limit = 5) {
+    const pool = await this.prisma.verbForm.findMany({
+      where: { verified: true, ...(level ? { level } : {}) },
+      orderBy: { position: 'asc' },
+      take: 300,
+    });
+    const chosen = await pickFresh(this.prisma, userId, 'verb', pool, limit);
+    await markSeen(this.prisma, userId, 'verb', chosen.map((c) => c.id));
+
+    return {
+      items: chosen.map((v) => ({
+        // Bu o'yinda javob YOZILADI, variant tanlanmaydi — shuning uchun
+        // tokenda faqat element ID si (to'g'ri indeks kerak emas).
+        token: this.seal(PURPOSE_VERB, { u: userId, i: v.id, c: 0 }),
+        infinitive: v.infinitive,
+        person: v.person,
+        tense: v.tense,
+        negative: v.negative,
+        uzbek: v.uzbek,
+      })),
+    };
+  }
+
+  async verbAnswer(userId: string, dto: { token: string; answer: string }) {
+    const p = this.validOrThrow<ChoicePayload>(PURPOSE_VERB, dto.token, userId);
+    const item = await this.prisma.verbForm.findUnique({
+      where: { id: p.i },
+      select: { answer: true, explanation: true },
+    });
+    if (!item) throw new BadRequestException('Mashq topilmadi');
+    const correct = normTr(dto.answer) === normTr(item.answer);
+    // Turkcha harflarsiz yozilgan bo'lsa — "deyarli to'g'ri"
+    const almost = !correct && fold(dto.answer) === fold(item.answer);
+    const { xpGained, capped } = await this.settleFree(userId, 'VERB_FORM', correct);
+    return {
+      correct,
+      almost,
+      answer: item.answer,
+      explanation: item.explanation,
+      xpGained,
+      capped,
+      stats: await this.myStats(userId),
+    };
+  }
+
+  // ═══════════════ 11) Suhbat ═══════════════
+
+  async dialogueSet(userId: string, level: Level | undefined, limit = 5) {
+    const pool = await this.prisma.dialogueItem.findMany({
+      where: { verified: true, ...(level ? { level } : {}) },
+      orderBy: { position: 'asc' },
+      take: 300,
+    });
+    const chosen = await pickFresh(this.prisma, userId, 'dialogue', pool, limit);
+    await markSeen(this.prisma, userId, 'dialogue', chosen.map((c) => c.id));
+
+    return {
+      items: chosen.map((d) => {
+        const { options, correctIndex } = this.mixOptions(d.answer, d.options);
+        return {
+          token: this.seal(PURPOSE_DIALOGUE, { u: userId, i: d.id, c: correctIndex }),
+          prompt: d.prompt,
+          situation: d.situation,
+          uzbek: d.uzbek,
+          options,
+        };
+      }),
+    };
+  }
+
+  async dialogueAnswer(userId: string, dto: { token: string; choice: number }) {
+    const p = this.validOrThrow<ChoicePayload>(PURPOSE_DIALOGUE, dto.token, userId);
+    const item = await this.prisma.dialogueItem.findUnique({
+      where: { id: p.i },
+      select: { answer: true, uzbek: true },
+    });
+    if (!item) throw new BadRequestException('Mashq topilmadi');
+    const correct = dto.choice === p.c;
+    const { xpGained, capped } = await this.settleFree(userId, 'DIALOGUE', correct);
+    return { correct, correctIndex: p.c, answer: item.answer, xpGained, capped, stats: await this.myStats(userId) };
+  }
+
+  // ═══════════════ 12) Zid ma'noli so'z ═══════════════
+
+  async pairSet(userId: string, level: Level | undefined, limit = 5) {
+    const pool = await this.prisma.wordPair.findMany({
+      where: { kind: 'ANTONYM', verified: true, ...(level ? { level } : {}) },
+      orderBy: { position: 'asc' },
+      take: 300,
+    });
+    if (pool.length < 4) return { items: [] };
+    const chosen = await pickFresh(this.prisma, userId, 'pair', pool, limit);
+    await markSeen(this.prisma, userId, 'pair', chosen.map((c) => c.id));
+
+    return {
+      items: chosen.map((pair) => {
+        // Chalg'ituvchilar — boshqa juftliklarning "ikkinchi" so'zlari.
+        // O'sha darajadan olinadi, aks holda javob ko'zga tashlanib qoladi.
+        const wrong = pool.filter((o) => o.id !== pair.id).map((o) => o.second);
+        const { options, correctIndex } = this.mixOptions(pair.second, wrong);
+        return {
+          token: this.seal(PURPOSE_PAIR, { u: userId, i: pair.id, c: correctIndex }),
+          word: pair.first,
+          uzbek: pair.uzbek,
+          options,
+        };
+      }),
+    };
+  }
+
+  async pairAnswer(userId: string, dto: { token: string; choice: number }) {
+    const p = this.validOrThrow<ChoicePayload>(PURPOSE_PAIR, dto.token, userId);
+    const item = await this.prisma.wordPair.findUnique({
+      where: { id: p.i },
+      select: { first: true, second: true },
+    });
+    if (!item) throw new BadRequestException('Mashq topilmadi');
+    const correct = dto.choice === p.c;
+    const { xpGained, capped } = await this.settleFree(userId, 'ANTONYM', correct);
+    return { correct, correctIndex: p.c, answer: item.second, xpGained, capped, stats: await this.myStats(userId) };
+  }
+
+  // ═══════════════ 13) Ortiqcha so'zni top ═══════════════
+  //
+  // Bu o'yin uchun alohida material KERAK EMAS: lug'atdagi `category`
+  // maydonidan foydalanamiz. Uchta so'z bir mavzudan, bittasi boshqadan.
+
+  async oddSet(userId: string, level: Level | undefined, limit = 5) {
+    const words = await this.prisma.word.findMany({
+      where: { verified: true, category: { not: null }, ...(level ? { level } : {}) },
+      select: { id: true, turkish: true, uzbek: true, category: true },
+      take: 1500,
+    });
+
+    // Mavzular bo'yicha guruhlaymiz; kamida 3 so'zi borlari yaroqli
+    const byCategory = new Map<string, typeof words>();
+    for (const w of words) {
+      const key = w.category as string;
+      const list = byCategory.get(key) ?? [];
+      list.push(w);
+      byCategory.set(key, list);
+    }
+    const usable = [...byCategory.entries()].filter(([, list]) => list.length >= 3);
+    if (usable.length < 2) return { items: [] };
+
+    // Har bir savol bitta mavzuga tegishli -> takrorlanmaslikni mavzu
+    // bo'yicha hisoblaymiz
+    const pool = usable.map(([category]) => ({ id: category }));
+    const chosen = await pickFresh(this.prisma, userId, 'odd', pool, limit);
+    await markSeen(this.prisma, userId, 'odd', chosen.map((c) => c.id));
+
+    const items = chosen.map(({ id: category }) => {
+      const same = shuffle(byCategory.get(category) ?? []).slice(0, 3);
+      const otherCats = usable.filter(([c]) => c !== category);
+      const [, otherList] = otherCats[Math.floor(Math.random() * otherCats.length)];
+      const stranger = shuffle(otherList)[0];
+      const { options, correctIndex } = this.mixOptions(
+        stranger.turkish,
+        same.map((w) => w.turkish),
+      );
+      return {
+        // Mavzu nomi ID o'rnida — bu o'yinda saqlanadigan element yo'q
+        token: this.seal(PURPOSE_ODD, { u: userId, i: category, c: correctIndex }),
+        options,
+        hint: category,
+      };
+    });
+    return { items };
+  }
+
+  async oddAnswer(userId: string, dto: { token: string; choice: number }) {
+    const p = this.validOrThrow<ChoicePayload>(PURPOSE_ODD, dto.token, userId);
+    const correct = dto.choice === p.c;
+    const { xpGained, capped } = await this.settleFree(userId, 'ODD_ONE_OUT', correct);
+    return { correct, correctIndex: p.c, category: p.i, xpGained, capped, stats: await this.myStats(userId) };
   }
 }

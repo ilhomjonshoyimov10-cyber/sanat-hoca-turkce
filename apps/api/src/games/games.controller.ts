@@ -2,7 +2,7 @@ import { Body, Controller, Get, Patch, Post, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/auth.decorators.js';
 import type { AuthUser } from '../auth/auth.decorators.js';
-import { AnswerDto, ChainAnswerDto, DrillQueryDto, MatchAnswerDto, OptInDto, QuizQueryDto, SetQueryDto, TextAnswerDto, TypedAnswerDto } from './games.dto.js';
+import { AnswerDto, ChainAnswerDto, ChoiceAnswerDto, DrillQueryDto, MatchAnswerDto, OptInDto, QuizQueryDto, SetQueryDto, TextAnswerDto, TypedAnswerDto } from './games.dto.js';
 import { GamesService } from './games.service.js';
 
 @Controller('games')
@@ -74,6 +74,63 @@ export class GamesController {
   @Post('chain/answer')
   chainAnswer(@CurrentUser() user: AuthUser, @Body() dto: ChainAnswerDto) {
     return this.games.chainAnswer(user.id, dto);
+  }
+
+  // ───────── Yangi o'yinlar ─────────
+
+  @Get('cloze')
+  cloze(@CurrentUser() user: AuthUser, @Query() q: DrillQueryDto) {
+    return this.games.clozeSet(user.id, q.level, q.limit);
+  }
+
+  @Throttle({ default: { limit: 120, ttl: 60 * 1000 } })
+  @Post('cloze/answer')
+  clozeAnswer(@CurrentUser() user: AuthUser, @Body() dto: ChoiceAnswerDto) {
+    return this.games.clozeAnswer(user.id, dto);
+  }
+
+  @Get('verb')
+  verb(@CurrentUser() user: AuthUser, @Query() q: DrillQueryDto) {
+    return this.games.verbSet(user.id, q.level, q.limit);
+  }
+
+  @Throttle({ default: { limit: 120, ttl: 60 * 1000 } })
+  @Post('verb/answer')
+  verbAnswer(@CurrentUser() user: AuthUser, @Body() dto: TextAnswerDto) {
+    return this.games.verbAnswer(user.id, dto);
+  }
+
+  @Get('dialogue')
+  dialogue(@CurrentUser() user: AuthUser, @Query() q: DrillQueryDto) {
+    return this.games.dialogueSet(user.id, q.level, q.limit);
+  }
+
+  @Throttle({ default: { limit: 120, ttl: 60 * 1000 } })
+  @Post('dialogue/answer')
+  dialogueAnswer(@CurrentUser() user: AuthUser, @Body() dto: ChoiceAnswerDto) {
+    return this.games.dialogueAnswer(user.id, dto);
+  }
+
+  @Get('antonym')
+  antonym(@CurrentUser() user: AuthUser, @Query() q: DrillQueryDto) {
+    return this.games.pairSet(user.id, q.level, q.limit);
+  }
+
+  @Throttle({ default: { limit: 120, ttl: 60 * 1000 } })
+  @Post('antonym/answer')
+  antonymAnswer(@CurrentUser() user: AuthUser, @Body() dto: ChoiceAnswerDto) {
+    return this.games.pairAnswer(user.id, dto);
+  }
+
+  @Get('odd')
+  odd(@CurrentUser() user: AuthUser, @Query() q: DrillQueryDto) {
+    return this.games.oddSet(user.id, q.level, q.limit);
+  }
+
+  @Throttle({ default: { limit: 120, ttl: 60 * 1000 } })
+  @Post('odd/answer')
+  oddAnswer(@CurrentUser() user: AuthUser, @Body() dto: ChoiceAnswerDto) {
+    return this.games.oddAnswer(user.id, dto);
   }
 
   @Get('me')

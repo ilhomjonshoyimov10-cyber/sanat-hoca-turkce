@@ -1,6 +1,8 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
+import { SKIP_CSRF_KEY } from '../auth/auth.decorators.js';
 
 /**
  * Cookie asosidagi autentifikatsiya uchun CSRF himoyasi.
@@ -13,11 +15,21 @@ import type { Request } from 'express';
  */
 @Injectable()
 export class CsrfGuard implements CanActivate {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly reflector: Reflector,
+  ) {}
 
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest<Request>();
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return true;
+
+    // Tashqi webhook: o'z himoyasi bor (@SkipCsrf izohiga qarang)
+    const skip = this.reflector.getAllAndOverride<boolean>(SKIP_CSRF_KEY, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
+    if (skip) return true;
 
     const origin = req.headers.origin;
     if (origin && origin !== this.config.get<string>('WEB_URL')) {

@@ -15,6 +15,7 @@ function linksFor(role: string): { href: string; label: string }[] {
       { href: "/kitoblar", label: "Materiallar" },
       { href: "/lugat", label: "Lug'at" },
       { href: "/arizalar", label: "Arizalar" },
+      { href: "/jonli", label: "Jonli" },
     ];
   }
   if (role === "TEACHER") {
@@ -25,6 +26,7 @@ function linksFor(role: string): { href: string; label: string }[] {
       { href: "/oqish", label: "O'qish" },
       { href: "/lugat", label: "Lug'at" },
       { href: "/ai", label: "AI" },
+      { href: "/jonli", label: "Jonli" },
       { href: "/arizalar", label: "Arizalar" },
     ];
   }
@@ -34,6 +36,8 @@ function linksFor(role: string): { href: string; label: string }[] {
     { href: "/oqish", label: "O'qish" },
     { href: "/kitoblar", label: "Materiallar" },
     { href: "/ai", label: "AI" },
+    { href: "/jonli", label: "Jonli" },
+    { href: "/bepul-dars", label: "Bepul dars" },
     { href: "/groups", label: "Guruhlarim" },
   ];
 }

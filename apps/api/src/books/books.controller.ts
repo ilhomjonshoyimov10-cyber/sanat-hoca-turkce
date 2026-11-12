@@ -59,10 +59,15 @@ export class BooksController {
       .replace(/-+/g, '-')
       .slice(-80);
 
+    // DIQQAT: token AYNAN shu yo'lga qulflanadi. Brauzer `put()` ga
+    // boshqa yo'l bersa, yuklash rad etiladi. Shuning uchun yo'lni
+    // javobda ham qaytaramiz — mijoz uni taxmin qilmasin.
+    const pathname = `kitoblar/${u.id}/${safeName}`;
+
     const token = await generateClientTokenFromReadWriteToken({
       token: rwToken,
       // Har ustozning fayllari o'z papkasida — kim nima yuklaganini ko'rish oson.
-      pathname: `kitoblar/${u.id}/${safeName}`,
+      pathname,
       allowedContentTypes: [dto.contentType],
       maximumSizeInBytes: MAX_BYTES,
       // Bir xil nomli fayl eskisini o'chirib yubormasin
@@ -70,7 +75,7 @@ export class BooksController {
       // Token 10 daqiqa yashaydi: o'g'irlangan token uzoq ishlamasin
       validUntil: Date.now() + 10 * 60 * 1000,
     });
-    return { token, maxBytes: MAX_BYTES, allowedTypes: ALLOWED_TYPES };
+    return { token, pathname, maxBytes: MAX_BYTES, allowedTypes: ALLOWED_TYPES };
   }
 
   // ───────────── Ro'yxat va o'qish ─────────────

@@ -16,6 +16,7 @@ export function Header() {
 
         <nav aria-label="Asosiy menyu" className="flex items-center gap-2 sm:gap-6">
           <Link href="/#darajalar" className="hidden text-[0.9375rem] font-medium text-muted transition-colors hover:text-porcelain md:inline">Darajalar</Link>
+          <Link href="/biz-haqimizda" className="hidden text-[0.9375rem] font-medium text-muted transition-colors hover:text-porcelain md:inline">Biz haqimizda</Link>
           <Link href="/#ariza" className="hidden text-[0.9375rem] font-medium text-muted transition-colors hover:text-porcelain md:inline">Ariza</Link>
           <HeaderAuth />
         </nav>

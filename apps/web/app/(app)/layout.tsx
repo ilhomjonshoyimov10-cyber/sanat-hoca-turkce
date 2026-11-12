@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { AppBar } from "@/components/AppBar";
 import { AuthProvider } from "@/lib/auth";
 
@@ -11,6 +12,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Suspense fallback={<div className="h-[3.25rem] border-b border-cobalt/25" />}>
         <AppBar />
       </Suspense>
+      {/* Admin e'lonlari: mazmundan OLDIN, lekin uni to'smaydi */}
+      <AnnouncementBar />
       {children}
     </AuthProvider>
   );

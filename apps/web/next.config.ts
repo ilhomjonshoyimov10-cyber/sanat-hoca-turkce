@@ -35,6 +35,12 @@ const nextConfig: NextConfig = {
   ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   // Monorepo ildizi: standalone yig'masiga kerakli fayllar to'g'ri topilishi uchun
   outputFileTracingRoot: path.join(process.cwd(), "../../"),
+  // Rasmlar FAQAT o'z fayl omborimizdan. Boshqa manzil qo'shilmaydi:
+  // begona saytdagi rasm sahifani ochgan har bir odamning IP manzilini
+  // o'sha saytga beradi, va server tomonida ham xuddi shu tekshiruv bor.
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "**.blob.vercel-storage.com" }],
+  },
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,

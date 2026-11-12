@@ -5,14 +5,20 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { api, needs2fa } from "@/lib/api";
 import { errorText } from "../groups/shared";
-import { StatsCards } from "./StatsCards";
-import { UsersTable } from "./UsersTable";
+import { AnnouncementsTab } from "./AnnouncementsTab";
 import { AuditLog } from "./AuditLog";
+import { FreeLessonTab } from "./FreeLessonTab";
+import { StatsCards } from "./StatsCards";
+import { SupportTab } from "./SupportTab";
+import { UsersTable } from "./UsersTable";
 
-export type Tab = "stats" | "users" | "audit";
+export type Tab = "stats" | "users" | "announcements" | "support" | "free" | "audit";
 const TABS: { key: Tab; label: string }[] = [
   { key: "stats", label: "Ko'rsatkichlar" },
   { key: "users", label: "Foydalanuvchilar" },
+  { key: "announcements", label: "E'lonlar" },
+  { key: "support", label: "Murojaatlar" },
+  { key: "free", label: "Bepul dars" },
   { key: "audit", label: "Audit jurnali" },
 ];
 
@@ -58,6 +64,9 @@ export function AdminPanel() {
 
       {tab === "stats" && <StatsCards onError={setError} />}
       {tab === "users" && <UsersTable meId={user.id} onError={setError} />}
+      {tab === "announcements" && <AnnouncementsTab onError={setError} />}
+      {tab === "support" && <SupportTab onError={setError} />}
+      {tab === "free" && <FreeLessonTab onError={setError} isAdmin />}
       {tab === "audit" && <AuditLog onError={setError} />}
     </div>
   );

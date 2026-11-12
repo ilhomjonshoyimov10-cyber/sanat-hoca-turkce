@@ -238,12 +238,17 @@ function AddBookForm({ groups, isAdmin, onDone }: { groups: Group[]; isAdmin: bo
       // chunki Vercel funksiyasiga 4.5 MB dan katta so'rov sig'maydi.
       if (file) {
         setUploadNote("Fayl yuklanmoqda...");
-        const { token } = await api<{ token: string }>("/books/upload-token", {
-          method: "POST",
-          body: { fileName: file.name, contentType: file.type || "application/octet-stream", size: file.size },
-        });
+        const { token, pathname } = await api<{ token: string; pathname: string }>(
+          "/books/upload-token",
+          {
+            method: "POST",
+            body: { fileName: file.name, contentType: file.type || "application/octet-stream", size: file.size },
+          },
+        );
+        // Yo'lni server beradi: token aynan shu yo'lga qulflangan.
+        // Avval bu yerda boshqa yo'l yozilgan edi va yuklash rad etilardi.
         const { put } = await import("@vercel/blob");
-        const blob = await put(`kitoblar/${file.name}`, file, {
+        const blob = await put(pathname, file, {
           access: "public",
           token,
           contentType: file.type || "application/octet-stream",

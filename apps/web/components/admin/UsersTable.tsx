@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { api, needs2fa } from "@/lib/api";
 import { errorText } from "../groups/shared";
+import { UserActivity } from "./UserActivity";
 
 interface U {
   id: string; email: string | null; phone: string | null;
@@ -27,6 +28,7 @@ export function UsersTable({ meId, onError }: { meId: string; onError: (m: strin
   const [skip, setSkip] = useState(0);
   const [busy, setBusy] = useState(true);
   const [editing, setEditing] = useState<U | null>(null);
+  const [activity, setActivity] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [note, setNote] = useState("");
 
@@ -127,9 +129,14 @@ export function UsersTable({ meId, onError }: { meId: string; onError: (m: strin
                   {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString("uz-UZ") : "—"}
                 </td>
                 <td>
-                  <button type="button" onClick={() => setEditing(u)} className="btn btn-quiet !min-h-9">
-                    Boshqarish
-                  </button>
+                  <div className="flex gap-1">
+                    <button type="button" onClick={() => setEditing(u)} className="btn btn-quiet !min-h-9">
+                      Boshqarish
+                    </button>
+                    <button type="button" onClick={() => setActivity(u.id)} className="btn btn-quiet !min-h-9">
+                      Tarix
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -149,6 +156,10 @@ export function UsersTable({ meId, onError }: { meId: string; onError: (m: strin
             </button>
           </div>
         </div>
+      )}
+
+      {activity && (
+        <UserActivity userId={activity} onClose={() => setActivity(null)} onError={onError} />
       )}
 
       {editing && (

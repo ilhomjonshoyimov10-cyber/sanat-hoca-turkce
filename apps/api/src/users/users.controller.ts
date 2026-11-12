@@ -56,16 +56,20 @@ export class UsersController {
       });
     }
 
+    // Yo'lni SERVER belgilaydi: foydalanuvchi birovning papkasiga yoza
+    // olmaydi. Token aynan shu yo'lga qulflanadi, shuning uchun brauzer
+    // ham shu yo'lni ishlatishi SHART — javobda qaytaramiz.
+    const pathname = `avatar/${u.id}/${safeFileName(dto.fileName)}`;
+
     const token = await generateClientTokenFromReadWriteToken({
       token: rwToken,
-      // Yo'lni SERVER belgilaydi: foydalanuvchi birovning papkasiga yoza olmaydi
-      pathname: `avatar/${u.id}/${safeFileName(dto.fileName)}`,
+      pathname,
       allowedContentTypes: [dto.contentType],
       maximumSizeInBytes: AVATAR_MAX_BYTES,
       addRandomSuffix: true,
       validUntil: Date.now() + 10 * 60 * 1000,
     });
-    return { token, maxBytes: AVATAR_MAX_BYTES, allowedTypes: AVATAR_TYPES };
+    return { token, pathname, maxBytes: AVATAR_MAX_BYTES, allowedTypes: AVATAR_TYPES };
   }
 
   @Post('me/avatar')

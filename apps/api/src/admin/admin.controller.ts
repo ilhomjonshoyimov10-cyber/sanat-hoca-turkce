@@ -45,6 +45,17 @@ export class AdminController {
     return this.admin.unlock(u, id);
   }
 
+  /** Kirish tarixi: qachon, qaysi qurilma, qaysi IP. Parol YO'Q (xeshlangan). */
+  @Get('users/:id/activity')
+  activity(@Param('id') id: string) {
+    return this.admin.userActivity(id);
+  }
+
+  @Post('users/:id/revoke-sessions')
+  revokeSessions(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    return this.admin.revokeSessions(u, id);
+  }
+
   @Get('audit')
   audit(@Query('skip') skip?: string, @Query('take') take?: string) {
     return this.admin.auditLog(Number(skip) || 0, Number(take) || 50);

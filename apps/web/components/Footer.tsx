@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Mosque } from "./fx/Mosque";
+import { contact } from "@/lib/about";
 import { site } from "@/lib/content";
 
 export function Footer() {
@@ -11,12 +12,19 @@ export function Footer() {
           <Mosque className="size-7 text-brass" />
           {site.name}
         </div>
-        <nav aria-label="Pastki menyu" className="flex gap-6 text-[0.9375rem] font-medium text-muted">
+        <nav aria-label="Pastki menyu" className="flex flex-wrap gap-x-6 gap-y-2 text-[0.9375rem] font-medium text-muted">
+          <Link href="/biz-haqimizda" className="transition-colors hover:text-porcelain">Biz haqimizda</Link>
           <Link href="/maxfiylik" className="transition-colors hover:text-porcelain">Maxfiylik siyosati</Link>
           <Link href="/login" className="transition-colors hover:text-porcelain">Kirish</Link>
           <Link href="/#ariza" className="transition-colors hover:text-porcelain">Ariza</Link>
         </nav>
-        <p className="text-sm text-muted">© {site.name}</p>
+        <div className="text-sm text-muted">
+          <a href={contact.phoneHref} className="block transition-colors hover:text-porcelain">{contact.phone}</a>
+          <a href={contact.telegramChannel} target="_blank" rel="noopener noreferrer" className="block transition-colors hover:text-porcelain">
+            {contact.telegramChannelLabel}
+          </a>
+          <p className="mt-1">© {site.name}</p>
+        </div>
       </div>
     </footer>
   );

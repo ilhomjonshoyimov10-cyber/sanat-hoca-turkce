@@ -8,7 +8,7 @@ export type Stats = {
 /** Har bir o'yin shu props bilan ishlaydi: statistikani yangilaydi, xatoni markazga uzatadi. */
 export type GameProps = { onStats: (s: Stats) => void; onFail: (e: unknown) => void; onExit: () => void; level: string };
 
-export const LEVELS = ["A1", "A2", "B1", "B2"] as const;
+export const LEVELS = ["A1", "A2", "B1", "B2", "C1"] as const;
 /** Daraja tanlangan bo'lsa so'rovga qo'shiladigan qism (masalan "&level=B1"); bo'sh = hamma daraja */
 export const levelParam = (level: string) => (level ? `&level=${level}` : "");
 

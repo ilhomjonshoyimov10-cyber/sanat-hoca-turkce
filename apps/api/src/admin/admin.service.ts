@@ -216,6 +216,57 @@ export class AdminService {
     return { ok: true };
   }
 
+  /**
+   * Bitta foydalanuvchining kirish tarixi: qachon, qaysi qurilmadan,
+   * qaysi IP dan. Admin shuni so'ragan edi.
+   *
+   * PAROL BU YERDA YO'Q va bo'lishi ham mumkin emas: parollar Argon2id
+   * bilan xeshlangan, ya'ni ularni hech kim — admin ham, biz ham —
+   * qaytara olmaydi. Bu kamchilik emas, himoya: baza sizib ketsa
+   * o'quvchilarning parollari ko'chaga chiqmaydi (odamlar ko'pincha
+   * bir xil parolni Telegram va pochtada ham ishlatadi).
+   * Nazorat uchun kerak bo'lgani — kim, qachon, qayerdan kirgani va
+   * parolni majburan tiklash tugmasi — hammasi bor.
+   */
+  async userActivity(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true, firstName: true, lastName: true, email: true, phone: true,
+        role: true, isActive: true, twoFactorEnabled: true,
+        createdAt: true, lastLoginAt: true, lockedUntil: true, failedLoginCount: true,
+      },
+    });
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+
+    const [sessions, events] = await Promise.all([
+      this.prisma.refreshToken.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 30,
+        // tokenHash SO'RALMAYDI: u sessiyaning kaliti, admin uni ko'rmasligi kerak
+        select: { id: true, userAgent: true, ip: true, createdAt: true, expiresAt: true, revokedAt: true },
+      }),
+      this.prisma.auditLog.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: { id: true, action: true, ip: true, createdAt: true, meta: true },
+      }),
+    ]);
+    return { user, sessions, events };
+  }
+
+  /** Foydalanuvchini barcha qurilmalardan chiqarish. */
+  async revokeSessions(actor: Actor, userId: string) {
+    const { count } = await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    await this.audit('ADMIN_SESSIONS_REVOKED', actor, userId);
+    return { revoked: count };
+  }
+
   // ───────── Audit jurnali ─────────
   async auditLog(skip = 0, take = 50) {
     const [items, total] = await Promise.all([

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { api, needs2fa } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { errorText, type GroupInfo } from "../groups/shared";
+import { FreeLessonTab } from "../admin/FreeLessonTab";
 
 interface Row extends GroupInfo {
   memberCount: number;
@@ -84,7 +85,10 @@ export function TeacherPanel() {
           <h1 className="text-[clamp(1.9rem,4vw,2.6rem)]">Ustoz paneli</h1>
           <p className="mt-2 text-muted">Salom, {user.firstName}. Guruhlaringiz va ishlaringiz shu yerda.</p>
         </div>
-        <Link href="/groups" className="btn btn-primary">Guruh yaratish</Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/jonli" className="btn btn-outline">Jonli efir</Link>
+          <Link href="/groups" className="btn btn-primary">Guruh yaratish</Link>
+        </div>
       </header>
 
       {error && <p className="alert-error" role="alert">{error}</p>}
@@ -121,6 +125,14 @@ export function TeacherPanel() {
           </ul>
         </section>
       )}
+
+      {/* Bepul darsga arizalar: ustoz video biriktiradi va arizachi bilan
+          yozishadi. Admin paneldagi bilan bir xil komponent — video
+          kutubxonasini faqat admin tahrirlaydi (isAdmin=false). */}
+      <section aria-labelledby="free-h">
+        <h2 id="free-h" className="mb-4 text-[1.4rem]">Bepul dars arizalari</h2>
+        <FreeLessonTab onError={setError} isAdmin={false} />
+      </section>
 
       <section aria-labelledby="groups-h">
         <h2 id="groups-h" className="mb-4 text-[1.4rem]">Guruhlarim</h2>

@@ -11,6 +11,7 @@
 // TEKSHIRISH KERAK: ustoz jumlalarni ko'rib chiqsin.
 
 import type { Level } from '@prisma/client';
+import { moreCloze } from './more.js';
 
 export interface Cloze {
   full: string;
@@ -463,3 +464,6 @@ export const clozeItems: Cloze[] = [
     level: 'C1',
   },
 ];
+
+// Qo'shimcha to'plam (content/more.ts)
+clozeItems.push(...moreCloze);

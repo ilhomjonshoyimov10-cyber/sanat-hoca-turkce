@@ -13,6 +13,8 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { errorText } from "../groups/shared";
+import { PageLoader } from "@/components/Loader";
+import { formatDate, formatDateTime } from "@/lib/datetime";
 
 interface Session {
   id: string; userAgent: string | null; ip: string | null;
@@ -105,7 +107,7 @@ export function UserActivity({
     }
   }
 
-  if (!data) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (!data) return <PageLoader />;
 
   const active = data.sessions.filter((s) => !s.revokedAt && new Date(s.expiresAt) > new Date());
 
@@ -121,7 +123,7 @@ export function UserActivity({
       <dl className="mb-6 grid gap-x-6 gap-y-2 text-[0.95rem] sm:grid-cols-2">
         <div className="flex justify-between gap-3 border-b border-cobalt/15 pb-1">
           <dt className="text-muted">Oxirgi kirish</dt>
-          <dd>{data.user.lastLoginAt ? new Date(data.user.lastLoginAt).toLocaleString("uz-UZ") : "—"}</dd>
+          <dd>{data.user.lastLoginAt ? formatDateTime(data.user.lastLoginAt, "uz") : "—"}</dd>
         </div>
         <div className="flex justify-between gap-3 border-b border-cobalt/15 pb-1">
           <dt className="text-muted">Ochiq qurilmalar</dt>
@@ -133,7 +135,7 @@ export function UserActivity({
         </div>
         <div className="flex justify-between gap-3 border-b border-cobalt/15 pb-1">
           <dt className="text-muted">Ro&apos;yxatdan o&apos;tgan</dt>
-          <dd>{new Date(data.user.createdAt).toLocaleDateString("uz-UZ")}</dd>
+          <dd>{formatDate(data.user.createdAt, "uz")}</dd>
         </div>
       </dl>
 
@@ -156,7 +158,7 @@ export function UserActivity({
                   {deviceName(s.userAgent)}
                 </span>
                 <span className="text-muted">
-                  {new Date(s.createdAt).toLocaleString("uz-UZ")}
+                  {formatDateTime(s.createdAt, "uz")}
                   {s.ip && ` · ${s.ip}`}
                 </span>
               </li>
@@ -178,7 +180,7 @@ export function UserActivity({
             <li key={e.id} className="flex flex-wrap items-baseline justify-between gap-2 border-b border-cobalt/12 pb-1">
               <span>{ACTION[e.action] ?? e.action}</span>
               <span className="text-muted">
-                {new Date(e.createdAt).toLocaleString("uz-UZ")}
+                {formatDateTime(e.createdAt, "uz")}
                 {e.ip && ` · ${e.ip}`}
               </span>
             </li>

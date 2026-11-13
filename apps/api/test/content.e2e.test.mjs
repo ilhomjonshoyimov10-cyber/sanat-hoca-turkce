@@ -37,15 +37,22 @@ let ctx, TEACHER, OTHER_TEACHER, ADMIN, S1, OUTSIDER, group, otherGroup;
 
 // ───────── Soxta AI: tashqi tarmoqqa chiqmaydi ─────────
 const aiCalls = [];
+// Har model uchun javob rejimi: 'ok' | 'down' (500) | 'thinking-only' (bo'sh javob)
+const aiMode = { default: 'ok' };
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
   const u = String(url);
   if (u.includes('generativelanguage.googleapis.com')) {
     aiCalls.push({ url: u, body: JSON.parse(String(init?.body ?? '{}')) });
-    return new Response(
-      JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Merhaba! (Salom!)' }] } }] }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } },
-    );
+    const model = /models\/([^:]+):/.exec(u)?.[1] ?? '';
+    const mode = aiMode[model] ?? aiMode.default;
+    const json = (o, status = 200) =>
+      new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json' } });
+    if (mode === 'down') return json({ error: { code: 500, message: 'Internal error' } }, 500);
+    if (mode === 'thinking-only') {
+      return json({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ thought: true, text: 'O‘ylayapman...' }] } }] });
+    }
+    return json({ candidates: [{ content: { parts: [{ thought: true, text: 'ichki fikr' }, { text: 'Merhaba! (Salom!)' }] } }] });
   }
   return realFetch(url, init);
 };
@@ -393,5 +400,98 @@ describe('AI yordamchi', () => {
   it("juda uzun matn rad etiladi", async () => {
     const r = await S1.agent.post('/ai/ask').send({ task: 'EXPLAIN', message: 'a'.repeat(400) });
     assert.equal(r.status, 400);
+  });
+
+  it("'thinking' qismi javobga aralashmaydi va o'chirib so'raladi", async () => {
+    aiCalls.length = 0;
+    const r = await S1.agent.post('/ai/ask').send({ task: 'CHAT', message: 'Teşekkürler' });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    assert.equal(r.body.answer, 'Merhaba! (Salom!)');
+    assert.equal(aiCalls[0].body.generationConfig.thinkingConfig.thinkingBudget, 0);
+    assert.ok(aiCalls[0].body.generationConfig.maxOutputTokens >= 2048);
+  });
+
+  it('asosiy model ishlamasa zaxira model javob beradi', async () => {
+    aiMode['test-model'] = 'thinking-only';
+    aiCalls.length = 0;
+    try {
+      const r = await S1.agent.post('/ai/ask').send({ task: 'CHAT', message: 'Nasılsın?' });
+      assert.equal(r.status, 201, JSON.stringify(r.body));
+      assert.equal(aiCalls.length, 2);
+      assert.match(aiCalls[1].url, /gemini-2\.5-flash/);
+      assert.equal(r.body.model, 'gemini-2.5-flash');
+    } finally {
+      delete aiMode['test-model'];
+    }
+  });
+
+  it("AI butunlay ishlamasa ham SAVOL saqlanadi, limit yeyilmaydi", async () => {
+    aiMode.default = 'down';
+    try {
+      const before = (await TEACHER.agent.get('/ai/status')).body.usedToday;
+      const r = await TEACHER.agent.post('/ai/ask').send({ task: 'CHAT', message: 'Bu savol yo‘qolmasin' });
+      assert.equal(r.status, 503, JSON.stringify(r.body));
+      assert.equal(r.body.code, 'AI_FAILED');
+      assert.ok(r.body.conversationId);
+      const convo = await TEACHER.agent.get(`/ai/conversations/${r.body.conversationId}`);
+      assert.equal(convo.body.messages[0].content, 'Bu savol yo‘qolmasin');
+      assert.equal(convo.body.messages[1].role, 'ASSISTANT');
+      assert.ok(convo.body.messages[1].error, 'xato qatori yozilmadi');
+      assert.ok(!JSON.stringify(convo.body).includes('test-kalit'), 'kalit sizib chiqdi');
+      const after = (await TEACHER.agent.get('/ai/status')).body.usedToday;
+      assert.equal(after, before);
+    } finally {
+      aiMode.default = 'ok';
+    }
+  });
+
+  it('xatodan keyin o‘sha suhbatda davom etsa, tarix to‘g‘ri navbatlanadi', async () => {
+    const convos = (await TEACHER.agent.get('/ai/conversations')).body;
+    const failed = convos.find((c) => c.title.startsWith('Bu savol'));
+    aiCalls.length = 0;
+    const r = await TEACHER.agent.post('/ai/ask').send({ task: 'CHAT', message: 'Yana urinaman', conversationId: failed.id });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    const roles = aiCalls[0].body.contents.map((c) => c.role);
+    for (let i = 1; i < roles.length; i++) assert.notEqual(roles[i], roles[i - 1], `ketma-ket ${roles[i]}: ${roles}`);
+    assert.equal(roles.at(-1), 'user');
+  });
+
+  it("o'quvchi admin bo'limiga kira olmaydi", async () => {
+    for (const path of ['/ai/admin/stats', '/ai/admin/conversations']) {
+      const r = await S1.agent.get(path);
+      assert.equal(r.status, 403, path);
+    }
+    const t = await TEACHER.agent.get('/ai/admin/conversations');
+    assert.equal(t.status, 403);
+  });
+
+  it('admin hamma suhbatlarni ko‘radi, qidiradi, o‘chiradi', async () => {
+    const stats = await ADMIN.agent.get('/ai/admin/stats');
+    assert.equal(stats.status, 200, JSON.stringify(stats.body));
+    assert.ok(stats.body.conversations >= 3);
+    assert.ok(stats.body.today.failed >= 1);
+    assert.ok(stats.body.health.lastError);
+    assert.ok(!JSON.stringify(stats.body).includes('test-kalit'));
+
+    const list = await ADMIN.agent.get('/ai/admin/conversations');
+    assert.equal(list.status, 200);
+    assert.ok(list.body.items.some((c) => c.user.id === S1.id));
+    assert.ok(list.body.items.some((c) => c.user.id === TEACHER.id));
+
+    const found = await ADMIN.agent.get('/ai/admin/conversations?q=yo‘qolmasin');
+    assert.equal(found.body.items.length, 1, JSON.stringify(found.body));
+    const failedOnly = await ADMIN.agent.get('/ai/admin/conversations?failed=1');
+    assert.ok(failedOnly.body.items.length >= 1);
+
+    const id = found.body.items[0].id;
+    const one = await ADMIN.agent.get(`/ai/admin/conversations/${id}`);
+    assert.equal(one.status, 200);
+    assert.ok(one.body.messages.length >= 2);
+    assert.equal(one.body.user.id, TEACHER.id);
+
+    const del = await ADMIN.agent.delete(`/ai/admin/conversations/${id}`);
+    assert.equal(del.status, 200);
+    const gone = await TEACHER.agent.get(`/ai/conversations/${id}`);
+    assert.equal(gone.status, 404);
   });
 });

@@ -3,6 +3,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
 import { errorText, type Homework, type Sub } from "./shared";
+import { PageLoader } from "@/components/Loader";
+import { formatDate } from "@/lib/datetime";
 
 type TeacherSub = Sub & { studentId: string; studentName: string; submittedAt: string };
 
@@ -95,7 +97,7 @@ function TeacherView({ hw, onChanged }: { hw: Homework; onChanged: () => void })
     <div className="grid gap-4">
       <p className="whitespace-pre-wrap leading-relaxed">{hw.description}</p>
       {error && <p className="alert-error" role="alert">{error}</p>}
-      {subs === null && !error && <p className="text-muted" role="status">Yuklanmoqda...</p>}
+      {subs === null && !error && <PageLoader />}
       {subs && subs.length === 0 && <p className="text-muted">Hali hech kim topshirmagan.</p>}
       {subs?.map((s) => {
         const [label, cls] = STATUS[s.status];
@@ -187,7 +189,7 @@ export function HomeworkSection({ groupId, canManage }: { groupId: string; canMa
   return (
     <div className="grid gap-5">
       {error && <p className="alert-error" role="alert">{error}</p>}
-      {items === null && !error && <p className="text-muted" role="status">Yuklanmoqda...</p>}
+      {items === null && !error && <PageLoader />}
       {items && items.length === 0 && <p className="card text-muted">Hozircha vazifa yo&apos;q.</p>}
 
       {items && items.length > 0 && (
@@ -201,7 +203,7 @@ export function HomeworkSection({ groupId, canManage }: { groupId: string; canMa
                 <span>
                   <span className="block font-extrabold">{h.title}</span>
                   <span className="text-sm text-muted">
-                    {h.dueAt ? `Muddat: ${new Date(h.dueAt).toLocaleDateString("uz-UZ")} · ` : ""}Maksimal ball: {h.maxScore}
+                    {h.dueAt ? `Muddat: ${formatDate(h.dueAt, "uz")} · ` : ""}Maksimal ball: {h.maxScore}
                   </span>
                 </span>
                 {badge(h)}

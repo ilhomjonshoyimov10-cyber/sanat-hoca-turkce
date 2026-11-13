@@ -7,6 +7,7 @@ import { api, needs2fa } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { errorText, type GroupInfo } from "../groups/shared";
 import { FreeLessonTab } from "../admin/FreeLessonTab";
+import { PageLoader } from "@/components/Loader";
 
 interface Row extends GroupInfo {
   memberCount: number;
@@ -72,7 +73,7 @@ export function TeacherPanel() {
     if (user && user.role !== "STUDENT" && user.role !== "PARENT") void load();
   }, [user, load]);
 
-  if (loading || !user) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (loading || !user) return <PageLoader />;
   if (user.role === "STUDENT" || user.role === "PARENT") return null;
 
   const totalStudents = groups.reduce((n, g) => n + g.memberCount, 0);

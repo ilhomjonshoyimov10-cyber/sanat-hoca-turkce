@@ -9,6 +9,7 @@ import { fmt } from "@/lib/i18n/config";
 import { useI18n } from "@/lib/i18n/client";
 import { Achievements } from "./Achievements";
 import type { Stats } from "./games/types";
+import { PageLoader } from "@/components/Loader";
 
 const Icon = ({ children }: { children: React.ReactNode }) => (
   <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -57,7 +58,7 @@ export function Dashboard() {
   }, [user]);
 
   if (loading || !user) {
-    return <p className="text-muted" role="status">{t.common.loading}</p>;
+    return <PageLoader />;
   }
 
   const isStaff = user.role === "TEACHER" || user.role === "ADMIN";

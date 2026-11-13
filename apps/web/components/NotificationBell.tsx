@@ -6,26 +6,34 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmt, LOCALE_META } from "@/lib/i18n/config";
 import { useI18n } from "@/lib/i18n/client";
+import { OPEN_BELL_EVENT, useNotifications, type NotificationItem as Item } from "@/lib/notify";
 
-interface Item {
-  id: string;
-  type: string;
-  title: string;
-  body: string | null;
-  link: string | null;
-  readAt: string | null;
-  createdAt: string;
+/** Brauzerning o'z bildirishnomasi: ruxsat holati (server render'da — "yo'q"). */
+function usePushPermission() {
+  // Qo'ng'iroqcha faqat kirgan foydalanuvchiga (brauzerda) chiziladi — server render'da bu qiymat ishlatilmaydi
+  const [perm, setPerm] = useState<NotificationPermission | "unsupported">(() =>
+    typeof Notification !== "undefined" ? Notification.permission : "unsupported",
+  );
+  const ask = useCallback(async () => {
+    if (typeof Notification === "undefined") return;
+    try {
+      setPerm(await Notification.requestPermission());
+    } catch {
+      /* eski Safari: callback ko'rinishi — e'tiborsiz */
+    }
+  }, []);
+  return { perm, ask };
 }
-
-const POLL_MS = 60_000;
 
 export function NotificationBell() {
   const { t, locale } = useI18n();
   const { user } = useAuth();
+  // Hisob va so'rov — markazda (NotificationCenter): bu yerda faqat ro'yxat
+  const { unread, setUnread, version } = useNotifications();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
-  const [unread, setUnread] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
+  const push = usePushPermission();
 
   const load = useCallback(async () => {
     try {
@@ -35,14 +43,19 @@ export function NotificationBell() {
     } catch {
       /* jim: bildirishnoma kelmasa sahifa baribir ishlayveradi */
     }
-  }, []);
+  }, [setUnread]);
 
+  // Ochiq turganda yangi xabar kelsa — ro'yxat darhol yangilanadi
   useEffect(() => {
-    if (!user) return;
-    void load();
-    const t = setInterval(load, POLL_MS);
-    return () => clearInterval(t);
-  }, [user, load]);
+    if (open) void load();
+  }, [open, version, load]);
+
+  // "Sizda N ta xabar bor" oynasidagi "Ko'rish" tugmasi qo'ng'iroqchani ochadi
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener(OPEN_BELL_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_BELL_EVENT, onOpen);
+  }, []);
 
   // Tashqariga bosilsa yopiladi; Escape ham yopadi
   useEffect(() => {
@@ -71,7 +84,7 @@ export function NotificationBell() {
     <div className="relative" ref={boxRef}>
       <button
         type="button"
-        onClick={() => { setOpen((o) => !o); if (!open) void load(); }}
+        onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-label={unread ? `${t.notif.title}, ${fmt(t.notif.unread, { n: unread })}` : t.notif.title}
         className="relative grid size-10 place-items-center rounded-full text-muted transition-colors hover:text-porcelain"
@@ -101,6 +114,12 @@ export function NotificationBell() {
           <ul className="max-h-[22rem] overflow-y-auto">
             {items.length === 0 && <li className="px-4 py-8 text-center text-[0.9375rem] text-muted">{t.notif.empty}</li>}
             {items.map((n) => {
+              const read = () => {
+                if (n.readAt) return;
+                setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, readAt: new Date().toISOString() } : x)));
+                setUnread(Math.max(0, unread - 1));
+                void api(`/notifications/${n.id}/read`, { method: "PATCH" }).catch(() => undefined);
+              };
               const inner = (
                 <>
                   <p className="font-medium">{n.title}</p>
@@ -111,16 +130,27 @@ export function NotificationBell() {
               return (
                 <li key={n.id} className={`border-b border-cobalt/14 last:border-0 ${n.readAt ? "" : "bg-cobalt/8"}`}>
                   {n.link ? (
-                    <Link href={n.link} onClick={() => setOpen(false)} className="block px-4 py-3 transition-colors hover:bg-cobalt/10">
+                    <Link href={n.link} onClick={() => { read(); setOpen(false); }} className="block px-4 py-3 transition-colors hover:bg-cobalt/10">
                       {inner}
                     </Link>
                   ) : (
-                    <div className="px-4 py-3">{inner}</div>
+                    <button type="button" onClick={read} className="block w-full px-4 py-3 text-left">{inner}</button>
                   )}
                 </li>
               );
             })}
           </ul>
+
+          {push.perm === "default" && (
+            <div className="border-t border-cobalt/25 px-4 py-3">
+              <button type="button" onClick={push.ask} className="text-[0.8125rem] text-brass underline underline-offset-4">
+                {t.notif.pushAsk}
+              </button>
+            </div>
+          )}
+          {push.perm === "denied" && (
+            <p className="border-t border-cobalt/25 px-4 py-3 text-[0.75rem] text-muted">{t.notif.pushBlocked}</p>
+          )}
         </div>
       )}
     </div>

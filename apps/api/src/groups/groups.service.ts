@@ -1,7 +1,9 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Role } from '@prisma/client';
 import { calcAge, normalizeEmail, normalizePhone } from '../auth/auth.utils.js';
+import { randomInt } from 'node:crypto';
 import { tashkentDay } from '../games/srs.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type {
   AddMemberDto, AttendanceDto, CreateGroupDto, CreateHomeworkDto, GradeDto, SubmitDto, UpdateGroupDto,
@@ -9,12 +11,29 @@ import type {
 
 export interface Actor { id: string; role: Role }
 
+/** "malika.k@gmail.com" -> "ma***@gmail.com" */
+function maskEmail(e: string | null): string | null {
+  if (!e) return null;
+  const [name, domain] = e.split('@');
+  return `${name.slice(0, 2)}***@${domain ?? ''}`;
+}
+
+/** "+998901234567" -> "+998 ** *** 45 67" */
+function maskPhone(p: string | null): string | null {
+  if (!p) return null;
+  const d = p.replace(/\D/g, '');
+  return d.length >= 4 ? `+${d.slice(0, 3)} ** *** ${d.slice(-4, -2)} ${d.slice(-2)}` : null;
+}
+
 const NOT_FOUND = "Topilmadi";
 const DAY = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class GroupsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   // ───────── Ruxsat tekshiruvi (IDOR himoyasi) ─────────
   /**
@@ -92,7 +111,11 @@ export class GroupsService {
       : [];
     const teacher = await this.prisma.user.findUnique({ where: { id: group.teacherId }, select: { firstName: true, lastName: true } });
     return {
-      group: { id: group.id, name: group.name, level: group.level, schedule: group.schedule, meetingUrl: group.meetingUrl, isActive: group.isActive },
+      group: {
+        id: group.id, name: group.name, level: group.level, schedule: group.schedule, meetingUrl: group.meetingUrl, isActive: group.isActive,
+        // Qo'shilish kodi faqat ustozga ko'rinadi
+        ...(canManage ? { joinCode: group.joinCode } : {}),
+      },
       teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
       canManage,
       // Aloqa ma'lumotlari faqat ustozga ko'rinadi; o'quvchilar bir-birining email/telefonini ko'rmaydi
@@ -134,6 +157,113 @@ export class GroupsService {
     return { ok: true };
   }
 
+  // ───────── O'quvchini topish ─────────
+  /**
+   * Ustoz guruhga qo'shish uchun o'quvchi qidiradi: ism, familiya, email
+   * yoki telefon bo'yicha (kamida 2 belgi).
+   *
+   * Maxfiylik: to'liq email/telefon ko'rsatilmaydi — faqat farqlash uchun
+   * yetadigan qismi ("ma***@gmail.com", "+998 ** *** 45 67"). Qidiruv faqat
+   * o'quvchilar orasida va faqat o'z guruhini boshqaradigan ustozga.
+   */
+  async candidates(id: string, actor: Actor, q: string) {
+    await this.manage(id, actor);
+    const term = q.trim();
+    if (term.length < 2) return [];
+    const digits = term.replace(/\D/g, '');
+    const parts = term.split(/\s+/).filter(Boolean).slice(0, 3);
+    const rows = await this.prisma.user.findMany({
+      where: {
+        role: 'STUDENT',
+        isActive: true,
+        OR: [
+          ...parts.map((p) => ({ firstName: { contains: p, mode: 'insensitive' as const } })),
+          ...parts.map((p) => ({ lastName: { contains: p, mode: 'insensitive' as const } })),
+          { email: { contains: term.toLowerCase() } },
+          ...(digits.length >= 4 ? [{ phone: { contains: digits } }] : []),
+        ],
+      },
+      take: 20,
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+      select: {
+        id: true, firstName: true, lastName: true, email: true, phone: true, avatarUrl: true, birthDate: true, parentConsent: true,
+        memberships: { select: { groupId: true, group: { select: { name: true } } } },
+      },
+    });
+    return rows.map((u) => ({
+      id: u.id,
+      name: `${u.firstName} ${u.lastName}`,
+      avatarUrl: u.avatarUrl,
+      contact: maskEmail(u.email) ?? maskPhone(u.phone) ?? '',
+      inGroup: u.memberships.some((m) => m.groupId === id),
+      groups: u.memberships.map((m) => m.group.name).slice(0, 3),
+      needsConsent: !!u.birthDate && calcAge(u.birthDate) < 18 && !u.parentConsent,
+    }));
+  }
+
+  /** Topilgan o'quvchini ID bo'yicha qo'shish (qidiruvdan keyin). */
+  async addMemberById(id: string, actor: Actor, userId: string, confirmParentConsent?: boolean) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, phone: true } });
+    if (!user) throw new NotFoundException("Bunday o'quvchi topilmadi");
+    const identifier = user.email ?? user.phone;
+    if (!identifier) throw new NotFoundException("Bunday o'quvchi topilmadi");
+    return this.addMember(id, actor, { identifier, confirmParentConsent });
+  }
+
+  // ───────── Qo'shilish kodi ─────────
+  /** Yangi kod: 6 belgi, chalkash harflarsiz (0/O, 1/I yo'q). */
+  async newJoinCode(id: string, actor: Actor) {
+    await this.manage(id, actor);
+    const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = Array.from({ length: 6 }, () => ALPHABET[randomInt(ALPHABET.length)]).join('');
+      const taken = await this.prisma.group.findUnique({ where: { joinCode: code }, select: { id: true } });
+      if (taken) continue;
+      await this.prisma.group.update({ where: { id }, data: { joinCode: code } });
+      return { joinCode: code };
+    }
+    throw new ConflictException("Kod yaratib bo'lmadi, qayta urinib ko'ring");
+  }
+
+  async disableJoinCode(id: string, actor: Actor) {
+    await this.manage(id, actor);
+    await this.prisma.group.update({ where: { id }, data: { joinCode: null } });
+    return { joinCode: null };
+  }
+
+  /**
+   * O'quvchi kodni kiritib o'zi qo'shiladi.
+   * 18 yoshgacha bo'lsa va ota-ona roziligi yozilmagan bo'lsa — o'zi
+   * qo'shila olmaydi: rozilikni ustoz tasdiqlaydi (qonuniy talab).
+   */
+  async joinByCode(actor: Actor, rawCode: string) {
+    if (actor.role !== 'STUDENT') throw new ForbiddenException("Kod orqali faqat o'quvchi qo'shiladi");
+    const code = rawCode.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length !== 6) throw new BadRequestException("Kod 6 belgidan iborat");
+    const group = await this.prisma.group.findUnique({ where: { joinCode: code } });
+    if (!group || !group.isActive) throw new NotFoundException("Bunday kod topilmadi. Ustozdan qayta so'rang");
+
+    const exists = await this.prisma.groupMember.findUnique({ where: { groupId_userId: { groupId: group.id, userId: actor.id } } });
+    if (exists) return { ok: true, groupId: group.id, already: true };
+
+    const me = await this.prisma.user.findUnique({ where: { id: actor.id }, select: { birthDate: true, parentConsent: true, firstName: true, lastName: true } });
+    if (me?.birthDate && calcAge(me.birthDate) < 18 && !me.parentConsent) {
+      throw new ForbiddenException({
+        code: 'PARENT_CONSENT_REQUIRED',
+        message: "18 yoshga to'lmagansiz: ustozingiz sizni ota-ona roziligi bilan o'zi qo'shadi",
+      });
+    }
+    await this.prisma.groupMember.create({ data: { groupId: group.id, userId: actor.id } });
+    await this.audit('MEMBER_JOINED_BY_CODE', actor, group.id, { studentId: actor.id });
+    await this.notifications.push({
+      userId: group.teacherId, type: 'ACCOUNT',
+      title: `${group.name}: yangi o'quvchi qo'shildi`,
+      body: me ? `${me.firstName} ${me.lastName}` : undefined,
+      link: `/groups/${group.id}`,
+    });
+    return { ok: true, groupId: group.id, already: false };
+  }
+
   async removeMember(id: string, userId: string, actor: Actor) {
     await this.manage(id, actor);
     const m = await this.prisma.groupMember.findUnique({ where: { groupId_userId: { groupId: id, userId } } });
@@ -145,10 +275,18 @@ export class GroupsService {
 
   // ───────── Uy vazifalari ─────────
   async createHomework(groupId: string, actor: Actor, dto: CreateHomeworkDto) {
-    await this.manage(groupId, actor);
-    return this.prisma.homework.create({
+    const group = await this.manage(groupId, actor);
+    const hw = await this.prisma.homework.create({
       data: { groupId, title: dto.title.trim(), description: dto.description.trim(), maxScore: dto.maxScore ?? 100, dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined },
     });
+    const members = await this.prisma.groupMember.findMany({ where: { groupId }, select: { userId: true } });
+    await this.notifications.pushMany(members.map((m) => m.userId), {
+      type: 'HOMEWORK_NEW',
+      title: `${group.name}: yangi uy vazifasi`,
+      body: hw.title,
+      link: `/groups/${groupId}`,
+    });
+    return hw;
   }
 
   async listHomework(groupId: string, actor: Actor) {
@@ -206,11 +344,21 @@ export class GroupsService {
     await this.manage(hw.groupId, actor);
 
     if (dto.returnForRevision) {
-      return this.prisma.submission.update({ where: { id: sub.id }, data: { status: 'RETURNED', feedback: dto.feedback?.trim() || null, score: null } });
+      const r = await this.prisma.submission.update({ where: { id: sub.id }, data: { status: 'RETURNED', feedback: dto.feedback?.trim() || null, score: null } });
+      await this.notifications.push({
+        userId: sub.studentId, type: 'HOMEWORK_GRADED',
+        title: 'Vazifa qayta ishlashga qaytarildi', body: hw.title, link: `/groups/${hw.groupId}`,
+      });
+      return r;
     }
     if (dto.score === undefined) throw new BadRequestException('Ball kiriting');
     if (dto.score > hw.maxScore) throw new BadRequestException(`Ball ${hw.maxScore} dan oshmasin`);
-    return this.prisma.submission.update({ where: { id: sub.id }, data: { status: 'GRADED', score: dto.score, feedback: dto.feedback?.trim() || null } });
+    const r = await this.prisma.submission.update({ where: { id: sub.id }, data: { status: 'GRADED', score: dto.score, feedback: dto.feedback?.trim() || null } });
+    await this.notifications.push({
+      userId: sub.studentId, type: 'HOMEWORK_GRADED',
+      title: `Vazifa baholandi: ${dto.score}/${hw.maxScore}`, body: hw.title, link: `/groups/${hw.groupId}`,
+    });
+    return r;
   }
 
   // ───────── Davomat ─────────

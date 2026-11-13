@@ -16,7 +16,7 @@ export class LiveController {
   @Roles('TEACHER', 'ADMIN')
   @Post()
   create(@CurrentUser() u: AuthUser, @Body() dto: CreateLiveDto) {
-    return this.live.create(u.id, dto);
+    return this.live.create(u, dto);
   }
 
   @Roles('TEACHER', 'ADMIN')

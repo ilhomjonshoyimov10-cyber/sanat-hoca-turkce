@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/client";
+import { FRESH_EVENT } from "@/lib/notify";
 
 interface Announcement {
   id: string;
@@ -37,17 +38,36 @@ export function AnnouncementBar() {
   const { user } = useAuth();
   const [items, setItems] = useState<Announcement[]>([]);
 
+  const load = useCallback(async () => {
+    try {
+      setItems(await api<Announcement[]>("/announcements"));
+    } catch {
+      /* E'lon kelmasa sahifa baribir ishlashi kerak — jim o'tamiz */
+    }
+  }, []);
+
   useEffect(() => {
     if (!user) return;
-    let alive = true;
-    api<Announcement[]>("/announcements")
-      .then((rows) => alive && setItems(rows))
-      // E'lon kelmasa sahifa baribir ishlashi kerak — jim o'tamiz
-      .catch(() => undefined);
-    return () => {
-      alive = false;
+    void load();
+    // 1) Yangi e'lon bildirishnomasi kelsa — DARHOL (sahifani yangilamasdan)
+    const onFresh = (e: Event) => {
+      const fresh = (e as CustomEvent<{ type: string }[]>).detail ?? [];
+      if (fresh.some((n) => n.type === "ANNOUNCEMENT")) void load();
     };
-  }, [user]);
+    // 2) Tabga qaytganda — ko'pi bilan 2 daqiqada bir marta
+    let last = Date.now();
+    const onFocus = () => {
+      if (document.hidden || Date.now() - last < 120_000) return;
+      last = Date.now();
+      void load();
+    };
+    window.addEventListener(FRESH_EVENT, onFresh);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener(FRESH_EVENT, onFresh);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [user, load]);
 
   const dismiss = useCallback(async (id: string) => {
     // Darhol yo'qotamiz: server javobini kutib turish sekin tuyuladi.

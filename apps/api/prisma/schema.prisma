@@ -151,6 +151,16 @@ enum NotificationType {
   LESSON_SOON        // video dars boshlanmoqda
   ANNOUNCEMENT       // guruhga e'lon
   ACCOUNT            // hisob bilan bog'liq (rol o'zgardi, 2FA va h.k.)
+  SUPPORT            // murojaat va unga javob
+  FREE_LESSON        // bepul dars arizasi, video, yozishma
+  CHAT               // guruh chatida ustozning xabari
+  LIVE               // jonli dars rejalashtirildi / boshlandi
+}
+
+/// Jonli dars qayerda o'tadi.
+enum LiveProvider {
+  JITSI    // meet.jit.si — bepul, yangi oynada ochiladi
+  EXTERNAL // ustoz bergan havola: Zoom, Google Meet, Telegram video chat
 }
 
 enum LessonStatus {
@@ -316,6 +326,9 @@ model Group {
   schedule   String? // masalan: "Du-Chor-Ju 19:00"
   meetingUrl String? // Zoom / Meet havolasi
   isActive   Boolean  @default(true)
+  /// Guruhga qo'shilish kodi: ustoz o'quvchilarga beradi, o'quvchi o'zi
+  /// kiritadi. null = kod o'chirilgan.
+  joinCode   String?  @unique
   courseId   String?
   course     Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
   teacherId  String
@@ -328,6 +341,7 @@ model Group {
   attendances Attendance[]
   lessons     Lesson[]
   books       Book[]
+  liveSessions LiveSession[]
 
   @@index([teacherId])
 }
@@ -869,6 +883,8 @@ model AiMessage {
   content        String
   /// Qaysi model javob bergani — provayder almashsa tarix tushunarli qolsin.
   model          String?
+  /// AI javob bermagan bo'lsa — sababi (admin ko'radi). Savol baribir saqlanadi.
+  error          String?
   createdAt      DateTime       @default(now())
 
   @@index([conversationId, createdAt])
@@ -1062,6 +1078,8 @@ model LessonVideo {
   level       Level?
   position    Int      @default(0)
   isActive    Boolean  @default(true)
+  /// "Bepul 1-dars" — admin bir tugma bilan yuboradigan asosiy video
+  isDefault   Boolean  @default(false)
   createdById String
   createdBy   User     @relation("LessonVideoAuthor", fields: [createdById], references: [id])
   createdAt   DateTime @default(now())
@@ -1127,6 +1145,14 @@ model LiveSession {
   level       Level?
   /// Faqat o'quvchilar uchunmi yoki mehmonlar ham (kelajak uchun)
   isPublic    Boolean      @default(false)
+  /// Faqat shu guruh a'zolari kira oladi (null = hamma o'quvchi yoki daraja)
+  groupId     String?
+  group       Group?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  provider    LiveProvider @default(JITSI)
+  /// EXTERNAL uchun: https havola (faqat ruxsatli foydalanuvchiga beriladi)
+  externalUrl String?
+  /// Bizning tomonda chegaramiz (o'quvchilar soni)
+  maxParticipants Int      @default(100)
   hostId      String
   host        User         @relation("LiveHost", fields: [hostId], references: [id], onDelete: Cascade)
   createdAt   DateTime     @default(now())
@@ -1135,6 +1161,7 @@ model LiveSession {
   attendees LiveAttendee[]
 
   @@index([status, startsAt])
+  @@index([groupId])
 }
 
 model LiveAttendee {

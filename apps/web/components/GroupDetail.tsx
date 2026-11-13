@@ -11,6 +11,7 @@ import { LessonsSection } from "./groups/LessonsSection";
 import { HomeworkSection } from "./groups/HomeworkSection";
 import { MembersSection } from "./groups/MembersSection";
 import { errorText, type Detail } from "./groups/shared";
+import { PageLoader } from "@/components/Loader";
 
 type Tab = "hw" | "members" | "att" | "chat" | "lessons";
 
@@ -42,7 +43,7 @@ export function GroupDetail() {
     };
   }, [user, id, router, ver]);
 
-  if (loading || !user) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (loading || !user) return <PageLoader />;
   if (error) {
     return (
       <div className="grid gap-4">
@@ -51,7 +52,7 @@ export function GroupDetail() {
       </div>
     );
   }
-  if (!detail) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (!detail) return <PageLoader />;
 
   const { group, canManage } = detail;
   const tabs: [Tab, string][] = [
@@ -92,7 +93,7 @@ export function GroupDetail() {
         {tab === "hw" && <HomeworkSection groupId={group.id} canManage={canManage} />}
         {tab === "chat" && <ChatSection groupId={group.id} canModerate={canManage} />}
         {tab === "lessons" && <LessonsSection groupId={group.id} canManage={canManage} />}
-        {tab === "members" && <MembersSection groupId={group.id} canManage={canManage} members={detail.members} onChanged={() => setVer((n) => n + 1)} />}
+        {tab === "members" && <MembersSection groupId={group.id} canManage={canManage} members={detail.members} joinCode={group.joinCode} onChanged={() => setVer((n) => n + 1)} />}
         {tab === "att" && <AttendanceSection groupId={group.id} canManage={canManage} members={detail.members} myId={user.id} />}
       </div>
     </div>

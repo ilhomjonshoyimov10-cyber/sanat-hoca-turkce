@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { TextAdmin } from "./ReadingEditor";
+import { PageLoader } from "@/components/Loader";
 
 type Glossary = { id: string; turkish: string; uzbek: string };
 type Question = { id: string; kind: "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER"; prompt: string; options: string[] };
@@ -117,7 +118,7 @@ export function ReadingDetail() {
       </div>
     );
   }
-  if (!text) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (!text) return <PageLoader />;
 
   const resultFor = (id: string) => results?.find((r) => r.questionId === id);
   const canEdit = user?.role === "TEACHER" || user?.role === "ADMIN";

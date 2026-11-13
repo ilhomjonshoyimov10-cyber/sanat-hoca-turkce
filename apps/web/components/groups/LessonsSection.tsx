@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
+import { formatDateTime, localInputValue } from "@/lib/datetime";
+import { useI18n } from "@/lib/i18n/client";
 import { errorText } from "./shared";
 
 interface Lesson {
@@ -13,7 +15,7 @@ interface Lesson {
   attendeeCount: number;
   joinable: boolean;
 }
-interface JoinInfo { roomName: string; title: string; isModerator: boolean; durationMin: number }
+interface JoinInfo { url: string; title: string; isModerator: boolean; durationMin: number }
 
 const STATUS_LABEL: Record<Lesson["status"], string> = {
   SCHEDULED: "Rejalashtirilgan",
@@ -22,25 +24,14 @@ const STATUS_LABEL: Record<Lesson["status"], string> = {
   CANCELLED: "Bekor qilingan",
 };
 
-/** Jitsi ommaviy serveri. O'z serveringizga ko'chirsangiz shu qatorni almashtiring. */
-const JITSI_HOST = "meet.jit.si";
-
-const fmt = (iso: string) =>
-  new Date(iso).toLocaleString("uz-UZ", {
-    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tashkent",
-  });
-
-/** Brauzerning mahalliy vaqtini <input type="datetime-local"> formatiga keltiradi. */
-function localInputValue(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-}
 
 export function LessonsSection({ groupId, canManage }: { groupId: string; canManage: boolean }) {
+  const { locale } = useI18n();
+  const fmt = (iso: string) => formatDateTime(iso, locale);
   const [items, setItems] = useState<Lesson[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [room, setRoom] = useState<JoinInfo | null>(null);
+  const [room, setRoom] = useState<(JoinInfo & { opened: boolean }) | null>(null);
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
@@ -87,9 +78,21 @@ export function LessonsSection({ groupId, canManage }: { groupId: string; canMan
 
   async function join(id: string) {
     setError("");
+    // Yangi oyna DARHOL ochiladi (aks holda brauzer bloklaydi), manzil keyin
+    let win: Window | null = null;
+    try { win = window.open("about:blank", "_blank"); } catch { win = null; }
     try {
-      setRoom(await api<JoinInfo>(`/lessons/${id}/join`, { method: "POST" }));
+      const info = await api<JoinInfo>(`/lessons/${id}/join`, { method: "POST" });
+      let opened = false;
+      if (win && !win.closed) {
+        win.opener = null;
+        win.location.href = info.url;
+        opened = true;
+      }
+      setRoom({ ...info, opened });
+      void load();
     } catch (e) {
+      win?.close();
       setError(errorText(e));
     }
   }
@@ -99,8 +102,6 @@ export function LessonsSection({ groupId, canManage }: { groupId: string; canMan
     await load();
   }
 
-  if (room) return <JitsiRoom info={room} onLeave={() => { setRoom(null); void load(); }} />;
-
   return (
     <section aria-labelledby="lessons-h" className="border border-cobalt/25 bg-cobalt/[0.04]">
       <h2 id="lessons-h" className="border-b border-cobalt/25 px-5 py-4 font-display text-[1.25rem] font-semibold">
@@ -109,6 +110,23 @@ export function LessonsSection({ groupId, canManage }: { groupId: string; canMan
 
       <div className="p-5">
         {error && <p className="alert-error mb-4" role="alert">{error}</p>}
+        {room && (
+          <div className="alert-success mb-4 grid gap-2" role="status">
+            <p>{room.opened ? "Dars yangi oynada ochildi" : "Dars tayyor"}: {room.title}</p>
+            <p className="flex flex-wrap gap-2">
+              <a href={room.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">
+                {room.opened ? "Oynani qayta ochish" : "Darsni ochish"}
+              </a>
+              <button type="button" className="btn btn-quiet btn-sm" onClick={() => setRoom(null)}>Yopish</button>
+            </p>
+            {room.isModerator && (
+              <p className="text-[0.875rem] text-muted">
+                Birinchi kirganingizda meet.jit.si Google/GitHub orqali kirishni so&apos;raydi — bu sizni moderator qiladi.
+                Guruh a&apos;zolariga &quot;Dars boshlandi&quot; xabari ketdi.
+              </p>
+            )}
+          </div>
+        )}
         {loading && <div className="skeleton h-20" />}
         {!loading && items.length === 0 && (
           <p className="text-[0.9375rem] text-muted">Hozircha rejalashtirilgan dars yo&apos;q.</p>
@@ -126,8 +144,10 @@ export function LessonsSection({ groupId, canManage }: { groupId: string; canMan
               <span className={`badge ${l.status === "LIVE" ? "badge-ok" : l.status === "CANCELLED" ? "badge-bad" : ""}`}>
                 {STATUS_LABEL[l.status]}
               </span>
-              {l.joinable ? (
-                <button type="button" onClick={() => join(l.id)} className="btn btn-primary">Darsga kirish</button>
+              {l.joinable || (canManage && l.status === "SCHEDULED") ? (
+                <button type="button" onClick={() => join(l.id)} className="btn btn-primary">
+                  {canManage && l.status === "SCHEDULED" ? "Darsni boshlash" : "Darsga kirish"}
+                </button>
               ) : (
                 <span className="text-[0.875rem] text-muted">
                   {l.status === "SCHEDULED" ? "Boshlanishiga 15 daqiqa qolganda ochiladi" : ""}
@@ -161,36 +181,6 @@ export function LessonsSection({ groupId, canManage }: { groupId: string; canMan
           </form>
         )}
       </div>
-    </section>
-  );
-}
-
-/** Jitsi xonasi iframe ichida. Xona nomi serverdan keladi va taxmin qilib bo'lmaydi. */
-function JitsiRoom({ info, onLeave }: { info: JoinInfo; onLeave: () => void }) {
-  const ref = useRef<HTMLIFrameElement>(null);
-  const url =
-    `https://${JITSI_HOST}/${encodeURIComponent(info.roomName)}` +
-    `#config.prejoinPageEnabled=true&config.disableDeepLinking=true`;
-
-  return (
-    <section aria-labelledby="room-h" className="border border-cobalt/25 bg-cobalt/[0.04]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cobalt/25 px-5 py-4">
-        <h2 id="room-h" className="font-display text-[1.25rem] font-semibold">
-          {info.title}
-          {info.isModerator && <span className="badge badge-warn ml-3">Siz moderatorsiz</span>}
-        </h2>
-        <button type="button" onClick={onLeave} className="btn btn-outline">Darsdan chiqish</button>
-      </div>
-      <iframe
-        ref={ref}
-        src={url}
-        title={`Video dars: ${info.title}`}
-        allow="camera; microphone; fullscreen; display-capture; autoplay"
-        className="block h-[clamp(20rem,70vh,46rem)] w-full border-0 bg-well"
-      />
-      <p className="px-5 py-3 text-[0.8125rem] text-muted">
-        Video {JITSI_HOST} orqali ishlaydi. Kamera va mikrofonga ruxsat so&apos;raladi.
-      </p>
     </section>
   );
 }

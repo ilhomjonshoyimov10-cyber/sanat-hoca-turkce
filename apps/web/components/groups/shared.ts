@@ -4,7 +4,7 @@ export type Member = {
   id: string; firstName: string; lastName: string;
   email?: string | null; phone?: string | null; isMinor?: boolean; parentConsent?: boolean;
 };
-export type GroupInfo = { id: string; name: string; level: string; schedule: string | null; meetingUrl: string | null; isActive: boolean };
+export type GroupInfo = { id: string; name: string; level: string; schedule: string | null; meetingUrl: string | null; isActive: boolean; joinCode?: string | null };
 export type Detail = { group: GroupInfo; teacherName: string; canManage: boolean; members: Member[] };
 export type Sub = { id: string; text: string | null; status: "SUBMITTED" | "GRADED" | "RETURNED"; score: number | null; feedback: string | null };
 export type Homework = {

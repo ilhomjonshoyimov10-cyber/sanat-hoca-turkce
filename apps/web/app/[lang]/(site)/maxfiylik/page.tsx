@@ -14,13 +14,21 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-xl font-bold">Qanday ma&apos;lumotlarni yig&apos;amiz</h2>
           <p className="mt-2 text-muted">
-            Ism, familiya, telefon raqam, email, tug&apos;ilgan sana, o&apos;qish natijalari (o&apos;yinlar, vazifalar, davomat) va guruh chatidagi xabarlar.
+            Ism, familiya, telefon raqam, email, tug&apos;ilgan sana, o&apos;qish natijalari (o&apos;yinlar, vazifalar, davomat), guruh chatidagi xabarlar, murojaatlar va AI yordamchi bilan suhbatlar.
           </p>
         </section>
         <section>
           <h2 className="text-xl font-bold">Nima uchun</h2>
           <p className="mt-2 text-muted">
             Siz bilan bog&apos;lanish, darslarni tashkil qilish, o&apos;qish jarayonini kuzatish va hisobingizni himoya qilish uchun.
+          </p>
+        </section>
+        <section>
+          <h2 className="text-xl font-bold">AI yordamchi</h2>
+          <p className="mt-2 text-muted">
+            AI yordamchiga yozgan savollaringiz va javoblar o&apos;quv markazida saqlanadi va administrator ko&apos;rishi
+            mumkin — qiyin mavzularni aniqlash va darsni moslash uchun. Ism, telefon va email AI xizmatiga yuborilmaydi
+            (matndan olib tashlanadi). Suhbatni o&apos;zingiz istalgan vaqtda o&apos;chirishingiz mumkin.
           </p>
         </section>
         <section>

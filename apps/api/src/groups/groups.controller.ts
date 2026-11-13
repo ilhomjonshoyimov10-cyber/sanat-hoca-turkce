@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser, Roles } from '../auth/auth.decorators.js';
 import type { AuthUser } from '../auth/auth.decorators.js';
 import {
-  AddMemberDto, AttendanceDto, CreateGroupDto, CreateHomeworkDto, GradeDto, SubmitDto, UpdateGroupDto,
+  AddMemberByIdDto, AddMemberDto, AttendanceDto, JoinByCodeDto, CreateGroupDto, CreateHomeworkDto, GradeDto, SubmitDto, UpdateGroupDto,
 } from './groups.dto.js';
 import { GroupsService } from './groups.service.js';
 
@@ -18,6 +19,20 @@ export class GroupsController {
 
   @Roles('TEACHER', 'ADMIN') @HttpCode(201) @Post('groups/:id/members')
   addMember(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: AddMemberDto) { return this.groups.addMember(id, u, dto); }
+  @Roles('TEACHER', 'ADMIN') @HttpCode(201) @Post('groups/:id/members/by-id')
+  addMemberById(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: AddMemberByIdDto) {
+    return this.groups.addMemberById(id, u, dto.userId, dto.confirmParentConsent);
+  }
+  @Roles('TEACHER', 'ADMIN') @Get('groups/:id/candidates')
+  candidates(@CurrentUser() u: AuthUser, @Param('id') id: string, @Query('q') q = '') { return this.groups.candidates(id, u, String(q).slice(0, 60)); }
+  @Roles('TEACHER', 'ADMIN') @Post('groups/:id/join-code')
+  newJoinCode(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.groups.newJoinCode(id, u); }
+  @Roles('TEACHER', 'ADMIN') @Delete('groups/:id/join-code')
+  disableJoinCode(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.groups.disableJoinCode(id, u); }
+  /** Kodni taxmin qilishga qarshi: daqiqasiga 10 ta urinish */
+  @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post('groups/join')
+  join(@CurrentUser() u: AuthUser, @Body() dto: JoinByCodeDto) { return this.groups.joinByCode(u, dto.code); }
+
   @Roles('TEACHER', 'ADMIN') @Delete('groups/:id/members/:userId')
   removeMember(@CurrentUser() u: AuthUser, @Param('id') id: string, @Param('userId') userId: string) { return this.groups.removeMember(id, userId, u); }
 

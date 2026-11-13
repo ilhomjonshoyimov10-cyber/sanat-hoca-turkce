@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { errorText, fullName, tashkentToday, type Member } from "./shared";
+import { PageLoader } from "@/components/Loader";
+import { formatDate } from "@/lib/datetime";
 
 type Rec = { date: string; userId: string; present: boolean };
 
@@ -30,7 +32,7 @@ export function AttendanceSection({ groupId, canManage, members, myId }: { group
   }, [groupId, reload]);
 
   if (error) return <p className="alert-error" role="alert">{error}</p>;
-  if (!records) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (!records) return <PageLoader />;
 
   const dates = [...new Set(records.map((r) => r.date))].sort().reverse();
   const stat = (userId: string) => {
@@ -52,7 +54,7 @@ export function AttendanceSection({ groupId, canManage, members, myId }: { group
           <ul className="grid gap-2">
             {mine.map((r) => (
               <li key={r.date} className="card flex items-center justify-between !p-4">
-                <span>{new Date(`${r.date}T00:00:00`).toLocaleDateString("uz-UZ", { day: "numeric", month: "long", weekday: "long" })}</span>
+                <span>{formatDate(`${r.date}T00:00:00`, "uz")}</span>
                 <span className={`badge ${r.present ? "badge-ok" : "badge-bad"}`}>{r.present ? "Keldi" : "Kelmadi"}</span>
               </li>
             ))}

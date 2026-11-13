@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AiPanel } from "@/components/ai/AiPanel";
+import { PageLoader } from "@/components/Loader";
 
 export const metadata: Metadata = { title: "AI yordamchi", robots: { index: false } };
 
@@ -11,7 +12,7 @@ export default function Page() {
       <p className="mb-7 text-muted">
         Turkcha mashq qiling, xatolaringizni tuzatib oling, so&apos;z va qoidalarni so&apos;rang.
       </p>
-      <Suspense fallback={<p className="text-muted" role="status">Yuklanmoqda...</p>}>
+      <Suspense fallback={<PageLoader />}>
         <AiPanel />
       </Suspense>
     </div>

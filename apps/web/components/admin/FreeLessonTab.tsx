@@ -5,11 +5,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
 import { useHydrated } from "@/lib/hydrated";
+import { FRESH_EVENT } from "@/lib/notify";
 import { errorText } from "../groups/shared";
+import { formatDateTime } from "@/lib/datetime";
 
 interface Video {
   id: string; title: string; description: string | null; url: string;
-  level: string | null; position: number; isActive: boolean;
+  level: string | null; position: number; isActive: boolean; isDefault?: boolean;
   _count?: { assignments: number };
 }
 interface Person { id: string; firstName: string; lastName: string; role?: string }
@@ -20,6 +22,17 @@ interface LeadRow {
   _count: { messages: number };
 }
 interface Msg { id: string; body: string; createdAt: string; sender: Person }
+interface SentFirst {
+  ok: boolean; alreadySent: boolean; onSite: boolean;
+  video: { id: string; title: string; url: string };
+  shareText: string; telegramShare: string;
+}
+
+/** Bepul 1-dars — Sanat Hoca Telegram kanalidagi birinchi dars. */
+export const FIRST_LESSON_URL = "https://t.me/SanatHoca/41?single";
+
+/** Telefon raqamidan SMS havolasi (telefonda "Xabar" ilovasini tayyor matn bilan ochadi). */
+const smsHref = (phone: string, text: string) => `sms:${phone.replace(/[^\d+]/g, "")}?body=${encodeURIComponent(text)}`;
 
 const LEAD_STATUS: Record<string, { label: string; cls: string }> = {
   NEW: { label: "Yangi", cls: "badge badge-warn" },
@@ -28,13 +41,15 @@ const LEAD_STATUS: Record<string, { label: string; cls: string }> = {
   REJECTED: { label: "Rad etildi", cls: "badge badge-bad" },
 };
 
-export function FreeLessonTab({ onError, isAdmin }: { onError: (m: string) => void; isAdmin: boolean }) {
+export function FreeLessonTab({ onError, isAdmin, focusId }: { onError: (m: string) => void; isAdmin: boolean; focusId?: string }) {
   const hydrated = useHydrated();
   const [videos, setVideos] = useState<Video[]>([]);
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [open, setOpen] = useState<{ lead: LeadRow; messages: Msg[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [sent, setSent] = useState<Record<string, SentFirst>>({});
+  const [copied, setCopied] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -51,6 +66,70 @@ export function FreeLessonTab({ onError, isAdmin }: { onError: (m: string) => vo
 
   useEffect(() => { void load(); }, [load]);
 
+  // Yangi ariza kelsa — ro'yxat o'zi yangilanadi
+  useEffect(() => {
+    const onFresh = (e: Event) => {
+      const fresh = (e as CustomEvent<{ type: string }[]>).detail ?? [];
+      if (fresh.some((n) => n.type === "FREE_LESSON")) void load();
+    };
+    window.addEventListener(FRESH_EVENT, onFresh);
+    return () => window.removeEventListener(FRESH_EVENT, onFresh);
+  }, [load]);
+
+  // Bildirishnomadan kelgan bo'lsa (?lead=...) — o'sha ariza ko'rsatiladi
+  useEffect(() => {
+    if (!focusId || !leads.some((l) => l.id === focusId)) return;
+    const el = document.getElementById(`lead-${focusId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusId, leads]);
+
+  /** Bir tugma: 1-dars havolasi biriktiriladi + ulashish uchun tayyor matn. */
+  async function sendFirst(leadId: string) {
+    onError(""); setNote("");
+    try {
+      const r = await api<SentFirst>(`/free-lesson/leads/${leadId}/send-first`, { method: "POST" });
+      setSent((m) => ({ ...m, [leadId]: r }));
+      await load();
+    } catch (e) {
+      onError(errorText(e));
+    }
+  }
+
+  async function copy(key: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
+      setTimeout(() => setCopied(""), 2000);
+    } catch {
+      window.prompt("Nusxa oling:", text);
+    }
+  }
+
+  async function makeDefault(id: string) {
+    onError("");
+    try {
+      await api(`/free-lesson/videos/${id}`, { method: "PATCH", body: { isDefault: true } });
+      await load();
+    } catch (e) {
+      onError(errorText(e));
+    }
+  }
+
+  async function addFirstLesson() {
+    onError("");
+    try {
+      await api("/free-lesson/videos", {
+        method: "POST",
+        body: { title: "Bepul 1-dars (Telegram)", url: FIRST_LESSON_URL, level: "A1", position: 0, isDefault: true,
+          description: "Sanat Hoca bilan turk tilining birinchi darsi. Telegram kanalida ochiladi." },
+      });
+      setNote("1-dars havolasi qo'shildi va asosiy qilib belgilandi");
+      await load();
+    } catch (e) {
+      onError(errorText(e));
+    }
+  }
+
   async function addVideo(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -64,6 +143,7 @@ export function FreeLessonTab({ onError, isAdmin }: { onError: (m: string) => vo
           url: String(f.get("url")),
           description: String(f.get("description") ?? "").trim() || undefined,
           position: Number(f.get("position") || 0),
+          isDefault: f.get("isDefault") === "on" || undefined,
         },
       });
       form.reset();
@@ -156,21 +236,41 @@ export function FreeLessonTab({ onError, isAdmin }: { onError: (m: string) => vo
               <label htmlFor="v-desc" className="label">Izoh (ixtiyoriy)</label>
               <textarea id="v-desc" name="description" maxLength={1000} rows={2} className="input resize-y" />
             </div>
+            <label className="flex items-center gap-2 text-[0.9375rem]">
+              <input type="checkbox" name="isDefault" className="size-4 accent-[var(--bole)]" />
+              Asosiy &quot;1-dars&quot; qilish (arizachiga bir tugma bilan yuboriladi)
+            </label>
             <div>
               <button type="submit" disabled={busy || !hydrated} className="btn btn-primary">Qo&apos;shish</button>
             </div>
           </form>
 
+          {!videos.some((v) => v.url === FIRST_LESSON_URL) && (
+            <div className="mb-6 flex flex-wrap items-center gap-3 rounded-[var(--r-tile)] border border-brass/40 bg-brass/[0.06] p-4">
+              <p className="min-w-0 flex-1 text-[0.9375rem]">
+                Telegram kanalidagi 1-dars (<span className="break-all">{FIRST_LESSON_URL}</span>) hali ro&apos;yxatda yo&apos;q.
+              </p>
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => void addFirstLesson()}>Bir bosishda qo&apos;shish</button>
+            </div>
+          )}
+
           {videos.length > 0 && (
             <ul className="grid gap-2">
               {videos.map((v) => (
                 <li key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--r-tile)] border border-cobalt/20 px-4 py-3">
-                  <span>
+                  <span className="min-w-0">
                     <strong>{v.title}</strong>
+                    {v.isDefault && <span className="badge badge-warn ml-2">Asosiy 1-dars</span>}
                     <span className="ml-2 text-sm text-muted">{v._count?.assignments ?? 0} ta arizachiga berilgan</span>
+                    <a href={v.url} target="_blank" rel="noopener noreferrer" className="mt-0.5 block truncate text-[0.8125rem] text-muted underline">{v.url}</a>
                   </span>
-                  <span className={v.isActive ? "badge badge-ok" : "badge badge-warn"}>
-                    {v.isActive ? "Faol" : "O'chirilgan"}
+                  <span className="flex items-center gap-2">
+                    {!v.isDefault && v.isActive && (
+                      <button type="button" className="btn btn-quiet btn-sm" onClick={() => void makeDefault(v.id)}>Asosiy qilish</button>
+                    )}
+                    <span className={v.isActive ? "badge badge-ok" : "badge badge-warn"}>
+                      {v.isActive ? "Faol" : "O'chirilgan"}
+                    </span>
                   </span>
                 </li>
               ))}
@@ -186,7 +286,11 @@ export function FreeLessonTab({ onError, isAdmin }: { onError: (m: string) => vo
         ) : (
           <ul className="grid gap-3">
             {leads.map((l) => (
-              <li key={l.id} className="rounded-[var(--r-tile)] border border-cobalt/20 p-4">
+              <li
+                key={l.id}
+                id={`lead-${l.id}`}
+                className={`rounded-[var(--r-tile)] border p-4 ${focusId === l.id ? "border-brass/70 bg-brass/[0.05]" : "border-cobalt/20"}`}
+              >
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <span className={LEAD_STATUS[l.status]?.cls ?? "badge"}>
                     {LEAD_STATUS[l.status]?.label ?? l.status}
@@ -214,6 +318,36 @@ export function FreeLessonTab({ onError, isAdmin }: { onError: (m: string) => vo
                     ))}
                   </p>
                 )}
+
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <button type="button" className="btn btn-primary" onClick={() => void sendFirst(l.id)}>
+                    1-darsni yuborish
+                  </button>
+                  <a href={`tel:${l.phone}`} className="btn btn-outline">Qo&apos;ng&apos;iroq</a>
+                </div>
+
+                {sent[l.id] && (() => {
+                  const r = sent[l.id];
+                  return (
+                    <div className="mb-3 grid gap-2 rounded-[var(--r-tile)] border border-turquoise/40 bg-turquoise/[0.06] p-3" role="status">
+                      <p className="text-[0.9375rem]">
+                        {r.alreadySent ? "Bu dars avval ham berilgan." : "Dars biriktirildi."}{" "}
+                        {r.onSite
+                          ? "Arizachi saytdagi \"Bepul dars\" bo'limida ko'radi va bildirishnoma oladi."
+                          : "Arizachi hali ro'yxatdan o'tmagan — havolani Telegram yoki SMS orqali yuboring:"}
+                      </p>
+                      <p className="whitespace-pre-line rounded-[var(--r-field)] bg-well p-2.5 text-[0.875rem]">{r.shareText}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <a href={r.telegramShare} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">Telegramda yuborish</a>
+                        <a href={smsHref(l.phone, r.shareText)} className="btn btn-outline btn-sm">SMS</a>
+                        <button type="button" className="btn btn-outline btn-sm" onClick={() => void copy(l.id, r.shareText)}>
+                          {copied === l.id ? "Nusxalandi ✓" : "Matnni nusxalash"}
+                        </button>
+                        <a href={r.video.url} target="_blank" rel="noopener noreferrer" className="btn btn-quiet btn-sm">Darsni ko&apos;rish</a>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex flex-wrap items-center gap-2">
                   <select
@@ -283,7 +417,7 @@ export function FreeLessonTab({ onError, isAdmin }: { onError: (m: string) => vo
                     }`}
                   >
                     <p className="mb-1 text-sm text-muted">
-                      {m.sender.firstName} {m.sender.lastName} · {new Date(m.createdAt).toLocaleString("uz-UZ")}
+                      {m.sender.firstName} {m.sender.lastName} · {formatDateTime(m.createdAt, "uz")}
                     </p>
                     <p className="whitespace-pre-line">{m.body}</p>
                   </article>

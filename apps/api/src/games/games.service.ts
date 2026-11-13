@@ -313,22 +313,68 @@ export class GamesService {
     };
   }
 
-  /** Haftalik reyting: faqat o'zi rozilik bergan foydalanuvchilar. Ism: "Aziza K." */
-  async leaderboard() {
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  /**
+   * Haftalik reyting — KALENDAR haftasi: dushanba 00:00 (Toshkent) dan.
+   * Har dushanba hamma 0 dan boshlaydi: yangi o'quvchi ham birinchi bo'la
+   * oladi (doimiy "7 kunlik" oynada oldingi haftaning yetakchilari ketmasdi).
+   * Faqat o'zi rozilik bergan foydalanuvchilar. Ism: "Aziza K."
+   */
+  async leaderboard(week: 'this' | 'last' = 'this', take = 20) {
+    const { start, end } = this.weekBounds(week === 'last' ? -1 : 0);
     const rows = await this.prisma.gameResult.groupBy({
       by: ['userId'],
-      where: { createdAt: { gte: since }, user: { leaderboardOptIn: true } },
+      where: { createdAt: { gte: start, lt: end }, user: { leaderboardOptIn: true } },
       _sum: { score: true },
       orderBy: { _sum: { score: 'desc' } },
-      take: 20,
+      take,
     });
     const users = await this.prisma.user.findMany({
       where: { id: { in: rows.map((r) => r.userId) } },
       select: { id: true, firstName: true, lastName: true },
     });
-    const names = new Map(users.map((u) => [u.id, `${u.firstName} ${u.lastName.charAt(0)}.`]));
+    const names = new Map(users.map((u) => [u.id, `${u.firstName} ${(u.lastName ?? '').charAt(0)}.`]));
     return rows.map((r, i) => ({ rank: i + 1, name: names.get(r.userId) ?? '?', xp: r._sum.score ?? 0, userId: r.userId }));
+  }
+
+  /** Reyting sahifasi uchun: ro'yxat + o'zimning o'rnim + yangilanish vaqti + o'tgan hafta g'oliblari. */
+  async leaderboardSummary(userId: string) {
+    const { start, end } = this.weekBounds(0);
+    const [top, lastWeek, mine, me] = await Promise.all([
+      this.leaderboard('this', 20),
+      this.leaderboard('last', 3),
+      this.prisma.gameResult.aggregate({ where: { userId, createdAt: { gte: start, lt: end } }, _sum: { score: true } }).catch(() => null),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { leaderboardOptIn: true } }),
+    ]);
+    const myXp = mine?._sum.score ?? 0;
+    let myRank: number | null = top.find((r) => r.userId === userId)?.rank ?? null;
+    if (myRank === null && me?.leaderboardOptIn && myXp > 0) {
+      // 20 likdan tashqarida: mendan ko'p XP to'plaganlar soni + 1
+      const all = await this.prisma.gameResult.groupBy({
+        by: ['userId'],
+        where: { createdAt: { gte: start, lt: end }, user: { leaderboardOptIn: true } },
+        _sum: { score: true },
+      });
+      myRank = all.filter((r) => (r._sum.score ?? 0) > myXp).length + 1;
+    }
+    return {
+      weekStart: start,
+      resetsAt: end,
+      updatedAt: new Date(),
+      rows: top,
+      me: { xp: myXp, rank: myRank, optedIn: !!me?.leaderboardOptIn },
+      lastWeek,
+    };
+  }
+
+  /** Toshkent bo'yicha hafta chegaralari (dushanba 00:00). offset: -1 = o'tgan hafta. */
+  private weekBounds(offset: number) {
+    const TZ_MS = 5 * 60 * 60 * 1000; // UTC+5, yozgi vaqt yo'q
+    const local = new Date(Date.now() + TZ_MS);
+    const dow = (local.getUTCDay() + 6) % 7; // dushanba = 0
+    const mondayLocal = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() - dow);
+    const start = new Date(mondayLocal - TZ_MS + offset * 7 * 86400_000);
+    const end = new Date(start.getTime() + 7 * 86400_000);
+    return { start, end };
   }
 
   /** Voyaga yetmaganlar reytingda ko'rinishi uchun ota-ona roziligi kerak. */

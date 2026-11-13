@@ -21,6 +21,8 @@ export class CreateVideoDto {
   @IsOptional() @IsIn(LEVELS) level?: (typeof LEVELS)[number];
   @IsOptional() @IsInt() @Min(0) @Max(999) position?: number;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  /** "Bepul 1-dars": bir tugma bilan yuboriladigan asosiy video */
+  @IsOptional() @IsBoolean() isDefault?: boolean;
 }
 
 export class UpdateVideoDto {
@@ -31,6 +33,7 @@ export class UpdateVideoDto {
   @IsOptional() @IsIn(LEVELS) level?: (typeof LEVELS)[number];
   @IsOptional() @IsInt() @Min(0) @Max(999) position?: number;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsBoolean() isDefault?: boolean;
 }
 
 export class AssignVideoDto {

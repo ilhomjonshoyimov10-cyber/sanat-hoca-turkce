@@ -91,20 +91,31 @@ export class ChatService {
       include: { sender: { select: { id: true, firstName: true, lastName: true, role: true } } },
     });
 
-    if (isAnnouncement) {
-      const members = await this.prisma.groupMember.findMany({
-        where: { groupId },
-        select: { userId: true },
-      });
-      await this.notifications.pushMany(
-        members.map((m) => m.userId).filter((id) => id !== actor.id),
-        {
-          type: 'ANNOUNCEMENT',
-          title: `${group.name}: yangi e'lon`,
-          body: dto.content.slice(0, 200),
-          link: `/guruh?id=${groupId}`,
-        },
-      );
+    // ── Kimga xabar boradi ──
+    // Ustozning har bir xabari o'quvchilarga bildirishnoma bo'ladi
+    // (ekranda "Sizga xabar keldi" chiqadi). Ketma-ket 10 ta xabar = 1 ta
+    // bildirishnoma: o'qilmagani bor odamga yangisi yuborilmaydi.
+    // E'lon esa har doim alohida boradi. O'quvchi yozsa — ustozga.
+    const link = `/groups/${groupId}`;
+    const author = `${msg.sender.firstName} ${msg.sender.lastName}`;
+    if (canModerate) {
+      const members = await this.prisma.groupMember.findMany({ where: { groupId }, select: { userId: true } });
+      const targets = members.map((m) => m.userId).filter((id) => id !== actor.id);
+      const input = {
+        type: (isAnnouncement ? 'ANNOUNCEMENT' : 'CHAT') as 'ANNOUNCEMENT' | 'CHAT',
+        title: isAnnouncement ? `${group.name}: yangi e'lon` : `${group.name}: ${author} yozdi`,
+        body: dto.content.trim().slice(0, 200),
+        link,
+      };
+      if (isAnnouncement) await this.notifications.pushMany(targets, input);
+      else await this.notifications.pushManyCoalesced(targets, input, 20 * 60 * 1000);
+    } else if (group.teacherId !== actor.id) {
+      await this.notifications.pushManyCoalesced([group.teacherId], {
+        type: 'CHAT',
+        title: `${group.name}: ${author} yozdi`,
+        body: dto.content.trim().slice(0, 200),
+        link,
+      }, 30 * 60 * 1000);
     }
 
     return {

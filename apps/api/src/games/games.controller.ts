@@ -145,6 +145,15 @@ export class GamesController {
     return rows.map(({ userId, ...r }) => ({ ...r, isMe: userId === user.id }));
   }
 
+  /** To'liq reyting: hafta oxirigacha vaqt, o'z o'rnim, o'tgan hafta g'oliblari. */
+  @Get('leaderboard/week')
+  async leaderboardWeek(@CurrentUser() user: AuthUser) {
+    const s = await this.games.leaderboardSummary(user.id);
+    const strip = <T extends { userId: string }>(list: T[]) =>
+      list.map(({ userId, ...r }) => ({ ...r, isMe: userId === user.id }));
+    return { ...s, rows: strip(s.rows), lastWeek: strip(s.lastWeek) };
+  }
+
   @Patch('leaderboard-optin')
   optIn(@CurrentUser() user: AuthUser, @Body() dto: OptInDto) {
     return this.games.setLeaderboardOptIn(user.id, dto.optIn);

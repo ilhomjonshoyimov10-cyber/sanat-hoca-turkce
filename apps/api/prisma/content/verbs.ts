@@ -10,6 +10,7 @@
 // TEKSHIRISH KERAK: ustoz shakllarni ko'rib chiqsin.
 
 import type { Level } from '@prisma/client';
+import { moreVerbs } from './more.js';
 
 export interface Verb {
   infinitive: string;
@@ -294,3 +295,6 @@ export const verbForms: Verb[] = [
     level: 'C1',
   },
 ];
+
+// Qo'shimcha to'plam (content/more.ts)
+verbForms.push(...moreVerbs);

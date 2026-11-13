@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { api, needs2fa } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { errorText } from "./groups/shared";
+import { PageLoader } from "@/components/Loader";
 
 type Row = { id: string; name: string; level: string; schedule: string | null; isActive: boolean; memberCount: number; teacherName: string };
 const LEVELS = ["A1", "A2", "B1", "B2", "C1"];
@@ -15,6 +16,7 @@ export function GroupsPanel() {
   const router = useRouter();
   const [groups, setGroups] = useState<Row[] | null>(null);
   const [error, setError] = useState("");
+  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const canManage = user?.role === "TEACHER" || user?.role === "ADMIN";
@@ -63,16 +65,51 @@ export function GroupsPanel() {
     }
   }
 
-  if (loading || !user) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  async function joinByCode(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const code = String(new FormData(form).get("code") ?? "").trim();
+    if (!code) return;
+    setBusy(true);
+    setError(""); setNote("");
+    try {
+      const r = await api<{ groupId: string; already: boolean }>("/groups/join", { method: "POST", body: { code } });
+      form.reset();
+      setNote(r.already ? "Siz bu guruhda allaqachon borsiz" : "Guruhga qo'shildingiz!");
+      setReload((n) => n + 1);
+      if (!r.already) router.push(`/groups/${r.groupId}`);
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading || !user) return <PageLoader />;
 
   return (
     <div className="grid gap-8">
       {error && <p className="alert-error" role="alert">{error}</p>}
+      {note && <p className="alert-success" role="status">{note}</p>}
 
-      {groups === null && !error && <p className="text-muted" role="status">Yuklanmoqda...</p>}
+      {user.role === "STUDENT" && (
+        <form onSubmit={joinByCode} className="card flex flex-wrap items-end gap-3">
+          <div className="min-w-[12rem] flex-1">
+            <label htmlFor="join-code" className="label">Kod bilan qo&apos;shilish</label>
+            <input
+              id="join-code" name="code" required minLength={6} maxLength={12} autoComplete="off" spellCheck={false}
+              className="input font-semibold uppercase tracking-[0.2em]" placeholder="ABC234"
+            />
+            <p className="help">Ustozingiz bergan 6 belgili kodni kiriting.</p>
+          </div>
+          <button type="submit" disabled={busy} className="btn btn-primary">{busy ? "Tekshirilmoqda..." : "Qo'shilish"}</button>
+        </form>
+      )}
+
+      {groups === null && !error && <PageLoader />}
       {groups && groups.length === 0 && (
         <p className="card text-muted">
-          {canManage ? "Hali guruh yo'q. Pastdan birinchi guruhni yarating." : "Siz hali hech qaysi guruhga qo'shilmagansiz. Ustoz sizni guruhga qo'shadi."}
+          {canManage ? "Hali guruh yo'q. Pastdan birinchi guruhni yarating." : "Siz hali hech qaysi guruhga qo'shilmagansiz. Ustoz sizni qo'shadi yoki yuqoridagi kod bilan o'zingiz qo'shiling."}
         </p>
       )}
       {groups && groups.length > 0 && (

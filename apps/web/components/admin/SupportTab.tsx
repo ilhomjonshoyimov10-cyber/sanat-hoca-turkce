@@ -5,7 +5,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
 import { useHydrated } from "@/lib/hydrated";
+import { FRESH_EVENT } from "@/lib/notify";
 import { errorText } from "../groups/shared";
+import { formatDate, formatDateTime } from "@/lib/datetime";
 
 interface Person { id: string; firstName: string; lastName: string; role: string; phone?: string | null }
 interface Row {
@@ -25,7 +27,7 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   CLOSED: { label: "Yopilgan", cls: "badge" },
 };
 
-export function SupportTab({ onError }: { onError: (m: string) => void }) {
+export function SupportTab({ onError, focusId }: { onError: (m: string) => void; focusId?: string }) {
   const hydrated = useHydrated();
   const [rows, setRows] = useState<Row[]>([]);
   const [open, setOpen] = useState<Detail | null>(null);
@@ -43,14 +45,31 @@ export function SupportTab({ onError }: { onError: (m: string) => void }) {
 
   useEffect(() => { void load(); }, [load]);
 
-  async function show(id: string) {
+  const show = useCallback(async (id: string) => {
     onError("");
     try {
       setOpen(await api<Detail>(`/support/${id}`));
+      // Telefonda ro'yxat uzun: ochilgan murojaatga aylantiramiz
+      requestAnimationFrame(() => document.getElementById("support-thread")?.scrollIntoView({ behavior: "smooth", block: "start" }));
     } catch (e) {
       onError(errorText(e));
     }
-  }
+  }, [onError]);
+
+  // Bildirishnomadan kelgan bo'lsa (?id=...) — o'sha murojaat darhol ochiladi
+  useEffect(() => {
+    if (focusId) void show(focusId);
+  }, [focusId, show]);
+
+  // Yangi murojaat kelsa — ro'yxat o'zi yangilanadi
+  useEffect(() => {
+    const onFresh = (e: Event) => {
+      const fresh = (e as CustomEvent<{ type: string }[]>).detail ?? [];
+      if (fresh.some((n) => n.type === "SUPPORT")) void load();
+    };
+    window.addEventListener(FRESH_EVENT, onFresh);
+    return () => window.removeEventListener(FRESH_EVENT, onFresh);
+  }, [load]);
 
   async function reply(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -115,7 +134,7 @@ export function SupportTab({ onError }: { onError: (m: string) => void }) {
                   <span className="text-sm text-muted">
                     {r.user.firstName} {r.user.lastName}
                     {r.user.phone && ` · ${r.user.phone}`} · {TOPIC[r.topic] ?? r.topic} ·{" "}
-                    {new Date(r.createdAt).toLocaleDateString("uz-UZ")}
+                    {formatDate(r.createdAt, "uz")}
                   </span>
                 </span>
                 <span className={STATUS[r.status]?.cls ?? "badge"}>{STATUS[r.status]?.label ?? r.status}</span>
@@ -126,7 +145,7 @@ export function SupportTab({ onError }: { onError: (m: string) => void }) {
       )}
 
       {open && (
-        <section aria-labelledby="sup-open" className="border border-cobalt/25 bg-cobalt/[0.04] p-6">
+        <section id="support-thread" aria-labelledby="sup-open" className="border border-cobalt/25 bg-cobalt/[0.04] p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 id="sup-open" className="text-[1.3rem]">{open.subject}</h2>
             <button type="button" className="btn btn-quiet" onClick={() => setOpen(null)}>Yopish</button>
@@ -134,7 +153,7 @@ export function SupportTab({ onError }: { onError: (m: string) => void }) {
 
           <article className="mb-4 rounded-[var(--r-tile)] border border-cobalt/20 p-4">
             <p className="mb-1 text-sm text-muted">
-              {open.user.firstName} {open.user.lastName} · {new Date(open.createdAt).toLocaleString("uz-UZ")}
+              {open.user.firstName} {open.user.lastName} · {formatDateTime(open.createdAt, "uz")}
             </p>
             <p className="whitespace-pre-line">{open.body}</p>
           </article>
@@ -142,7 +161,7 @@ export function SupportTab({ onError }: { onError: (m: string) => void }) {
           {open.replies.map((r) => (
             <article key={r.id} className="mb-3 rounded-[var(--r-tile)] border border-cobalt/20 p-4">
               <p className="mb-1 text-sm text-muted">
-                {r.author.firstName} {r.author.lastName} · {new Date(r.createdAt).toLocaleString("uz-UZ")}
+                {r.author.firstName} {r.author.lastName} · {formatDateTime(r.createdAt, "uz")}
               </p>
               <p className="whitespace-pre-line">{r.body}</p>
             </article>

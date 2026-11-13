@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useHydrated } from "@/lib/hydrated";
+import { PageLoader } from "@/components/Loader";
 
 type Setup = { secret: string; otpauthUrl: string; qr: string };
 const message = (e: unknown) => (e instanceof ApiError ? e.message : "Xatolik yuz berdi. Qayta urinib ko'ring");
@@ -24,7 +25,7 @@ export function SecurityPanel() {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
 
-  if (loading || !user) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (loading || !user) return <PageLoader />;
   const mandatory = user.role === "TEACHER" || user.role === "ADMIN";
 
   async function start() {

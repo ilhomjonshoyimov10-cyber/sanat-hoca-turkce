@@ -24,6 +24,12 @@ const RULE_LABEL: Record<string, string> = {
   ability: "Imkoniyat",
   negation: "Bo'lishsiz shakl",
   softening: "Undosh yumshashi",
+  conditional: "Shart mayli",
+  necessity: "Majburiyat (-malı)",
+  converb: "Ravishdosh",
+  passive: "Majhul nisbat",
+  causative: "Orttirma nisbat",
+  "formal-passive": "Rasmiy uslub (majhul)",
 };
 type Result = {
   correct: boolean;

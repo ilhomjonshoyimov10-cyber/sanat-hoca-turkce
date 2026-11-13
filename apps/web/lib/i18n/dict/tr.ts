@@ -93,8 +93,24 @@ export const tr: Dict = {
     markAll: "Tümünü okundu say",
     empty: "Henüz boş",
     more: "Ayrıntılar",
+    toast: "Size mesaj geldi",
+    open: "Aç",
+    close: "Kapat",
+    summary: "{n} okunmamış mesajınız var",
+    show: "Gör",
+    pushAsk: "Site kapalıyken de ekranda göster",
+    pushOn: "Ekran bildirimleri açık",
+    pushBlocked: "Tarayıcı bildirimleri engelledi — ayarlardan izin verin",
+    sessionEnded: "Oturum sona erdi. Tekrar giriş yapın",
     kinds: { INFO: "Bilgi", PROMO: "Fırsat", EVENT: "Etkinlik", WARNING: "Önemli" },
   },
+
+  theme: {
+    label: "Gündüz / gece modu",
+    toLight: "Gündüz moduna geç",
+    toDark: "Gece moduna geç",
+  },
+
 
   lang: {
     title: "Dil",
@@ -313,6 +329,13 @@ export const tr: Dict = {
     due: "Tekrara hazır kelimeler:",
     learned: "Öğrenilen:",
     backToGames: "← Oyunlar",
+    boardLive: "Canlı — her 30 saniyede güncellenir",
+    resetsIn: "Yeni haftaya: {t}",
+    unitD: "gün", unitH: "sa", unitM: "dk",
+    myRank: "Sıranız",
+    thisWeek: "Bu hafta",
+    lastWeek: "Geçen haftanın kazananları",
+    notRanked: "Sıralamada görünmek için aşağıdaki kutuyu işaretleyin.",
     board: "Haftalık sıralama",
     boardEmpty: "İlk cevabınızdan sonra burada görüneceksiniz.",
     optIn: "Sıralamada adım görünsün (yalnızca \"Ad S.\" şeklinde)",

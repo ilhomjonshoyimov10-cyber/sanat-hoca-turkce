@@ -101,6 +101,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (readHint()) check();
   }, [check]);
 
+  // Sessiya tugadi (boshqa qurilmada chiqildi, token eskirdi): sarlavha
+  // "Kirish" ga qaytadi, bildirishnoma so'rovlari to'xtaydi.
+  useEffect(() => {
+    const onExpired = () => {
+      setUser(null);
+      setAuthHint(false);
+    };
+    window.addEventListener("sh-session-expired", onExpired);
+    return () => window.removeEventListener("sh-session-expired", onExpired);
+  }, []);
+
   const login = useCallback(async (identifier: string, password: string): Promise<LoginResult> => {
     const res = await api<{ twoFactorRequired?: boolean; challenge?: string; user?: User; mustSetup2fa?: boolean }>(
       "/auth/login",

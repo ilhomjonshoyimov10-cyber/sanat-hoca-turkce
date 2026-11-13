@@ -23,6 +23,8 @@ export type AiConfig = {
   provider: ProviderName;
   apiKey: string;
   model: string;
+  /** Asosiy model ishlamasa — navbat bilan shular sinab ko'riladi. */
+  fallbackModels: string[];
   /** So'rov necha millisekundda bekor qilinadi. AI sekin bo'lsa sayt kutib qolmasin. */
   timeoutMs: number;
 };
@@ -35,11 +37,22 @@ export function readAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
     openai: 'gpt-5-mini',
     anthropic: 'claude-haiku-5-5',
   };
+  const fallbackDefaults: Record<string, string> = {
+    // Bepul tierda har bir model uchun kvota alohida: biri tugasa, boshqasi ishlaydi
+    gemini: 'gemini-2.5-flash,gemini-2.0-flash',
+  };
+  const model = env.AI_MODEL ?? defaults[provider] ?? '';
+  const fallbacks = (env.AI_FALLBACK_MODELS ?? fallbackDefaults[provider] ?? '')
+    .split(',')
+    .map((m) => m.trim())
+    .filter((m) => m && m !== model);
   return {
     provider,
     apiKey: env.AI_API_KEY ?? '',
-    model: env.AI_MODEL ?? defaults[provider] ?? '',
-    timeoutMs: Number(env.AI_TIMEOUT_MS ?? 25_000),
+    model,
+    fallbackModels: fallbacks,
+    // Vercel funksiyasi 30 soniyada uziladi — bitta urinish 12 soniyadan oshmasin
+    timeoutMs: Number(env.AI_TIMEOUT_MS ?? 12_000),
   };
 }
 
@@ -105,27 +118,73 @@ function textFromPath(data: unknown, path: (string | number)[]): string | undefi
   return typeof node === 'string' ? node : undefined;
 }
 
+/** Gemini javobidagi matn: "o'ylash" (thought) qismlarisiz, barcha qismlar birga. */
+function geminiText(data: unknown): string | undefined {
+  const parts = (data as { candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[] })
+    ?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return undefined;
+  const text = parts.filter((p) => !p.thought && typeof p.text === 'string').map((p) => p.text).join('').trim();
+  return text || undefined;
+}
+
+/**
+ * Gemini.
+ *
+ * MUHIM XATO TUZATILDI: yangi "flash" modellari javob berishdan oldin
+ * "o'ylaydi" va bu o'ylash tokenlari javob chegarasidan (maxOutputTokens)
+ * yeyiladi. Chegara kichik bo'lsa (300 token), hamma token o'ylashga
+ * ketib, javob BO'SH qaytardi — sayt "AI javob bermadi" der edi.
+ * Endi: o'ylash o'chiriladi (model qo'llasa), chegara keng beriladi,
+ * uzunlikni esa o'zimiz qirqamiz.
+ */
 async function callGemini({ config, system, messages, maxOutputChars }: CallArgs): Promise<AiReply> {
-  const data = await postJson(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': config.apiKey },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        // Gemini'da yordamchi roli "model" deb ataladi
-        contents: messages.map((m) => ({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content }],
-        })),
-        generationConfig: { temperature: 0.4, maxOutputTokens: toTokens(maxOutputChars) },
-      }),
-    },
-    config.timeoutMs,
-  );
-  const text = textFromPath(data, ['candidates', 0, 'content', 'parts', 0, 'text']);
-  if (!text) throw new AiProviderError(502, 'Gemini bo\'sh javob qaytardi');
-  return { text, model: config.model };
+  const body = (thinking: boolean) =>
+    JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      // Gemini'da yordamchi roli "model" deb ataladi
+      contents: messages.map((m) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      })),
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: Math.max(2048, toTokens(maxOutputChars) * 4),
+        ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+      },
+    });
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent`;
+  const init = (thinking: boolean): RequestInit => ({
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': config.apiKey },
+    body: body(thinking),
+  });
+
+  let data: unknown;
+  try {
+    data = await postJson(url, init(true), config.timeoutMs);
+  } catch (e) {
+    // Ba'zi modellar o'ylashni o'chirishga ruxsat bermaydi — sozlamasiz qayta
+    if (e instanceof AiProviderError && e.status === 400 && /thinking/i.test(e.detail)) {
+      data = await postJson(url, init(false), config.timeoutMs);
+    } else {
+      throw e;
+    }
+  }
+  const text = geminiText(data);
+  if (!text) {
+    const reason = textFromPath(data, ['candidates', 0, 'finishReason']) ?? textFromPath(data, ['promptFeedback', 'blockReason']) ?? 'EMPTY';
+    throw new AiProviderError(502, `Gemini bo'sh javob qaytardi (${reason})`);
+  }
+  return { text: clip(text, maxOutputChars), model: config.model };
+}
+
+/** Javob juda uzun bo'lsa — gap oxirida qirqamiz (chegaraning 2 barobari). */
+function clip(text: string, maxChars: number): string {
+  const limit = maxChars * 2;
+  if (text.length <= limit) return text;
+  const cut = text.slice(0, limit);
+  const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('\n'));
+  return (end > limit * 0.6 ? cut.slice(0, end + 1) : cut) + ' …';
 }
 
 /** Groq va OpenAI bir xil (OpenAI-mos) so'rov shaklini ishlatadi. */
@@ -175,8 +234,31 @@ async function callAnthropic({ config, system, messages, maxOutputChars }: CallA
   return { text, model: config.model };
 }
 
-/** Tanlangan provayderga so'rov yuboradi. Shaxsiy ma'lumot avval tozalanadi. */
+/**
+ * Tanlangan provayderga so'rov yuboradi. Shaxsiy ma'lumot avval tozalanadi.
+ *
+ * Asosiy model ishlamasa (kvota tugadi, model nomi eskirdi, bo'sh javob)
+ * — zaxira modellar navbat bilan sinab ko'riladi. Kalit noto'g'ri
+ * bo'lsa (401/403) — boshqa model ham yordam bermaydi, darhol xato.
+ * Umumiy vaqt Vercel chegarasidan (30 s) oshmasligi uchun 2 tagacha zaxira.
+ */
 export async function callAi(args: CallArgs): Promise<AiReply> {
+  const models = [args.config.model, ...args.config.fallbackModels].slice(0, 3);
+  let last: unknown;
+  const started = Date.now();
+  for (const model of models) {
+    if (Date.now() - started > 20_000) break;
+    try {
+      return await callOnce({ ...args, config: { ...args.config, model } });
+    } catch (e) {
+      last = e;
+      if (e instanceof AiProviderError && (e.status === 401 || e.status === 403)) throw e;
+    }
+  }
+  throw last instanceof Error ? last : new AiProviderError(503, String(last));
+}
+
+async function callOnce(args: CallArgs): Promise<AiReply> {
   const clean: CallArgs = {
     ...args,
     messages: args.messages.map((m) => ({ role: m.role, content: stripPersonalData(m.content) })),

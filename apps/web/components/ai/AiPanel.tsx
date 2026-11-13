@@ -15,7 +15,7 @@ type Status = {
   canUseExercise: boolean;
 };
 
-type Msg = { id: string; role: "USER" | "ASSISTANT"; content: string; createdAt: string };
+type Msg = { id: string; role: "USER" | "ASSISTANT"; content: string; createdAt: string; error?: string | null };
 type Convo = { id: string; title: string; task: Task; updatedAt: string };
 
 const TASKS: { id: Task; label: string; hint: string; placeholder: string }[] = [
@@ -91,7 +91,10 @@ export function AiPanel() {
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
-    const message = text.trim();
+    await ask(text.trim());
+  }
+
+  async function ask(message: string) {
     if (!message || sending) return;
 
     setSending(true);
@@ -114,10 +117,21 @@ export function AiPanel() {
       setStatus((s) => (s ? { ...s, usedToday: r.usedToday } : s));
       void api<Convo[]>("/ai/conversations").then(setConvos).catch(() => {});
     } catch (err) {
-      // Yuborilmagan savolni qaytarib beramiz, foydalanuvchi qayta yozmasin
-      setMessages((m) => m.filter((x) => x.id !== temp.id));
-      setText(message);
-      setError(err instanceof ApiError ? err.message : "Javob kelmadi. Qayta urinib ko'ring");
+      const body = err instanceof ApiError ? (err.data as { conversationId?: string } | undefined) : undefined;
+      if (body?.conversationId) {
+        // Savol serverda SAQLANDI (ustoz ko'radi) — suhbatda qoladi, yonida "qayta yuborish"
+        setConvoId(body.conversationId);
+        setMessages((m) => [
+          ...m,
+          { id: `e-${Date.now()}`, role: "ASSISTANT", content: "", error: err instanceof ApiError ? err.message : "Javob kelmadi", createdAt: new Date().toISOString() },
+        ]);
+        void api<Convo[]>("/ai/conversations").then(setConvos).catch(() => {});
+      } else {
+        // Umuman yetib bormadi (limit, tarmoq) — matnni qaytarib beramiz, qayta yozmasin
+        setMessages((m) => m.filter((x) => x.id !== temp.id));
+        setText(message);
+        setError(err instanceof ApiError ? err.message : "Javob kelmadi. Qayta urinib ko'ring");
+      }
     } finally {
       setSending(false);
     }
@@ -176,17 +190,42 @@ export function AiPanel() {
             </p>
           ) : (
             <ul className="grid gap-3">
-              {messages.map((m) => (
+              {messages.map((m, i) => (
                 <li key={m.id} className={m.role === "USER" ? "flex justify-end" : "flex justify-start"}>
-                  <div className={m.role === "USER" ? "bubble bubble-mine max-w-[85%]" : "bubble max-w-[85%]"}>
-                    <p className="whitespace-pre-wrap">{m.content}</p>
-                  </div>
+                  {m.error ? (
+                    <div className="bubble max-w-[85%] !border-danger/45">
+                      <p className="text-danger">{m.error.includes(":") && /^\d{3}:/.test(m.error) ? "AI javob bermadi." : m.error}</p>
+                      {i === messages.length - 1 && messages[i - 1]?.role === "USER" && (
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm mt-2"
+                          disabled={sending}
+                          onClick={() => {
+                            const q = messages[i - 1].content;
+                            setMessages((list) => list.slice(0, i - 1));
+                            void ask(q);
+                          }}
+                        >
+                          Qayta yuborish
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={m.role === "USER" ? "bubble bubble-mine max-w-[85%]" : "bubble max-w-[85%]"}>
+                      <p className="whitespace-pre-wrap">{m.content}</p>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
           )}
           {sending && (
-            <p className="mt-3 text-sm text-muted" role="status">
+            <p className="mt-3 flex items-center gap-2 text-sm text-muted" role="status">
+              <span className="inline-flex gap-1" aria-hidden="true">
+                <span className="size-1.5 animate-bounce rounded-full bg-brass [animation-delay:-0.3s]" />
+                <span className="size-1.5 animate-bounce rounded-full bg-brass [animation-delay:-0.15s]" />
+                <span className="size-1.5 animate-bounce rounded-full bg-brass" />
+              </span>
               AI o&apos;ylayapti...
             </p>
           )}
@@ -228,7 +267,8 @@ export function AiPanel() {
         <p className="mt-5 border-l-2 border-brass/50 pl-4 text-[0.875rem] text-muted">
           Javoblar tashqi AI xizmatidan keladi va <strong>xato bo'lishi mumkin</strong> — ustozingizdan
           tasdiqlab oling. Ismingiz, telefon raqamingiz va emailingiz AI ga yuborilmaydi. AI baho
-          qo&apos;ymaydi.
+          qo&apos;ymaydi. Suhbatlar o&apos;quv markazida saqlanadi — administrator ko&apos;rishi mumkin
+          (qiyin mavzularni bilib, darsni moslash uchun).
         </p>
       </div>
 

@@ -8,6 +8,8 @@ import { useAuth } from "@/lib/auth";
 import { useHydrated } from "@/lib/hydrated";
 import { errorText } from "./groups/shared";
 import { AvatarUpload } from "./profile/AvatarUpload";
+import { PageLoader } from "@/components/Loader";
+import { formatDate, formatDateTime } from "@/lib/datetime";
 
 interface Profile {
   id: string; email: string | null; phone: string | null;
@@ -66,7 +68,7 @@ export function ProfilePanel() {
     api<Session[]>("/users/me/sessions").then(setSessions).catch(() => undefined);
   }, [user]);
 
-  if (loading || !user) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (loading || !user) return <PageLoader />;
 
   async function saveProfile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -137,7 +139,7 @@ export function ProfilePanel() {
         <h1 className="text-[clamp(1.9rem,4vw,2.6rem)]">Profil</h1>
         <p className="mt-2 text-muted">
           {ROLE_LABEL[user.role] ?? user.role}
-          {p?.createdAt && ` · ${new Date(p.createdAt).toLocaleDateString("uz-UZ")} dan beri`}
+          {p?.createdAt && ` · ${formatDate(p.createdAt, "uz")} dan beri`}
         </p>
       </header>
 
@@ -226,7 +228,7 @@ export function ProfilePanel() {
               >
                 <span className="font-medium">{deviceName(s.userAgent)}</span>
                 <span className="text-sm text-muted">
-                  {new Date(s.createdAt).toLocaleString("uz-UZ")}
+                  {formatDateTime(s.createdAt, "uz")}
                   {s.ip && ` · ${s.ip}`}
                 </span>
               </li>

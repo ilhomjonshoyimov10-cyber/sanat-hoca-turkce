@@ -101,8 +101,24 @@ export const uz = {
     markAll: "Hammasini o'qildi",
     empty: "Hozircha bo'sh",
     more: "Batafsil",
+    toast: "Sizga xabar keldi",
+    open: "Ochish",
+    close: "Yopish",
+    summary: "Sizda {n} ta o'qilmagan xabar bor",
+    show: "Ko'rish",
+    pushAsk: "Sayt yopiq bo'lsa ham ekranga chiqsin",
+    pushOn: "Ekran bildirishnomalari yoqilgan",
+    pushBlocked: "Brauzer bildirishnomalarni taqiqlagan — sozlamalardan ruxsat bering",
+    sessionEnded: "Sessiya tugadi. Qayta kiring",
     kinds: { INFO: "Xabar", PROMO: "Taklif", EVENT: "Tadbir", WARNING: "Muhim" },
   },
+
+  theme: {
+    label: "Kunduzgi / tungi rejim",
+    toLight: "Kunduzgi rejimga o'tish",
+    toDark: "Tungi rejimga o'tish",
+  },
+
 
   lang: {
     title: "Til",
@@ -323,6 +339,13 @@ export const uz = {
     due: "Takrorlashga tayyor so'zlar:",
     learned: "O'rganilgan:",
     backToGames: "← O'yinlar",
+    boardLive: "Jonli — har 30 soniyada yangilanadi",
+    resetsIn: "Yangi hafta boshlanishiga: {t}",
+    unitD: "kun", unitH: "soat", unitM: "daq",
+    myRank: "Sizning o'rningiz",
+    thisWeek: "Bu hafta",
+    lastWeek: "O'tgan hafta g'oliblari",
+    notRanked: "Reytingda ko'rinish uchun pastdagi belgini qo'ying.",
     board: "Haftalik reyting",
     boardEmpty: "Birinchi javobdan keyin shu yerda paydo bo'lasiz.",
     optIn: "Reytingda ismim ko'rinsin (faqat \"Ism F.\" ko'rinishida)",

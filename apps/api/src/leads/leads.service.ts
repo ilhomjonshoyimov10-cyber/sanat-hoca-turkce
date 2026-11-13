@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { normalizePhone } from '../auth/auth.utils.js';
 import { CreateLeadDto } from './leads.dto.js';
 
@@ -7,7 +8,10 @@ const DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class LeadsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(dto: CreateLeadDto) {
     // Bot to'ldirgan bo'lsa: jim "muvaffaqiyat" qaytaramiz, hech narsa saqlamaymiz
@@ -23,13 +27,20 @@ export class LeadsService {
       select: { id: true },
     });
     if (!duplicate) {
-      await this.prisma.lead.create({
+      const lead = await this.prisma.lead.create({
         data: {
           name: dto.name.trim(),
           phone,
           level: dto.level,
           message: dto.message?.trim() || undefined,
         },
+      });
+      // Adminlar darhol bilsin: ariza kutib qolsa, o'quvchi boshqa markazga ketadi
+      await this.notifications.pushToAdmins({
+        type: 'FREE_LESSON',
+        title: `Bepul darsga yangi ariza: ${lead.name}`.slice(0, 160),
+        body: [lead.level, lead.message].filter(Boolean).join(' · ').slice(0, 200) || undefined,
+        link: `/admin?tab=free&lead=${lead.id}`,
       });
     }
     return { ok: true };

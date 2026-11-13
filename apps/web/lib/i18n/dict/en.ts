@@ -91,8 +91,24 @@ export const en: Dict = {
     markAll: "Mark all as read",
     empty: "Nothing yet",
     more: "Learn more",
+    toast: "You have a new message",
+    open: "Open",
+    close: "Close",
+    summary: "You have {n} unread messages",
+    show: "View",
+    pushAsk: "Show on screen even when the site is closed",
+    pushOn: "Screen notifications are on",
+    pushBlocked: "The browser blocked notifications — allow them in settings",
+    sessionEnded: "Your session ended. Please sign in again",
     kinds: { INFO: "Notice", PROMO: "Offer", EVENT: "Event", WARNING: "Important" },
   },
+
+  theme: {
+    label: "Day / night mode",
+    toLight: "Switch to day mode",
+    toDark: "Switch to night mode",
+  },
+
 
   lang: {
     title: "Language",
@@ -310,6 +326,13 @@ export const en: Dict = {
     due: "Ready to review:",
     learned: "Learned:",
     backToGames: "← Games",
+    boardLive: "Live — updates every 30 seconds",
+    resetsIn: "New week starts in {t}",
+    unitD: "d", unitH: "h", unitM: "min",
+    myRank: "Your rank",
+    thisWeek: "This week",
+    lastWeek: "Last week's winners",
+    notRanked: "Tick the box below to appear on the leaderboard.",
     board: "Weekly leaderboard",
     boardEmpty: "You'll appear here after your first answer.",
     optIn: "Show my name on the leaderboard (as \"Name S.\" only)",

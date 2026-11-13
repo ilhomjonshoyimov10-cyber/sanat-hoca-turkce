@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api, needs2fa } from "@/lib/api";
 import { errorText } from "../groups/shared";
 import { UserActivity } from "./UserActivity";
+import { formatDate } from "@/lib/datetime";
 
 interface U {
   id: string; email: string | null; phone: string | null;
@@ -126,7 +127,7 @@ export function UsersTable({ meId, onError }: { meId: string; onError: (m: strin
                   )}
                 </td>
                 <td className="text-muted">
-                  {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString("uz-UZ") : "—"}
+                  {u.lastLoginAt ? formatDate(u.lastLoginAt, "uz") : "—"}
                 </td>
                 <td>
                   <div className="flex gap-1">

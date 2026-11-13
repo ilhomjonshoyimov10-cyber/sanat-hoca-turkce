@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { AnnouncementAudience, Role } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateAnnouncementDto, UpdateAnnouncementDto } from './announcements.dto.js';
 
@@ -29,9 +30,20 @@ function audiencesFor(role: Role): AnnouncementAudience[] {
   return map[role];
 }
 
+/** Auditoriya -> qaysi rollarga bildirishnoma boradi. */
+const ROLES_FOR: Record<AnnouncementAudience, Role[]> = {
+  ALL: ['STUDENT', 'PARENT', 'TEACHER', 'ADMIN'],
+  STUDENTS: ['STUDENT'],
+  PARENTS: ['PARENT'],
+  TEACHERS: ['TEACHER'],
+};
+
 @Injectable()
 export class AnnouncementsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   /**
    * Foydalanuvchining ekranida ko'rinadigan e'lonlar.
@@ -107,7 +119,7 @@ export class AnnouncementsService {
     if (dto.linkLabel && !dto.linkUrl) {
       throw new BadRequestException("Havola matni bor, lekin havolaning o'zi yo'q");
     }
-    return this.prisma.announcement.create({
+    const row = await this.prisma.announcement.create({
       data: {
         kind: dto.kind ?? 'INFO',
         audience: dto.audience ?? 'ALL',
@@ -124,6 +136,26 @@ export class AnnouncementsService {
         createdById: adminId,
       },
     });
+
+    // Bildirishnoma ham: ekranda "Sizga xabar keldi" oynasi chiqadi va
+    // qo'ng'iroqchada saqlanadi. Faqat hozir faol bo'lsa (kelajakdagi
+    // e'lon vaqti kelganda paydo bo'ladi, bildirishnomasiz).
+    if (row.isActive && row.startsAt.getTime() <= Date.now() + 60_000) {
+      const roles = ROLES_FOR[row.audience];
+      const users = await this.prisma.user.findMany({
+        where: { isActive: true, role: { in: roles }, id: { not: adminId } },
+        select: { id: true },
+        take: 5000,
+      });
+      const internal = row.linkUrl?.startsWith('/') ? row.linkUrl : undefined;
+      await this.notifications.pushMany(users.map((u) => u.id), {
+        type: 'ANNOUNCEMENT',
+        title: row.title,
+        body: row.body.slice(0, 200),
+        link: internal,
+      });
+    }
+    return row;
   }
 
   async update(id: string, dto: UpdateAnnouncementDto) {

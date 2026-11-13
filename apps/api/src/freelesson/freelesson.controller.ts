@@ -88,6 +88,13 @@ export class FreeLessonController {
   }
 
   @Roles('TEACHER', 'ADMIN')
+  @Post('leads/:id/send-first')
+  @HttpCode(200)
+  sendFirst(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    return this.service.sendFirstLesson(u.id, id);
+  }
+
+  @Roles('TEACHER', 'ADMIN')
   @Delete('leads/:id/videos/:videoId')
   unassign(@Param('id') id: string, @Param('videoId') videoId: string) {
     return this.service.unassignVideo(id, videoId);

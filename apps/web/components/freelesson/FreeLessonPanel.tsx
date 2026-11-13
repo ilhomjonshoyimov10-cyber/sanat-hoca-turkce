@@ -10,6 +10,8 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useHydrated } from "@/lib/hydrated";
 import { errorText } from "../groups/shared";
+import { PageLoader } from "@/components/Loader";
+import { formatDateTime } from "@/lib/datetime";
 
 interface Video {
   id: string; title: string; description: string | null; url: string;
@@ -32,6 +34,12 @@ const STATUS: Record<string, string> = {
   ENROLLED: "Siz guruhga qabul qilindingiz",
   REJECTED: "Ariza yopildi. Savol bo'lsa, quyida yozing",
 };
+
+/** "https://t.me/SanatHoca/41?single" -> "SanatHoca/41" (faqat ochiq kanal postlari). */
+function telegramPost(url: string): string | null {
+  const m = /^https:\/\/t\.me\/([A-Za-z0-9_]{4,32})\/(\d{1,9})(?:[?#].*)?$/.exec(url);
+  return m ? `${m[1]}/${m[2]}` : null;
+}
 
 export function FreeLessonPanel() {
   const { user, loading } = useAuth();
@@ -57,7 +65,7 @@ export function FreeLessonPanel() {
     if (user) void load();
   }, [user, load]);
 
-  if (loading || !user) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (loading || !user) return <PageLoader />;
 
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -122,6 +130,15 @@ export function FreeLessonPanel() {
                       {v.level && <span className="badge">{v.level}</span>}
                     </div>
                     {v.description && <p className="mb-3 text-muted">{v.description}</p>}
+                    {telegramPost(v.url) && (
+                      // Telegram kanalidagi post sahifa ichida: video shu yerda o'ynaydi
+                      <iframe
+                        src={`https://t.me/${telegramPost(v.url)}?embed=1&mode=tme&single=1`}
+                        title={v.title}
+                        loading="lazy"
+                        className="mb-3 block h-[min(36rem,80vh)] w-full max-w-xl rounded-[var(--r-tile)] border border-cobalt/25 bg-white"
+                      />
+                    )}
                     <a
                       href={v.url}
                       target="_blank"
@@ -129,8 +146,13 @@ export function FreeLessonPanel() {
                       onClick={() => void markWatched(v.id)}
                       className="btn btn-primary"
                     >
-                      Darsni ochish
+                      {telegramPost(v.url) ? "Telegramda ochish" : "Darsni ochish"}
                     </a>
+                    {telegramPost(v.url) && !v.watchedAt && (
+                      <button type="button" className="btn btn-quiet ml-2" onClick={() => void markWatched(v.id)}>
+                        Ko&apos;rdim ✓
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -157,7 +179,7 @@ export function FreeLessonPanel() {
                     >
                       <p className="mb-1 text-sm text-muted">
                         {mine ? "Siz" : `${m.sender.firstName} ${m.sender.lastName}`} ·{" "}
-                        {new Date(m.createdAt).toLocaleString("uz-UZ")}
+                        {formatDateTime(m.createdAt, "uz")}
                       </p>
                       <p className="whitespace-pre-line">{m.body}</p>
                     </article>

@@ -1,8 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 import { contact } from "@/lib/about";
 import { site } from "@/lib/content";
 import { getT } from "@/lib/i18n/server";
-import { Mosque } from "./fx/Mosque";
+
 
 export async function Footer() {
   const { t } = await getT();
@@ -14,7 +15,7 @@ export async function Footer() {
       <div className="container-page grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div>
           <Link href="/" className="flex items-center gap-2.5 font-display text-[1.15rem] font-semibold tracking-[-0.02em]">
-            <Mosque className="size-7 text-brass" />
+            <Image src="/brand/logo-256.webp" alt="" width={40} height={40} className="brand-logo size-10" />
             {site.name}
           </Link>
           <p className="mt-3 max-w-[30ch] text-[0.9375rem] text-muted">{t.meta.title}</p>

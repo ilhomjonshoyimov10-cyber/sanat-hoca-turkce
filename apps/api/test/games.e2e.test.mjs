@@ -180,6 +180,29 @@ describe('reyting', () => {
     assert.equal(asOther.body[0].isMe, false);
   });
 
+  it('haftalik reyting: dushanbadan boshlanadi, o‘z o‘rnim va yangilanish vaqti bilan', async () => {
+    const r = await adult.get('/games/leaderboard/week');
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    const start = new Date(r.body.weekStart);
+    const end = new Date(r.body.resetsAt);
+    assert.equal(end - start, 7 * 86400_000);
+    // Toshkentda dushanba 00:00 = UTC yakshanba 19:00
+    assert.equal(start.getUTCHours(), 19);
+    assert.equal(start.getUTCDay(), 0);
+    assert.ok(start <= new Date() && new Date() < end);
+    assert.deepEqual(r.body.me, { xp: 10, rank: 1, optedIn: true });
+    assert.equal(r.body.rows[0].isMe, true);
+    assert.ok(!JSON.stringify(r.body).includes('userId'), 'ID sizib chiqdi');
+  });
+
+  it('o‘tgan haftadagi natija bu haftaga qo‘shilmaydi', async () => {
+    const me = ctx.prisma.db.users.find((u) => u.email !== 'minor@example.com' && u.leaderboardOptIn);
+    ctx.prisma.db.results.push({ id: 'old', userId: me.id, score: 500, createdAt: new Date(Date.now() - 8 * 86400_000) });
+    const r = await adult.get('/games/leaderboard/week');
+    assert.equal(r.body.me.xp, 10);
+    assert.equal(r.body.lastWeek[0]?.xp ?? 500, 500);
+  });
+
   it("18 yoshgacha bo'lgan o'quvchi ota-ona roziligisiz reytingga qo'shila olmaydi", async () => {
     assert.equal((await minor.patch('/games/leaderboard-optin').send({ optIn: true })).status, 403);
     ctx.prisma.db.users.find((u) => u.email === 'minor@example.com').parentConsent = true;

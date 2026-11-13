@@ -31,7 +31,9 @@ export class FreeLessonService {
     });
   }
 
-  createVideo(adminId: string, dto: CreateVideoDto) {
+  async createVideo(adminId: string, dto: CreateVideoDto) {
+    // Asosiy video faqat bitta bo'ladi
+    if (dto.isDefault) await this.prisma.lessonVideo.updateMany({ where: { isDefault: true }, data: { isDefault: false } });
     return this.prisma.lessonVideo.create({
       data: {
         title: dto.title.trim(),
@@ -41,6 +43,7 @@ export class FreeLessonService {
         level: dto.level ?? null,
         position: dto.position ?? 0,
         isActive: dto.isActive ?? true,
+        isDefault: dto.isDefault ?? false,
         createdById: adminId,
       },
     });
@@ -49,9 +52,13 @@ export class FreeLessonService {
   async updateVideo(id: string, dto: UpdateVideoDto) {
     const row = await this.prisma.lessonVideo.findUnique({ where: { id }, select: { id: true } });
     if (!row) throw new NotFoundException('Video topilmadi');
+    if (dto.isDefault) {
+      await this.prisma.lessonVideo.updateMany({ where: { isDefault: true, id: { not: id } }, data: { isDefault: false } });
+    }
     return this.prisma.lessonVideo.update({
       where: { id },
       data: {
+        isDefault: dto.isDefault,
         title: dto.title?.trim(),
         description: dto.description === undefined ? undefined : dto.description.trim() || null,
         url: dto.url,
@@ -135,13 +142,61 @@ export class FreeLessonService {
     if (lead.userId) {
       await this.notifications.push({
         userId: lead.userId,
-        type: 'ACCOUNT',
+        type: 'FREE_LESSON',
         title: 'Sizga bepul dars videosi biriktirildi',
         body: video.title,
         link: '/bepul-dars',
       });
     }
     return row;
+  }
+
+  /**
+   * "1-darsni yuborish" — bitta tugma.
+   *
+   * Asosiy video (isDefault) biriktiriladi; u bo'lmasa — birinchi faol
+   * video. Allaqachon biriktirilgan bo'lsa xato emas: yana yuborish
+   * oddiy holat (admin "yubordimmi?" deb ikkinchi marta bosadi).
+   * Javobda Telegram orqali yuborish uchun tayyor matn ham bor — ariza
+   * egasi saytda ro'yxatdan o'tmagan bo'lsa ham dars unga yetsin.
+   */
+  async sendFirstLesson(staffId: string, leadId: string) {
+    const lead = await this.prisma.lead.findUnique({ where: { id: leadId }, select: { id: true, name: true, phone: true, userId: true, status: true } });
+    if (!lead) throw new NotFoundException('Ariza topilmadi');
+    const video =
+      (await this.prisma.lessonVideo.findFirst({ where: { isDefault: true, isActive: true } })) ??
+      (await this.prisma.lessonVideo.findFirst({ where: { isActive: true }, orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] }));
+    if (!video) throw new BadRequestException("Avval video qo'shing (Bepul dars → Videolar)");
+
+    const existing = await this.prisma.leadVideo.findUnique({
+      where: { leadId_videoId: { leadId, videoId: video.id } },
+      select: { id: true },
+    });
+    if (!existing) {
+      await this.prisma.leadVideo.create({ data: { leadId, videoId: video.id, assignedById: staffId } });
+    }
+    if (lead.userId && !existing) {
+      await this.notifications.push({
+        userId: lead.userId,
+        type: 'FREE_LESSON',
+        title: 'Bepul 1-dars sizga yuborildi',
+        body: video.title,
+        link: '/bepul-dars',
+      });
+    }
+    if (lead.status === 'NEW') {
+      await this.prisma.lead.update({ where: { id: leadId }, data: { status: 'CONTACTED' } }).catch(() => undefined);
+    }
+    const text = `Assalomu alaykum, ${lead.name}! Sanat Hoca Türkçe bepul 1-darsini shu yerda ko'rishingiz mumkin: ${video.url}`;
+    return {
+      ok: true,
+      alreadySent: !!existing,
+      onSite: !!lead.userId,
+      video: { id: video.id, title: video.title, url: video.url },
+      shareText: text,
+      // Telegram'ning rasmiy "ulashish" oynasi: admin kimga yuborishni tanlaydi
+      telegramShare: `https://t.me/share/url?url=${encodeURIComponent(video.url)}&text=${encodeURIComponent(text.replace(`: ${video.url}`, ':'))}`,
+    };
   }
 
   async unassignVideo(leadId: string, videoId: string) {
@@ -244,10 +299,17 @@ export class FreeLessonService {
     if (staff && lead.userId) {
       await this.notifications.push({
         userId: lead.userId,
-        type: 'ACCOUNT',
+        type: 'FREE_LESSON',
         title: 'Ustozdan xabar',
-        body: dto.body.slice(0, 120),
+        body: dto.body.slice(0, 200),
         link: '/bepul-dars',
+      });
+    } else if (!staff) {
+      await this.notifications.pushToAdmins({
+        type: 'FREE_LESSON',
+        title: `Bepul dars: ${lead.name} yozdi`.slice(0, 160),
+        body: dto.body.slice(0, 200),
+        link: `/admin?tab=free&lead=${lead.id}`,
       });
     }
     return msg;

@@ -9,7 +9,7 @@ const TONES = [
   "bg-cobalt/30 text-porcelain",
   "bg-turquoise/25 text-turquoise",
   "bg-brass/25 text-brass",
-  "bg-bole/25 text-[#ffb3ab]",
+  "bg-bole/25 text-danger",
 ];
 
 function tone(seed: string) {

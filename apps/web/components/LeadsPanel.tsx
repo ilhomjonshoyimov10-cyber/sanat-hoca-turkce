@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError, needs2fa } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { PageLoader } from "@/components/Loader";
+import { formatDateTime } from "@/lib/datetime";
 
 type Lead = { id: string; name: string; phone: string; level: string | null; message: string | null; status: string; createdAt: string };
 
@@ -24,9 +26,9 @@ export function LeadsPanel() {
       });
   }, [loading, user, router]);
 
-  if (loading || !user) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (loading || !user) return <PageLoader />;
   if (error) return <p className="alert-error" role="alert">{error}</p>;
-  if (!leads) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (!leads) return <PageLoader />;
   if (leads.length === 0) return <p className="card text-muted">Hozircha arizalar yo&apos;q.</p>;
 
   return (
@@ -35,7 +37,7 @@ export function LeadsPanel() {
         <li key={l.id} className="card !p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-lg font-bold">{l.name}</h2>
-            <time className="text-sm text-muted" dateTime={l.createdAt}>{new Date(l.createdAt).toLocaleString("uz-UZ")}</time>
+            <time className="text-sm text-muted" dateTime={l.createdAt}>{formatDateTime(l.createdAt, "uz")}</time>
           </div>
           <p className="mt-1">
             <a href={`tel:${l.phone}`} className="font-bold text-primary underline">{l.phone}</a>

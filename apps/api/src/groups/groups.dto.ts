@@ -59,3 +59,12 @@ export class AttendanceDto {
   @IsArray() @ArrayMaxSize(200) @ValidateNested({ each: true }) @Type(() => AttendanceRecordDto)
   records!: AttendanceRecordDto[];
 }
+
+export class AddMemberByIdDto {
+  @IsString() @Length(1, 40) userId!: string;
+  @IsOptional() @IsBoolean() confirmParentConsent?: boolean;
+}
+
+export class JoinByCodeDto {
+  @IsString() @Length(4, 20) code!: string;
+}

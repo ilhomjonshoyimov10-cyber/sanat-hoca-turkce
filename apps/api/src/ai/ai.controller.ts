@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { CurrentUser } from '../auth/auth.decorators.js';
+import { CurrentUser, Roles } from '../auth/auth.decorators.js';
 import type { AuthUser } from '../auth/auth.decorators.js';
 import { AskDto } from './ai.dto.js';
 import { AiService } from './ai.service.js';
@@ -12,6 +12,36 @@ export class AiController {
   @Get('status')
   status(@CurrentUser() u: AuthUser) {
     return this.ai.status(u.id, u.role);
+  }
+
+  // ── Admin: barcha foydalanuvchilarning AI suhbatlari ──
+  @Roles('ADMIN')
+  @Get('admin/stats')
+  adminStats() {
+    return this.ai.adminStats();
+  }
+
+  @Roles('ADMIN')
+  @Get('admin/conversations')
+  adminConversations(
+    @Query('q') q?: string,
+    @Query('userId') userId?: string,
+    @Query('failed') failed?: string,
+    @Query('page') page?: string,
+  ) {
+    return this.ai.adminConversations({ search: q?.slice(0, 80), userId, failed: failed === '1', page: Number(page) || 0 });
+  }
+
+  @Roles('ADMIN')
+  @Get('admin/conversations/:id')
+  adminConversation(@Param('id') id: string) {
+    return this.ai.adminConversation(id);
+  }
+
+  @Roles('ADMIN')
+  @Delete('admin/conversations/:id')
+  adminDelete(@Param('id') id: string) {
+    return this.ai.adminDelete(id);
   }
 
   @Get('conversations')

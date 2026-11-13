@@ -301,7 +301,9 @@ describe('jonli efir', () => {
   it('uy egasi vaqtidan oldin ham kira oladi (sozlashni tekshirish uchun)', async () => {
     const r = await teacher.agent.post(`/live/${liveId}/join`);
     assert.equal(r.status, 200, JSON.stringify(r.body));
-    assert.ok(r.body.roomName.startsWith('sanat-live-'));
+    assert.ok(r.body.url.startsWith('https://meet.jit.si/sanat-live-'), r.body.url);
+    assert.match(r.body.url, /startWithAudioMuted=false/);
+    assert.equal(r.body.provider, 'JITSI');
     assert.equal(r.body.isHost, true);
   });
 

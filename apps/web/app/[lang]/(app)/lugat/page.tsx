@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DictionaryPanel } from "@/components/dictionary/DictionaryPanel";
+import { PageLoader } from "@/components/Loader";
 
 export const metadata: Metadata = { title: "Lug'at", robots: { index: false } };
 
@@ -12,7 +13,7 @@ export default function Page() {
         So&apos;zlarni qo&apos;shish, tahrirlash va tasdiqlash. Faqat tasdiqlangan so&apos;zlar
         o&apos;yinlarga tushadi.
       </p>
-      <Suspense fallback={<p className="text-muted" role="status">Yuklanmoqda...</p>}>
+      <Suspense fallback={<PageLoader />}>
         <DictionaryPanel />
       </Suspense>
     </div>

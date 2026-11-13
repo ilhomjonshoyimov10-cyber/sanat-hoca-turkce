@@ -327,7 +327,39 @@ async function seedMedia() {
   console.log(`Kino va musiqa: ${added} ta yangi (jami ro'yxatda ${mediaSeeds.length})`);
 }
 
+/**
+ * "Bepul 1-dars" — Sanat Hoca Telegram kanalidagi birinchi dars.
+ * Admin bir tugma bilan arizachiga yuboradi. Faqat bir marta qo'shiladi:
+ * admin keyin nomini o'zgartirsa yoki boshqa videoni asosiy qilsa — tegilmaydi.
+ */
+const FIRST_LESSON_URL = 'https://t.me/SanatHoca/41?single';
+
+async function seedFirstLesson() {
+  const exists = await prisma.lessonVideo.findFirst({ where: { url: FIRST_LESSON_URL }, select: { id: true } });
+  if (exists) return;
+  const admin = await prisma.user.findFirst({ where: { role: 'ADMIN' }, orderBy: { createdAt: 'asc' }, select: { id: true } });
+  if (!admin) {
+    console.log("Bepul 1-dars: admin yo'q, keyingi safar qo'shiladi");
+    return;
+  }
+  const hasDefault = await prisma.lessonVideo.findFirst({ where: { isDefault: true }, select: { id: true } });
+  await prisma.lessonVideo.create({
+    data: {
+      title: 'Bepul 1-dars (Telegram)',
+      description: "Sanat Hoca bilan turk tilining birinchi darsi. Telegram kanalida ochiladi.",
+      url: FIRST_LESSON_URL,
+      level: 'A1',
+      position: 0,
+      isActive: true,
+      isDefault: !hasDefault,
+      createdById: admin.id,
+    },
+  });
+  console.log('Bepul 1-dars: Telegram havolasi qo\'shildi');
+}
+
 async function main() {
+  await seedFirstLesson();
   await seedReading();
   await seedSentences();
   await seedDrills();

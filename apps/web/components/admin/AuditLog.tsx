@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAdminData } from "./AdminPanel";
+import { formatDateTime } from "@/lib/datetime";
 
 interface Entry {
   id: string;
@@ -49,7 +50,7 @@ export function AuditLog({ onError }: { onError: (m: string) => void }) {
             {data.items.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-muted">Yozuv yo&apos;q</td></tr>}
             {data.items.map((e) => (
               <tr key={e.id}>
-                <td className="whitespace-nowrap text-muted">{new Date(e.createdAt).toLocaleString("uz-UZ")}</td>
+                <td className="whitespace-nowrap text-muted">{formatDateTime(e.createdAt, "uz")}</td>
                 <td>
                   <span className={`badge ${SEVERE.has(e.action) ? "badge-bad" : ""}`}>{e.action}</span>
                 </td>

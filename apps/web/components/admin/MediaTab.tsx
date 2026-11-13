@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { MEDIA_KINDS, watchUrl, type MediaItem, type MediaKind } from "@/lib/media";
 import { errorText } from "../groups/shared";
 import { useAdminData } from "./AdminPanel";
+import { PageLoader } from "@/components/Loader";
 
 type Row = MediaItem & { published: boolean; position: number; checkNote: string | null; checkedAt: string | null };
 
@@ -135,7 +136,7 @@ export function MediaTab({ onError }: { onError: (m: string) => void }) {
 
       <section>
         <h2 className="mb-4 text-[1.3rem]">Ro&apos;yxat {data ? `(${data.length})` : ""}</h2>
-        {busy && !data && <p className="text-muted" role="status">Yuklanmoqda...</p>}
+        {busy && !data && <PageLoader />}
         {data && data.length === 0 && <p className="text-muted">Hozircha bo&apos;sh.</p>}
         <ul className="grid gap-3">
           {data?.map((r) => (

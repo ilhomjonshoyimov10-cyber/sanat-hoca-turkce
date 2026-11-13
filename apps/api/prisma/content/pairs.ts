@@ -7,6 +7,7 @@
 // TEKSHIRISH KERAK: ustoz turkcha yozilish va tarjimani ko'rib chiqsin.
 
 import type { Level } from '@prisma/client';
+import { moreAntonyms } from './more.js';
 
 export interface Pair {
   first: string;
@@ -85,3 +86,6 @@ export const antonyms: Pair[] = [
   { first: 'teşvik etmek', second: 'caydırmak', uzbek: 'rag‘batlantirmoq — qaytarmoq', level: 'C1' },
   { first: 'tutarlı', second: 'çelişkili', uzbek: 'izchil — ziddiyatli', level: 'C1' },
 ];
+
+// Qo'shimcha to'plam (content/more.ts)
+antonyms.push(...moreAntonyms);

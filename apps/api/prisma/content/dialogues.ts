@@ -8,6 +8,7 @@
 // TEKSHIRISH KERAK: ustoz turkcha jumlalarni ko'rib chiqsin.
 
 import type { Level } from '@prisma/client';
+import { moreDialogues } from './more.js';
 
 export interface Dialogue {
   prompt: string;
@@ -351,3 +352,6 @@ export const dialogues: Dialogue[] = [
     level: 'C1',
   },
 ];
+
+// Qo'shimcha to'plam (content/more.ts)
+dialogues.push(...moreDialogues);

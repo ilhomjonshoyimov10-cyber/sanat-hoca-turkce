@@ -59,6 +59,55 @@ export class NotificationsService {
       .catch(() => undefined);
   }
 
+  /** Barcha faol adminlarga (murojaat, bepul dars arizasi). */
+  async pushToAdmins(input: Omit<NotifyInput, 'userId'>): Promise<void> {
+    const admins = await this.prisma.user.findMany({ where: { role: 'ADMIN', isActive: true }, select: { id: true } });
+    await this.pushMany(admins.map((a) => a.id), input);
+  }
+
+  /**
+   * Bir xil manbadan ketma-ket xabar kelsa (ustoz chatda 10 ta xabar
+   * yozsa) — o'quvchiga 10 ta bildirishnoma emas, bitta boradi. Shu
+   * havola bo'yicha o'qilmagan bildirishnomasi bor odamga yangisi
+   * yuborilmaydi (oyna ichida).
+   */
+  async pushManyCoalesced(userIds: string[], input: Omit<NotifyInput, 'userId'>, windowMs = 30 * 60 * 1000): Promise<void> {
+    const link = this.safeLink(input.link);
+    if (!userIds.length) return;
+    if (!link) return this.pushMany(userIds, input);
+    const already = await this.prisma.notification.findMany({
+      // Turi ham mos bo'lsin: "yangi o'quvchi qo'shildi" (ACCOUNT) bildirishnomasi
+      // shu guruh havolasida turibdi, deb chat xabari yutilib ketmasin.
+      where: { userId: { in: userIds }, type: input.type, link, readAt: null, createdAt: { gte: new Date(Date.now() - windowMs) } },
+      select: { userId: true },
+    }).catch(() => []);
+    const skip = new Set(already.map((a) => a.userId));
+    await this.pushMany(userIds.filter((id) => !skip.has(id)), input);
+  }
+
+  /**
+   * Yengil so'rov: brauzer har daqiqada so'raydi. Faqat o'qilmaganlar
+   * soni va `since` dan keyingi yangilari (ekranda "Sizga xabar keldi"
+   * oynasini ko'rsatish uchun).
+   */
+  async pulse(userId: string, since?: Date) {
+    // Vaqt so'rovdan OLDIN olinadi: so'rov paytida yozilgan bildirishnoma
+    // keyingi safar ham "yangi" bo'lib keladi (brauzer id bo'yicha takrorni
+    // tashlab yuboradi) — aks holda u hech qachon ekranga chiqmay qolardi.
+    const now = new Date();
+    const [unread, fresh] = await Promise.all([
+      this.prisma.notification.count({ where: { userId, readAt: null } }),
+      since
+        ? this.prisma.notification.findMany({
+            where: { userId, createdAt: { gt: since } },
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+          })
+        : Promise.resolve([]),
+    ]);
+    return { unread, fresh, now };
+  }
+
   async list(userId: string) {
     const [items, unread] = await Promise.all([
       this.prisma.notification.findMany({

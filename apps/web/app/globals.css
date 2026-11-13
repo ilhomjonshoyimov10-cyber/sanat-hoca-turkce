@@ -587,3 +587,221 @@ html[data-scrolled="true"] .site-header {
 }
 @media (max-width: 640px) { .quote-corner { width: 0.35rem; height: 0.35rem; } }
 @media (prefers-reduced-motion: reduce) { .quote-image img { transform: none; transition: none; } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   YUKLANISH BELGISI
+   Asos: Uiverse.io, andrew-manzyk (MIT). So'z 9 ta tilimga bo'lingan,
+   har tilim o'z o'lchamida — o'rtasi kattalashgan "linza" hissi.
+   Moslash: brend ranglari (CSS o'zgaruvchilari orqali kunduzgi/tungi),
+   o'lcham variantlari, kamroq harakat rejimi.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.sh-loader-wrap { display: inline-grid; place-items: center; }
+.sh-loader-sm { font-size: 9px; }
+.sh-loader-md { font-size: 13px; }
+.sh-loader-lg { font-size: 18px; }
+.sh-loader {
+  --main-size: 4em;
+  --text-color: var(--porcelain);
+  --shine-color: rgba(227, 174, 91, 0.35);
+  --shadow-color: var(--cobalt);
+  display: flex; justify-content: center; align-items: center;
+  overflow: hidden; user-select: none; position: relative;
+  font-size: var(--main-size); font-weight: 900; text-transform: uppercase;
+  font-family: var(--font-sans);
+  color: var(--text-color);
+  width: 7.3em; height: 1em;
+  filter: drop-shadow(0 0 0.05em var(--shine-color));
+}
+.sh-loader .text {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  white-space: nowrap; overflow: hidden; position: absolute;
+}
+.sh-loader .text:nth-child(1) { clip-path: polygon(0% 0%, 11.11% 0%, 11.11% 100%, 0% 100%); font-size: calc(var(--main-size) / 20); margin-left: -2.1em; opacity: 0.6; }
+.sh-loader .text:nth-child(2) { clip-path: polygon(11.11% 0%, 22.22% 0%, 22.22% 100%, 11.11% 100%); font-size: calc(var(--main-size) / 16); margin-left: -0.98em; opacity: 0.7; }
+.sh-loader .text:nth-child(3) { clip-path: polygon(22.22% 0%, 33.33% 0%, 33.33% 100%, 22.22% 100%); font-size: calc(var(--main-size) / 13); margin-left: -0.33em; opacity: 0.8; }
+.sh-loader .text:nth-child(4) { clip-path: polygon(33.33% 0%, 44.44% 0%, 44.44% 100%, 33.33% 100%); font-size: calc(var(--main-size) / 11); margin-left: -0.05em; opacity: 0.9; }
+.sh-loader .text:nth-child(5) { clip-path: polygon(44.44% 0%, 55.55% 0%, 55.55% 100%, 44.44% 100%); font-size: calc(var(--main-size) / 10); margin-left: 0em; opacity: 1; }
+.sh-loader .text:nth-child(6) { clip-path: polygon(55.55% 0%, 66.66% 0%, 66.66% 100%, 55.55% 100%); font-size: calc(var(--main-size) / 11); margin-left: 0.05em; opacity: 0.9; }
+.sh-loader .text:nth-child(7) { clip-path: polygon(66.66% 0%, 77.77% 0%, 77.77% 100%, 66.66% 100%); font-size: calc(var(--main-size) / 13); margin-left: 0.33em; opacity: 0.8; }
+.sh-loader .text:nth-child(8) { clip-path: polygon(77.77% 0%, 88.88% 0%, 88.88% 100%, 77.77% 100%); font-size: calc(var(--main-size) / 16); margin-left: 0.98em; opacity: 0.7; }
+.sh-loader .text:nth-child(9) { clip-path: polygon(88.88% 0%, 100% 0%, 100% 100%, 88.88% 100%); font-size: calc(var(--main-size) / 20); margin-left: 2.1em; opacity: 0.6; }
+.sh-loader .text span {
+  animation:
+    sh-scrolling 2s cubic-bezier(0.1, 0.6, 0.9, 0.4) infinite,
+    sh-shadow 2s cubic-bezier(0.1, 0.6, 0.9, 0.4) infinite;
+}
+.sh-loader .text:nth-child(1) span { background: linear-gradient(to right, var(--text-color) 4%, var(--shadow-color) 7%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; color: transparent; }
+.sh-loader .text:nth-child(2) span { background: linear-gradient(to right, var(--text-color) 9%, var(--shadow-color) 13%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; color: transparent; }
+.sh-loader .text:nth-child(3) span { background: linear-gradient(to right, var(--text-color) 15%, var(--shadow-color) 18%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; color: transparent; }
+.sh-loader .text:nth-child(4) span { background: linear-gradient(to right, var(--text-color) 20%, var(--shadow-color) 23%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; color: transparent; }
+.sh-loader .text:nth-child(6) span { background: linear-gradient(to right, var(--shadow-color) 29%, var(--text-color) 32%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; color: transparent; }
+.sh-loader .text:nth-child(7) span { background: linear-gradient(to right, var(--shadow-color) 34%, var(--text-color) 37%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; color: transparent; }
+.sh-loader .text:nth-child(8) span { background: linear-gradient(to right, var(--shadow-color) 39%, var(--text-color) 42%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; color: transparent; }
+.sh-loader .text:nth-child(9) span { background: linear-gradient(to right, var(--shadow-color) 45%, var(--text-color) 48%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; color: transparent; }
+.sh-loader .line {
+  position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  height: 0.05em; width: calc(var(--main-size) / 2); margin-top: 0.9em; border-radius: 0.05em;
+}
+.sh-loader .line::before { content: ""; position: absolute; height: 100%; width: 100%; background-color: var(--brass); opacity: 0.3; }
+.sh-loader .line::after {
+  content: ""; position: absolute; height: 100%; width: 100%;
+  background-color: var(--brass); border-radius: 0.05em;
+  transform: translateX(-90%);
+  animation: sh-wobble 2s cubic-bezier(0.5, 0.8, 0.5, 0.2) infinite;
+}
+@keyframes sh-wobble { 0% { transform: translateX(-90%); } 50% { transform: translateX(90%); } 100% { transform: translateX(-90%); } }
+@keyframes sh-scrolling { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@keyframes sh-shadow { 0% { background-position: -98% 0; } 100% { background-position: 102% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .sh-loader .text span { animation-duration: 6s; }
+  .sh-loader .line::after { animation-duration: 6s; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KUNDUZGI / TUNGI ALMASHTIRGICH
+   Asos: Uiverse.io, andrew-demchenk0 (MIT) — quyosh va oy tugmasi.
+   Moslash: nomlar `.theme-switch-*` (loyihada `.switch` band), o'lcham em
+   orqali, tungi fon — çini siyohi, fokus halqasi, kamroq harakat rejimi.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.theme-switch {
+  font-size: 15px;
+  position: relative; display: inline-block; flex-shrink: 0;
+  width: 3.5em; height: 1.9em;
+  cursor: pointer;
+}
+.theme-switch-input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 3; }
+.theme-switch-slider {
+  position: absolute; inset: 0;
+  background-color: #73c0fc;
+  transition: background-color 0.4s, box-shadow 0.4s;
+  border-radius: 30px;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+.theme-switch-slider::before {
+  position: absolute; content: "";
+  height: 1.6em; width: 1.6em; border-radius: 20px;
+  left: 0.15em; bottom: 0.15em; z-index: 2;
+  background-color: #e8e8e8;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+  transition: transform 0.4s, background-color 0.4s;
+}
+.theme-switch-sun svg { position: absolute; top: 0.33em; left: 1.95em; z-index: 1; width: 1.25em; height: 1.25em; animation: theme-rotate 15s linear infinite; }
+.theme-switch-moon svg { fill: #73c0fc; position: absolute; top: 0.3em; left: 0.3em; z-index: 1; width: 1.25em; height: 1.25em; animation: theme-tilt 5s linear infinite; }
+@keyframes theme-rotate { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
+@keyframes theme-tilt { 0% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } 100% { transform: rotate(0deg); } }
+.theme-switch-input:checked ~ .theme-switch-slider { background-color: #183153; box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(59, 108, 225, 0.45); }
+.theme-switch-input:checked ~ .theme-switch-slider::before { transform: translateX(1.6em); background-color: #f3f0e6; }
+.theme-switch-input:focus-visible ~ .theme-switch-slider { outline: 2px solid var(--brass); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .theme-switch-sun svg, .theme-switch-moon svg { animation: none; }
+  .theme-switch-slider, .theme-switch-slider::before { transition-duration: 1ms; }
+}
+
+/* Rejim almashganda ranglar yumshoq o'tadi (faqat bir lahza) */
+html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *::after {
+  transition: background-color 320ms var(--ease-out), color 320ms var(--ease-out), border-color 320ms var(--ease-out), fill 320ms, stroke 320ms !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   "SIZGA XABAR KELDI" OYNASI
+   ═══════════════════════════════════════════════════════════════════════════ */
+.toast {
+  position: relative; display: flex; gap: 0.85rem; align-items: flex-start;
+  padding: 0.95rem 2.6rem 0.95rem 0.95rem;
+  border-radius: var(--r-tile);
+  background: var(--tile);
+  border: 1px solid rgba(227, 174, 91, 0.5);
+  box-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: toast-in 380ms var(--ease-out) both;
+}
+.toast::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: linear-gradient(180deg, var(--bole), var(--brass));
+}
+.toast-icon {
+  display: grid; place-items: center; flex-shrink: 0;
+  width: 2.25rem; height: 2.25rem; border-radius: 50%;
+  color: var(--brass); background: rgba(227, 174, 91, 0.14);
+  animation: toast-ring 1.2s var(--ease-out) 200ms 2;
+}
+.toast-kicker { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brass); }
+.toast-close {
+  position: absolute; top: 0.55rem; right: 0.55rem;
+  display: grid; place-items: center; width: 1.9rem; height: 1.9rem;
+  border-radius: 50%; color: var(--muted);
+}
+.toast-close:hover { color: var(--porcelain); background: rgba(59, 108, 225, 0.12); }
+.btn-sm { min-height: 2.25rem; padding: 0.35rem 1rem; font-size: 0.875rem; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(14px) scale(0.98); } }
+@keyframes toast-ring { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
+@media (prefers-reduced-motion: reduce) { .toast, .toast-icon { animation: none; } }
+
+/* Brend belgisi (sarlavha va pastki qism) */
+.brand-logo {
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(227, 174, 91, 0.45), 0 6px 18px -8px rgba(224, 69, 58, 0.7);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KUNDUZGI REJIM — "Gün Çini"
+   Tungi masjid o'rniga: kunduzgi hovli. Chinni-oq devor, siyoh matn,
+   o'sha kobalt/feruza/jez — faqat yorug' fonda o'qiladigan darajada to'qroq
+   (matn uchun kontrast ≥ 4.5:1).
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --ink: #f6f2ea;
+  --well: #fffdf8;
+  --tile: #ffffff;
+  --tile-2: #efe8da;
+
+  --cobalt: #2a56c6;
+  --cobalt-dim: #9fb4e8;
+  --turquoise: #0b7470;
+  --brass: #8a5a0d;
+  --bole: #c8372d;
+  --bole-btn: #c2332a;
+  --bole-deep: #9e271f;
+
+  --porcelain: #111a33;
+  --muted: #4f5a78;
+
+  --border: #d8cfbd;
+  --primary-hover: #ad2c23;
+  --on-primary: #fff8f6;
+  --danger: #b4321f;
+}
+:root[data-theme="light"] .aurora {
+  background:
+    radial-gradient(1200px 620px at 50% -16%, rgba(42, 86, 198, 0.12), transparent 64%),
+    radial-gradient(800px 420px at 88% 8%, rgba(138, 90, 13, 0.08), transparent 62%),
+    var(--ink);
+}
+:root[data-theme="light"] .aurora i { opacity: 0.35; }
+:root[data-theme="light"] .cini-field { opacity: 0.8; }
+:root[data-theme="light"] .site-header { background: transparent; }
+:root[data-theme="light"][data-scrolled="true"] .site-header {
+  background: rgba(246, 242, 234, 0.88);
+  border-bottom-color: rgba(42, 86, 198, 0.22);
+}
+:root[data-theme="light"] .input { box-shadow: inset 0 1px 3px rgba(17, 26, 51, 0.12); border-color: rgba(42, 86, 198, 0.32); }
+:root[data-theme="light"] .input::placeholder { color: rgba(79, 90, 120, 0.7); }
+:root[data-theme="light"] .raise { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 22px -14px rgba(17, 26, 51, 0.35); }
+:root[data-theme="light"] .press { box-shadow: inset 0 2px 5px rgba(17, 26, 51, 0.14); }
+:root[data-theme="light"] .segment,
+:root[data-theme="light"] .switch { box-shadow: inset 0 1px 4px rgba(17, 26, 51, 0.14); }
+:root[data-theme="light"] .switch::after { box-shadow: 0 1px 3px rgba(17, 26, 51, 0.35); }
+:root[data-theme="light"] .segment > button[aria-selected="true"] { background: #ffffff; box-shadow: 0 1px 4px rgba(17, 26, 51, 0.18); }
+:root[data-theme="light"] .btn-outline { box-shadow: 0 2px 8px -6px rgba(17, 26, 51, 0.4); }
+:root[data-theme="light"] .card { background: linear-gradient(180deg, #ffffff, #fbf8f2); border-color: rgba(42, 86, 198, 0.2); box-shadow: 0 14px 34px -26px rgba(17, 26, 51, 0.45); }
+:root[data-theme="light"] .card-flat { background: #ffffff; }
+:root[data-theme="light"] .glass-chip { background: rgba(255, 255, 255, 0.92); box-shadow: 0 14px 30px -18px rgba(17, 26, 51, 0.4); }
+:root[data-theme="light"] .badge { background: rgba(42, 86, 198, 0.1); }
+:root[data-theme="light"] .badge-ok { background: rgba(11, 116, 112, 0.1); }
+:root[data-theme="light"] .badge-warn { background: rgba(138, 90, 13, 0.1); }
+:root[data-theme="light"] .badge-bad { background: rgba(180, 50, 31, 0.1); }
+:root[data-theme="light"] .toast { box-shadow: 0 24px 50px -26px rgba(17, 26, 51, 0.5); }
+:root[data-theme="light"] .quote-frame { background: linear-gradient(160deg, #1a2a5c, #0a1430 70%); }
+:root[data-theme="light"] ::selection { background: rgba(42, 86, 198, 0.25); color: var(--porcelain); }
+:root[data-theme="light"] .sh-loader { --shine-color: rgba(138, 90, 13, 0.25); }
+:root[data-theme="light"] select.input option { background: #ffffff; }

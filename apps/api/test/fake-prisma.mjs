@@ -1,4 +1,8 @@
 // Testlar uchun xotiradagi soxta Prisma. Faqat ilova ishlatadigan so'rovlarni qo'llab-quvvatlaydi.
+
+/** Har chaqiriqda kamida 1 ms keyingi vaqt: bir millisekundda yozilgan qatorlar ham tartiblansin. */
+let lastTick = 0;
+const tick = () => new Date((lastTick = Math.max(Date.now(), lastTick + 1)));
 const pick = (row, select) => {
   if (!row || !select) return row ?? null;
   return Object.fromEntries(Object.keys(select).filter((k) => select[k]).map((k) => [k, row[k]]));
@@ -131,6 +135,38 @@ function sortBy(rows, orderBy) {
   });
 }
 
+/** OR/AND ichida ham, "bitta" bog'lanish (`user: {...}`) ustida ham ishlaydigan filtr.
+ *  OR/AND/NOT bo'lmagan oddiy shart eski yo'l bilan (splitWhere/relOk) tekshiriladi. */
+function hitWith(r, where, relations, ctx, splitWhere, relOk) {
+  const plain = {};
+  for (const [k, v] of Object.entries(where ?? {})) {
+    if (k === 'OR') {
+      if (!v.some((c) => hitWith(r, c, relations, ctx, splitWhere, relOk))) return false;
+      continue;
+    }
+    if (k === 'AND') {
+      const list = Array.isArray(v) ? v : [v];
+      if (!list.every((c) => hitWith(r, c, relations, ctx, splitWhere, relOk))) return false;
+      continue;
+    }
+    if (k === 'NOT') {
+      if (hitWith(r, v, relations, ctx, splitWhere, relOk)) return false;
+      continue;
+    }
+    const rel = relations[k];
+    if (rel && rel.kind === 'one' && v && typeof v === 'object' && !(v instanceof Date)) {
+      const target = rel.store(ctx).find((t) => t[rel.foreign ?? 'id'] === r[rel.local]);
+      if (!target) return false;
+      const sub = rel.relations ?? {};
+      if (!hitWith(target, v, sub, ctx, (w) => ({ scalar: w, rels: [] }), () => true)) return false;
+      continue;
+    }
+    plain[k] = v;
+  }
+  const { scalar, rels } = splitWhere(plain);
+  return match(r, flat(scalar)) && relOk(r, rels);
+}
+
 /**
  * @param store   () => massiv — qatorlar qayerda turadi
  * @param options defaults: yangi qator uchun standart qiymatlar
@@ -165,10 +201,7 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
       });
     });
 
-  const hit = (r, where = {}) => {
-    const { scalar, rels } = splitWhere(where);
-    return match(r, flat(scalar)) && relOk(r, rels);
-  };
+  const hit = (r, where = {}) => hitWith(r, where, relations, ctx, splitWhere, relOk);
 
   const byWhere = (where = {}) => rows().find((r) => hit(r, where));
   const breaksUnique = (candidate, ignore) =>
@@ -216,7 +249,9 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
       return view(list[0], { select, include }, relations, ctx);
     },
     async create({ data, select, include } = {}) {
-      const row = { ...defaults };
+      // Funksiya ko'rinishidagi standart qiymat har qatorda qayta hisoblanadi
+      // (masalan createdAt: har xabarga o'z vaqti — tartiblash uchun muhim).
+      const row = Object.fromEntries(Object.entries(defaults).map(([k, v]) => [k, typeof v === 'function' ? v() : v]));
       if (pk.length === 1 && pk[0] === 'id') row.id = nextId();
       Object.assign(row, withoutUndefined(data));
       if (breaksUnique(row)) throw Object.assign(new Error('unique'), { code: 'P2002' });
@@ -226,7 +261,7 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
     async createMany({ data, skipDuplicates } = {}) {
       let count = 0;
       for (const d of data) {
-        const row = { ...defaults };
+        const row = Object.fromEntries(Object.entries(defaults).map(([k, v]) => [k, typeof v === 'function' ? v() : v]));
         if (pk.length === 1 && pk[0] === 'id') row.id = nextId();
         Object.assign(row, withoutUndefined(d));
         if (breaksUnique(row)) {
@@ -250,7 +285,7 @@ function collection(store, nextId, ctx, { defaults = {}, relations = {}, uniques
         applyData(row, update);
         return project(row, select, relations, ctx);
       }
-      const made = { ...defaults };
+      const made = Object.fromEntries(Object.entries(defaults).map(([k, v]) => [k, typeof v === 'function' ? v() : v]));
       if (pk.length === 1 && pk[0] === 'id') made.id = nextId();
       Object.assign(made, withoutUndefined(create));
       rows().push(made);
@@ -318,8 +353,19 @@ export function createFakePrisma() {
       return Promise.all(arg);
     },
     user: {
-      async findMany({ where, select }) {
-        return db.users.filter((u) => match(u, where)).map((u) => pick(u, select));
+      async findMany({ where, select, take, orderBy }) {
+        let rows = db.users.filter((u) => match(u, where));
+        if (orderBy) rows = sortBy(rows, orderBy);
+        if (take) rows = rows.slice(0, take);
+        return rows.map((u) => {
+          const out = pick(u, select);
+          if (select?.memberships) {
+            out.memberships = db.members
+              .filter((m) => m.userId === u.id)
+              .map((m) => ({ groupId: m.groupId, group: { name: db.groups.find((g) => g.id === m.groupId)?.name ?? '' } }));
+          }
+          return out;
+        });
       },
       async findUnique({ where, select }) {
         return pick(db.users.find((u) => match(u, where)), select);
@@ -536,17 +582,22 @@ export function createFakePrisma() {
         const optIn = (uid) => db.users.find((u) => u.id === uid)?.leaderboardOptIn === true;
         const totals = new Map();
         for (const r of db.results) {
-          if (r.createdAt < where.createdAt.gte || (where.user?.leaderboardOptIn && !optIn(r.userId))) continue;
+          if (r.createdAt < where.createdAt.gte || (where.createdAt.lt && r.createdAt >= where.createdAt.lt)) continue;
+          if (where.user?.leaderboardOptIn && !optIn(r.userId)) continue;
           totals.set(r.userId, (totals.get(r.userId) ?? 0) + r.score);
         }
-        return [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, take)
+        return [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, take ?? undefined)
           .map(([userId, score]) => ({ userId, _sum: { score } }));
+      },
+      async aggregate({ where }) {
+        const rows = db.results.filter((r) => match(r, where));
+        return { _sum: { score: rows.reduce((n, r) => n + r.score, 0) } };
       },
     },
 
     group: {
       async create({ data }) {
-        const row = { id: id(), isActive: true, schedule: null, meetingUrl: null, createdAt: new Date(Date.now() + db.groups.length), ...data };
+        const row = { id: id(), isActive: true, schedule: null, meetingUrl: null, joinCode: null, createdAt: new Date(Date.now() + db.groups.length), ...data };
         db.groups.push(row);
         return row;
       },
@@ -555,8 +606,13 @@ export function createFakePrisma() {
         const rows = db.groups.filter((g) => match(g, where));
         return orderBy ? sortDesc(rows) : rows;
       },
+      async findFirst({ where = {} } = {}) { return db.groups.find((g) => match(g, where)) ?? null; },
       async update({ where, data }) {
         const row = db.groups.find((g) => match(g, where));
+        if (!row) throw Object.assign(new Error('not found'), { code: 'P2025' });
+        if (data.joinCode && db.groups.some((g) => g !== row && g.joinCode === data.joinCode)) {
+          throw Object.assign(new Error('unique'), { code: 'P2002' });
+        }
         for (const [k, v] of Object.entries(data)) if (v !== undefined) row[k] = v;
         return row;
       },
@@ -565,7 +621,12 @@ export function createFakePrisma() {
     groupMember: {
       async create({ data }) { db.members.push({ joinedAt: new Date(), ...data }); },
       async findUnique({ where }) { const w = flat(where); return db.members.find((m) => match(m, w)) ?? null; },
-      async findMany({ where = {} } = {}) { return db.members.filter((m) => match(m, where)); },
+      async findMany({ where = {}, select } = {}) {
+        const rows = db.members.filter((m) => match(m, where));
+        if (!select?.group) return rows;
+        return rows.map((m) => ({ ...m, group: pick(db.groups.find((g) => g.id === m.groupId), select.group.select) }));
+      },
+      async count({ where = {} } = {}) { return db.members.filter((m) => match(m, where)).length; },
       async delete({ where }) { const w = flat(where); db.members = db.members.filter((m) => !match(m, w)); },
     },
     homework: {
@@ -666,11 +727,14 @@ export function createFakePrisma() {
       defaults: { createdAt: new Date() },
     }),
     aiConversation: collection((c) => c.aiConversations, id, db, {
-      defaults: { task: 'CHAT', title: 'Yangi suhbat', createdAt: new Date(), updatedAt: new Date() },
-      relations: { messages: { kind: 'many', store: (c) => c.aiMessages, foreign: 'conversationId', local: 'id' } },
+      defaults: { task: 'CHAT', title: 'Yangi suhbat', createdAt: tick, updatedAt: tick },
+      relations: {
+        messages: { kind: 'many', store: (c) => c.aiMessages, foreign: 'conversationId', local: 'id' },
+        user: { kind: 'one', store: (c) => c.users, local: 'userId' },
+      },
     }),
     aiMessage: collection((c) => c.aiMessages, id, db, {
-      defaults: { model: null, createdAt: new Date() },
+      defaults: { model: null, error: null, createdAt: tick },
     }),
     aiUsage: collection((c) => c.aiUsage, id, db, {
       pk: ['userId', 'day'],
@@ -723,7 +787,7 @@ export function createFakePrisma() {
       relations: { author: { kind: 'one', store: (c) => c.users, local: 'authorId' } },
     }),
     lessonVideo: collection((c) => c.lessonVideos, id, db, {
-      defaults: { description: null, coverUrl: null, level: null, position: 0, isActive: true, createdAt: new Date(), updatedAt: new Date() },
+      defaults: { description: null, coverUrl: null, level: null, position: 0, isActive: true, isDefault: false, createdAt: tick, updatedAt: tick },
       relations: { assignments: { kind: 'many', store: (c) => c.leadVideos, foreign: 'videoId', local: 'id' } },
     }),
     leadVideo: collection((c) => c.leadVideos, id, db, {
@@ -737,9 +801,13 @@ export function createFakePrisma() {
     }),
     liveSession: collection((c) => c.liveSessions, id, db, {
       uniques: [['roomName']],
-      defaults: { description: null, status: 'SCHEDULED', durationMin: 60, level: null, isPublic: false, createdAt: new Date(), updatedAt: new Date() },
+      defaults: {
+        description: null, status: 'SCHEDULED', durationMin: 60, level: null, isPublic: false,
+        groupId: null, provider: 'JITSI', externalUrl: null, maxParticipants: 100, createdAt: tick, updatedAt: tick,
+      },
       relations: {
         host: { kind: 'one', store: (c) => c.users, local: 'hostId' },
+        group: { kind: 'one', store: (c) => c.groups, local: 'groupId' },
         attendees: { kind: 'many', store: (c) => c.liveAttendees, foreign: 'sessionId', local: 'id' },
       },
     }),

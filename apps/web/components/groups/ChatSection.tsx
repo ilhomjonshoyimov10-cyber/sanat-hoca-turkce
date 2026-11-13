@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
 import { errorText } from "./shared";
+import { formatTime } from "@/lib/datetime";
 
 interface Sender { id: string; firstName: string; lastName: string; role: string }
 interface Msg {
@@ -137,7 +138,7 @@ export function ChatSection({ groupId, canModerate }: { groupId: string; canMode
                 </span>
                 {m.isAnnouncement && <span className="badge badge-warn">E&apos;lon</span>}
                 <span className="text-[0.75rem] text-muted">
-                  {new Date(m.createdAt).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })}
+                  {formatTime(m.createdAt)}
                 </span>
                 {!m.isDeleted && (m.mine || canModerate) && (
                   <button

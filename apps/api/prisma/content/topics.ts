@@ -15,6 +15,7 @@
 // tomonidan ko'rib chiqilsin. Men yozdim, lekin oxirgi so'z ustozniki.
 
 import type { Level } from '@prisma/client';
+import { moreTopics } from './more.js';
 
 export interface TopicWord {
   turkish: string;
@@ -440,6 +441,9 @@ export const topics: Topic[] = [
     ],
   },
 ];
+
+// Qo'shimcha to'plam (content/more.ts)
+topics.push(...moreTopics);
 
 /** Jami nechta so'z — seed hisobotida ko'rsatiladi. */
 export const topicWordCount = topics.reduce((n, t) => n + t.words.length, 0);

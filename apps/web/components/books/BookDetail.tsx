@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { PageLoader } from "@/components/Loader";
 
 type Chapter = { id: string; title: string; position: number; startPage: number | null };
 
@@ -123,7 +124,7 @@ export function BookDetail() {
       </div>
     );
   }
-  if (!book) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (!book) return <PageLoader />;
 
   const canEdit = book.isMine || user?.role === "ADMIN";
 

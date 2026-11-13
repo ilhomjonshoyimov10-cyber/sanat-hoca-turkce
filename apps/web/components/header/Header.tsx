@@ -1,14 +1,15 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { site } from "@/lib/content";
 import { getT } from "@/lib/i18n/server";
 import { HeaderScroll } from "../fx/HeaderScroll";
-import { Mosque } from "../fx/Mosque";
 import { HeaderUser } from "./HeaderUser";
 import { LangSwitcher } from "./LangSwitcher";
 import { MobileMenu } from "./MobileMenu";
 import { NavLinks, NavLinksStatic } from "./NavLinks";
 import { SectionNav } from "./SectionNav";
+import { ThemeToggle } from "./ThemeToggle";
 
 /**
  * Saytning YAGONA sarlavhasi — ommaviy sahifalarda ham, kabinetda ham.
@@ -29,7 +30,14 @@ export async function Header() {
             aria-label={`${site.name} — ${t.nav.home}`}
             className="group flex min-w-0 shrink items-center gap-2 font-display text-[1.02rem] font-semibold tracking-[-0.02em] sm:gap-2.5 sm:text-[1.3rem]"
           >
-            <Mosque className="size-7 shrink-0 text-brass sm:size-8 transition-transform duration-500 [transition-timing-function:var(--ease-out)] group-hover:-translate-y-0.5" />
+            <Image
+              src="/brand/logo-256.webp"
+              alt=""
+              width={44}
+              height={44}
+              priority
+              className="brand-logo size-9 shrink-0 transition-transform duration-500 [transition-timing-function:var(--ease-out)] group-hover:-translate-y-0.5 group-hover:rotate-[-4deg] sm:size-11"
+            />
             <span className="truncate whitespace-nowrap max-[350px]:hidden">{site.name}</span>
           </Link>
 
@@ -44,6 +52,9 @@ export async function Header() {
             {/* Telefonda til tanlash menyu ichida — sarlavhaga sig'maydi */}
             <div className="max-sm:hidden">
               <LangSwitcher />
+            </div>
+            <div className="max-sm:hidden">
+              <ThemeToggle />
             </div>
             <HeaderUser />
             <Suspense fallback={null}>

@@ -13,6 +13,8 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useHydrated } from "@/lib/hydrated";
 import { errorText } from "../groups/shared";
+import { PageLoader } from "@/components/Loader";
+import { formatDate, formatDateTime } from "@/lib/datetime";
 
 const TOPICS = [
   { value: "PROFILE", label: "Profil ma'lumotlarim" },
@@ -63,7 +65,7 @@ export function SupportPanel() {
     if (user) void reload();
   }, [user, reload]);
 
-  if (loading || !user) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (loading || !user) return <PageLoader />;
 
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -174,7 +176,7 @@ export function SupportPanel() {
                   <span className="min-w-0">
                     <span className="block font-medium">{r.subject}</span>
                     <span className="text-sm text-muted">
-                      {new Date(r.createdAt).toLocaleDateString("uz-UZ")}
+                      {formatDate(r.createdAt, "uz")}
                       {r._count.replies > 0 && ` · ${r._count.replies} javob`}
                     </span>
                   </span>
@@ -197,7 +199,7 @@ export function SupportPanel() {
 
           <article className="mb-4 rounded-[var(--r-tile)] border border-cobalt/20 p-4">
             <p className="mb-1 text-sm text-muted">
-              Siz · {new Date(open.createdAt).toLocaleString("uz-UZ")}
+              Siz · {formatDateTime(open.createdAt, "uz")}
             </p>
             <p className="whitespace-pre-line">{open.body}</p>
           </article>
@@ -213,7 +215,7 @@ export function SupportPanel() {
               >
                 <p className="mb-1 text-sm text-muted">
                   {mine ? "Siz" : `${r.author.firstName} ${r.author.lastName}`} ·{" "}
-                  {new Date(r.createdAt).toLocaleString("uz-UZ")}
+                  {formatDateTime(r.createdAt, "uz")}
                 </p>
                 <p className="whitespace-pre-line">{r.body}</p>
               </article>

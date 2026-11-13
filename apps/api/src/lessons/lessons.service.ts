@@ -2,6 +2,8 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { randomBytes } from 'node:crypto';
 import type { Role } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { jitsiUrl } from '../common/jitsi.js';
+import { tashkentTime } from '../common/time.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateLessonDto, UpdateLessonDto } from './lessons.dto.js';
 
@@ -62,6 +64,8 @@ export class LessonsService {
 
   private isJoinable(startsAt: Date, durationMin: number, status: string): boolean {
     if (status === 'CANCELLED' || status === 'ENDED') return false;
+    // Ustoz kirib darsni boshlagan bo'lsa — vaqtdan qat'i nazar ochiq
+    if (status === 'LIVE') return true;
     const now = Date.now();
     return now >= startsAt.getTime() - EARLY_JOIN_MS
       && now <= startsAt.getTime() + durationMin * 60_000;
@@ -94,8 +98,8 @@ export class LessonsService {
     await this.notifications.pushMany(members.map((m) => m.userId), {
       type: 'LESSON_SOON',
       title: `${group.name}: video dars rejalashtirildi`,
-      body: `${lesson.title} — ${startsAt.toISOString()}`,
-      link: `/guruh?id=${groupId}`,
+      body: `${lesson.title} — ${tashkentTime(startsAt)}`,
+      link: `/groups/${groupId}`,
     });
 
     return { id: lesson.id, title: lesson.title, startsAt: lesson.startsAt, durationMin: lesson.durationMin, status: lesson.status };
@@ -136,11 +140,23 @@ export class LessonsService {
     if (!lesson) throw new NotFoundException(NOT_FOUND);
     const { canManage } = await this.access(lesson.groupId, actor);
 
-    if (!this.isJoinable(lesson.startsAt, lesson.durationMin, lesson.status)) {
+    // Ustoz istalgan vaqtda kira oladi (xonani oldindan ochish, sozlash uchun)
+    const ended = lesson.status === 'CANCELLED' || lesson.status === 'ENDED';
+    if (ended || (!canManage && !this.isJoinable(lesson.startsAt, lesson.durationMin, lesson.status))) {
       throw new ForbiddenException('Dars hali boshlanmadi yoki tugagan');
     }
 
-    if (lesson.status === 'SCHEDULED') {
+    if (lesson.status === 'SCHEDULED' && canManage) {
+      await this.prisma.lesson.update({ where: { id: lessonId }, data: { status: 'LIVE' } });
+      // "Dars boshlandi" — guruh a'zolari ekranida darhol chiqadi
+      const members = await this.prisma.groupMember.findMany({ where: { groupId: lesson.groupId }, select: { userId: true } });
+      await this.notifications.pushMany(members.map((m) => m.userId).filter((u) => u !== actor.id), {
+        type: 'LIVE',
+        title: 'Video dars boshlandi — kiring!',
+        body: lesson.title,
+        link: `/groups/${lesson.groupId}`,
+      });
+    } else if (lesson.status === 'SCHEDULED') {
       await this.prisma.lesson.update({ where: { id: lessonId }, data: { status: 'LIVE' } });
     }
     // Kim kirgani yoziladi; ikkinchi marta kirsa yangi yozuv yaratilmaydi.
@@ -148,8 +164,11 @@ export class LessonsService {
       .create({ data: { lessonId, userId: actor.id } })
       .catch(() => undefined);
 
+    const me = await this.prisma.user.findUnique({ where: { id: actor.id }, select: { firstName: true, lastName: true } });
+    const name = me ? `${me.firstName} ${(me.lastName ?? "").charAt(0)}.` : 'O‘quvchi';
     return {
       roomName: lesson.roomName,
+      url: jitsiUrl(lesson.roomName, name, canManage),
       title: lesson.title,
       /** Ustoz xonada moderator bo'ladi */
       isModerator: canManage,

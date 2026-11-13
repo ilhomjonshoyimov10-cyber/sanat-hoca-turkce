@@ -13,6 +13,8 @@ import { site } from "@/lib/content";
 import { getDictionary } from "@/lib/i18n";
 import { isLocale, LOCALE_META, LOCALES } from "@/lib/i18n/config";
 import { I18nProvider } from "@/lib/i18n/client";
+import { NotificationCenter } from "@/lib/notify";
+import { themeBootScript, THEME_COLORS } from "@/lib/theme";
 
 // Har bir til uchun sahifalar oldindan tayyorlanadi (statik).
 // proxy.ts foydalanuvchini cookie'dagi tilga ichkarida yo'naltiradi.
@@ -29,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export const viewport: Viewport = { themeColor: "#070d1f", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: THEME_COLORS.dark, colorScheme: "dark light" };
 
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   const l = await lang();
@@ -37,7 +39,11 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   const t = getDictionary(l);
 
   return (
-    <html lang={LOCALE_META[l].html} className="h-full">
+    // suppressHydrationWarning: data-theme ni <head> skripti qo'yadi (React'dan oldin)
+    <html lang={LOCALE_META[l].html} className="h-full" data-theme="dark" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body className="flex min-h-full flex-col">
         {/* JavaScript o'chiq bo'lsa ham kontent ko'rinishi uchun */}
         <noscript>
@@ -47,11 +53,14 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
         <a href="#main" className="skip-link">{t.common.skip}</a>
         <I18nProvider locale={l} dict={t}>
           <AuthProvider>
-            <Header />
-            {/* Admin e'lonlari: har bir sahifada, kirgan foydalanuvchiga */}
-            <AnnouncementBar />
-            <main id="main" className="flex-1">{children}</main>
-            <Footer />
+            {/* Bildirishnomalar: butun sayt uchun bitta so'rovchi + "Sizga xabar keldi" oynasi */}
+            <NotificationCenter>
+              <Header />
+              {/* Admin e'lonlari: har bir sahifada, kirgan foydalanuvchiga */}
+              <AnnouncementBar />
+              <main id="main" className="flex-1">{children}</main>
+              <Footer />
+            </NotificationCenter>
           </AuthProvider>
         </I18nProvider>
       </body>

@@ -198,7 +198,7 @@ export function UserMenu({ user }: { user: User }) {
               type="button"
               onClick={onLogout}
               disabled={leaving}
-              className="flex w-full items-center gap-3 rounded-[var(--r-field)] px-3 py-2.5 text-left text-[0.9375rem] font-medium text-[#ffb3ab] transition-colors hover:bg-bole/12 disabled:opacity-60"
+              className="flex w-full items-center gap-3 rounded-[var(--r-field)] px-3 py-2.5 text-left text-[0.9375rem] font-medium text-danger transition-colors hover:bg-bole/12 disabled:opacity-60"
             >
               {icons.logout}
               {leaving ? t.user.loggingOut : t.user.logout}

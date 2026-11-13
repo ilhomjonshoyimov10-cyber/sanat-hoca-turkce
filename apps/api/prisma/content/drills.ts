@@ -4,6 +4,7 @@
 // turkcha qoidaga mos bo'lishi kerak, ayniqsa unlilar moslashuvi
 // (ünlü uyumu) va undoshlarning yumshashi (ünsüz yumuşaması).
 
+import { moreDrills, moreSentences } from './more.js';
 export type SeedSentence = {
   turkish: string;
   uzbek: string;
@@ -325,3 +326,7 @@ export const DRILLS: SeedDrill[] = [
     rule: 'negation',
   },
 ];
+
+// Qo'shimcha to'plam (content/more.ts)
+SENTENCES.push(...moreSentences);
+DRILLS.push(...moreDrills);

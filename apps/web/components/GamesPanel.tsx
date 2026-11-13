@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { api, needs2fa } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -13,9 +13,10 @@ import { AntonymGame, ClozeGame, DialogueGame, OddOneOutGame, VerbGame } from ".
 import { QuizGame } from "./games/QuizGame";
 import { SentenceGame } from "./games/SentenceGame";
 import { SuffixGame } from "./games/SuffixGame";
+import { Leaderboard } from "./games/Leaderboard";
 import { errorText, LEVELS, type GameProps, type Stats } from "./games/types";
+import { PageLoader } from "@/components/Loader";
 
-type Row = { rank: number; name: string; xp: number; isMe: boolean };
 type Key =
   | "quiz" | "match" | "builder" | "listen" | "antonym" | "odd"
   | "sentence" | "suffix" | "cloze" | "verb"
@@ -123,7 +124,7 @@ export function GamesPanel() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
-  const [board, setBoard] = useState<Row[]>([]);
+  const [boardKey, setBoardKey] = useState(0);
   const [game, setGame] = useState<Key | null>(null);
   const [level, setLevel] = useState(""); // "" = hamma daraja
   const [error, setError] = useState("");
@@ -143,38 +144,43 @@ export function GamesPanel() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    Promise.all([api<Stats>("/games/me"), api<Row[]>("/games/leaderboard")])
-      .then(([s, b]) => {
+    api<Stats>("/games/me")
+      .then((s) => {
         if (cancelled) return;
         setStats(s);
-        setBoard(b);
       })
       .catch((e) => !cancelled && fail(e));
     return () => { cancelled = true; };
   }, [user, fail]);
 
-  async function exitGame() {
+  function exitGame() {
     setGame(null);
-    try {
-      setBoard(await api<Row[]>("/games/leaderboard"));
-    } catch (e) {
-      fail(e);
-    }
+    setBoardKey((k) => k + 1);
   }
+
+  // Har javobdan keyin (XP o'zgarganda) reyting ham yangilanadi — 3 soniyada ko'pi bilan bir marta
+  const lastBump = useRef(0);
+  const onStats = useCallback((next: Stats | ((s: Stats | null) => Stats | null)) => {
+    setStats(next as Stats);
+    if (Date.now() - lastBump.current > 3000) {
+      lastBump.current = Date.now();
+      setBoardKey((k) => k + 1);
+    }
+  }, []);
 
   async function toggleOptIn(optIn: boolean) {
     setError("");
     setStats((s) => (s ? { ...s, leaderboardOptIn: optIn } : s));
     try {
       await api("/games/leaderboard-optin", { method: "PATCH", body: { optIn } });
-      setBoard(await api<Row[]>("/games/leaderboard"));
+      setBoardKey((k) => k + 1);
     } catch (e) {
       setStats((s) => (s ? { ...s, leaderboardOptIn: !optIn } : s));
       fail(e);
     }
   }
 
-  if (loading || !user) return <p className="text-muted" role="status">{t.common.loading}</p>;
+  if (loading || !user) return <PageLoader />;
 
   const active = GAMES.find((g) => g.key === game);
 
@@ -263,37 +269,13 @@ export function GamesPanel() {
               className="justify-self-start text-[0.9375rem] text-muted transition-colors hover:text-porcelain">
               {g.backToGames}
             </button>
-            <active.Comp key={active.key} onStats={setStats} onFail={fail} onExit={exitGame} level={level} />
+            <active.Comp key={active.key} onStats={onStats} onFail={fail} onExit={exitGame} level={level} />
           </div>
         )}
       </div>
 
-      {/* Reyting */}
-      {/* self-start: ilgari bu blok sahifa bo'yi cho'zilib, bo'sh baland
-          quti bo'lib turardi */}
-      <aside className="self-start border border-cobalt/25 bg-cobalt/[0.05] p-6 lg:sticky lg:top-24">
-        <h2 className="text-[1.2rem]">{g.board}</h2>
-        {board.length === 0 ? (
-          <p className="mt-2.5 text-[0.9375rem] text-muted">{g.boardEmpty}</p>
-        ) : (
-          <ol className="mt-3 grid gap-2">
-            {board.map((r) => (
-              <li key={r.rank}
-                className={`flex justify-between px-3 py-2 text-[0.9375rem] ${r.isMe ? "bg-brass/15 font-semibold text-brass" : "bg-cobalt/10"}`}>
-                <span>{r.rank}. {r.name}</span>
-                <span>{r.xp} XP</span>
-              </li>
-            ))}
-          </ol>
-        )}
-        {stats && (
-          <label className="mt-5 flex items-start gap-3 text-[0.9375rem]">
-            <input type="checkbox" checked={stats.leaderboardOptIn} onChange={(e) => toggleOptIn(e.target.checked)}
-              className="mt-0.5 size-5 shrink-0 accent-cobalt" />
-            <span>{g.optIn}</span>
-          </label>
-        )}
-      </aside>
+      {/* Reyting: jonli, har 30 soniyada va har javobdan keyin yangilanadi */}
+      <Leaderboard refreshKey={boardKey} optIn={stats ? stats.leaderboardOptIn : null} onOptIn={(v) => void toggleOptIn(v)} />
     </div>
   );
 }

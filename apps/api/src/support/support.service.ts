@@ -38,21 +38,13 @@ export class SupportService {
     });
 
     // Adminlarga xabar beramiz — murojaat e'tiborsiz qolmasin
-    const admins = await this.prisma.user.findMany({
-      where: { role: 'ADMIN', isActive: true },
-      select: { id: true },
+    const who = await this.prisma.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true } });
+    await this.notifications.pushToAdmins({
+      type: 'SUPPORT',
+      title: `Yangi murojaat: ${who ? `${who.firstName} ${who.lastName}` : ''}`.trim(),
+      body: row.subject,
+      link: `/admin?tab=support&id=${row.id}`,
     });
-    await Promise.all(
-      admins.map((a) =>
-        this.notifications.push({
-          userId: a.id,
-          type: 'ACCOUNT',
-          title: 'Yangi murojaat',
-          body: row.subject,
-          link: `/admin/murojaatlar?id=${row.id}`,
-        }),
-      ),
-    );
     return row;
   }
 
@@ -126,10 +118,18 @@ export class SupportService {
     if (staff) {
       await this.notifications.push({
         userId: row.userId,
-        type: 'ACCOUNT',
+        type: 'SUPPORT',
         title: 'Murojaatingizga javob keldi',
-        body: row.subject,
+        body: dto.body.trim().slice(0, 200),
         link: `/murojaat?id=${row.id}`,
+      });
+    } else {
+      // Foydalanuvchi qo'shimcha yozdi — adminlar bilsin
+      await this.notifications.pushToAdmins({
+        type: 'SUPPORT',
+        title: `Murojaatga yangi xabar: ${row.subject}`.slice(0, 160),
+        body: dto.body.trim().slice(0, 200),
+        link: `/admin?tab=support&id=${row.id}`,
       });
     }
     return reply;

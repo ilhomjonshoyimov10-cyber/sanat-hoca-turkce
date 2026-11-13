@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { api } from "@/lib/api";
 import { useHydrated } from "@/lib/hydrated";
 import { errorText } from "../groups/shared";
+import { formatDate } from "@/lib/datetime";
 
 interface Row {
   id: string; kind: string; audience: string; title: string; body: string;
@@ -264,9 +265,9 @@ export function AnnouncementsTab({ onError }: { onError: (m: string) => void }) 
                     <strong>{r.title}</strong>
                   </div>
                   <p className="text-sm text-muted">
-                    {new Date(r.createdAt).toLocaleDateString("uz-UZ")} · {r.author} ·{" "}
+                    {formatDate(r.createdAt, "uz")} · {r.author} ·{" "}
                     {r.dismissedBy} kishi yopgan
-                    {r.endsAt && ` · ${new Date(r.endsAt).toLocaleDateString("uz-UZ")} gacha`}
+                    {r.endsAt && ` · ${formatDate(r.endsAt, "uz")} gacha`}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">

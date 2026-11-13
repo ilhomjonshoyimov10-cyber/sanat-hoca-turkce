@@ -117,6 +117,23 @@ mediaSeeds.forEach((m, i) => db.mediaItems.push({
   checkedAt: now, checkNote: null, position: i, published: true, createdById: null, createdAt: now, updatedAt: now,
 }));
 
+// ── Demo xodimlar: admin va ustoz (faqat mahalliy demo, ishlab chiqarishda YO'Q) ──
+// 2FA kodi shu sirdan hisoblanadi (QA skripti dist/auth/totp.js bilan).
+const { hashPassword } = await import('../dist/auth/argon.js');
+const { encrypt } = await import('../dist/auth/crypto.js');
+export const DEMO_TOTP = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+const staffHash = await hashPassword('demo-ustoz-parol-2026-kuz');
+for (const [role, email, first, last] of [['ADMIN', 'admin@demo.uz', 'Admin', 'Demo'], ['TEACHER', 'ustoz@demo.uz', 'Sanat', 'Hoca']]) {
+  db.users.push({
+    id: `demo-${role.toLowerCase()}`, email, phone: null, firstName: first, lastName: last, role, locale: 'UZ',
+    avatarUrl: null, isActive: true, twoFactorEnabled: true,
+    twoFactorSecret: encrypt(DEMO_TOTP, process.env.TOTP_ENCRYPTION_KEY, 'totp-secret'),
+    twoFactorLastStep: null, leaderboardOptIn: false, parentConsent: false, failedLoginCount: 0, lockedUntil: null,
+    passwordHash: staffHash, birthDate: null, bio: null, timezone: 'Asia/Tashkent', createdAt: now,
+    emailVerifiedAt: now, telegramVerifiedAt: null, telegramChatId: null, lastLoginAt: null,
+  });
+}
+
 const mod = await Test.createTestingModule({ imports: [AppModule] })
   .overrideProvider(PrismaService).useValue(prisma).compile();
 const app = mod.createNestApplication();

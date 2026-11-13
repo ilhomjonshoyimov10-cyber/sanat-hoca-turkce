@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n/client";
 import { isActive, useCleanPathname } from "@/lib/path";
 import { useDismiss } from "@/lib/useDismiss";
 import { LocaleList } from "./LangSwitcher";
+import { ThemeToggle } from "./ThemeToggle";
 import { PUBLIC_LINKS, sectionLinks } from "./links";
 
 /** Tor ekranda: barcha bo'limlar bitta ro'yxatda. */
@@ -77,6 +78,10 @@ export function MobileMenu() {
           <div className="container-page border-t border-cobalt/20 pb-10 pt-5">
             <p className="mb-2 px-3 text-[0.75rem] font-bold uppercase tracking-[0.08em] text-muted">{t.lang.title}</p>
             <LocaleList onPick={close} />
+            <div className="mt-5 flex items-center justify-between gap-4 border-t border-cobalt/20 px-3 pt-5">
+              <span className="font-medium">{t.theme.label}</span>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       )}

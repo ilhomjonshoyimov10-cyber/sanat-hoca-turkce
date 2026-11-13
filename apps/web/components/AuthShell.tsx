@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { getT } from "@/lib/i18n/server";
 import { Mosque } from "./fx/Mosque";
 
 /** Kirish va ro'yxatdan o'tish sahifalarining ramkasi.
  *  Chapda çini panel (bitta turkcha so'z — mahsulot shu), o'ngda forma. */
-export function AuthShell({
+export async function AuthShell({
   title,
   lead,
   word,
@@ -20,6 +21,7 @@ export function AuthShell({
   footer: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const { t } = await getT();
   return (
     <div className="container-page py-10 sm:py-16">
       <div className="mx-auto grid max-w-5xl overflow-hidden border border-cobalt/30 lg:grid-cols-[1fr_1fr]">
@@ -39,7 +41,7 @@ export function AuthShell({
           </div>
 
           <p className="relative text-[0.875rem] text-muted">
-            Har kuni bitta so&apos;z — bir yilda yetti yuz so&apos;z.
+            {t.auth.dailyWord}
           </p>
         </aside>
 

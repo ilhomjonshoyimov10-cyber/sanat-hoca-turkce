@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { fmt, LOCALE_META } from "@/lib/i18n/config";
+import { useI18n } from "@/lib/i18n/client";
 
 interface Item {
   id: string;
@@ -18,6 +20,7 @@ interface Item {
 const POLL_MS = 60_000;
 
 export function NotificationBell() {
+  const { t, locale } = useI18n();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
@@ -70,7 +73,7 @@ export function NotificationBell() {
         type="button"
         onClick={() => { setOpen((o) => !o); if (!open) void load(); }}
         aria-expanded={open}
-        aria-label={unread ? `Bildirishnomalar, ${unread} ta o'qilmagan` : "Bildirishnomalar"}
+        aria-label={unread ? `${t.notif.title}, ${fmt(t.notif.unread, { n: unread })}` : t.notif.title}
         className="relative grid size-10 place-items-center rounded-full text-muted transition-colors hover:text-porcelain"
       >
         <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
@@ -83,26 +86,26 @@ export function NotificationBell() {
       {open && (
         <div
           role="dialog"
-          aria-label="Bildirishnomalar"
+          aria-label={t.notif.title}
           className="absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] border border-cobalt/40 bg-tile raise"
         >
           <div className="flex items-center justify-between border-b border-cobalt/25 px-4 py-3">
-            <h2 className="font-display text-[1.05rem] font-semibold">Bildirishnomalar</h2>
+            <h2 className="font-display text-[1.05rem] font-semibold">{t.notif.title}</h2>
             {unread > 0 && (
               <button type="button" onClick={markAll} className="text-[0.8125rem] text-brass underline underline-offset-4">
-                Hammasini o&apos;qildi
+                {t.notif.markAll}
               </button>
             )}
           </div>
 
           <ul className="max-h-[22rem] overflow-y-auto">
-            {items.length === 0 && <li className="px-4 py-8 text-center text-[0.9375rem] text-muted">Hozircha bo&apos;sh</li>}
+            {items.length === 0 && <li className="px-4 py-8 text-center text-[0.9375rem] text-muted">{t.notif.empty}</li>}
             {items.map((n) => {
               const inner = (
                 <>
                   <p className="font-medium">{n.title}</p>
                   {n.body && <p className="mt-0.5 text-[0.875rem] text-muted">{n.body}</p>}
-                  <p className="mt-1 text-[0.75rem] text-muted">{new Date(n.createdAt).toLocaleString("uz-UZ")}</p>
+                  <p className="mt-1 text-[0.75rem] text-muted">{new Date(n.createdAt).toLocaleString(LOCALE_META[locale].intl)}</p>
                 </>
               );
               return (

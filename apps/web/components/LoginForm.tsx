@@ -5,15 +5,13 @@ import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useHydrated } from "@/lib/hydrated";
-
-/** Rolga qarab o'z paneliga yuboradi: admin, ustoz va o'quvchi alohida joyga tushadi. */
-function homeFor(role: string | undefined): string {
-  if (role === "ADMIN") return "/admin";
-  if (role === "TEACHER") return "/ustoz";
-  return "/dashboard";
-}
+import { useI18n } from "@/lib/i18n/client";
+// Rolga qarab o'z paneliga: admin, ustoz va o'quvchi alohida joyga tushadi
+import { homeFor } from "./header/links";
 
 export function LoginForm() {
+  const { t } = useI18n();
+  const a = t.auth;
   const { login, verifyTwoFactor, reloadUser } = useAuth();
   const router = useRouter();
   const hydrated = useHydrated();
@@ -22,7 +20,7 @@ export function LoginForm() {
   const [challenge, setChallenge] = useState<string | null>(null);
 
   const fail = (err: unknown) => {
-    setError(err instanceof ApiError ? err.message : "Xatolik yuz berdi. Qayta urinib ko'ring");
+    setError(err instanceof ApiError ? err.message : t.common.error);
     setLoading(false);
   };
 
@@ -70,11 +68,9 @@ export function LoginForm() {
   if (challenge) {
     return (
       <form onSubmit={onCode} method="post" className="grid gap-4">
-        <p className="text-muted">
-          Authenticator ilovasidagi 6 xonali kodni kiriting. Telefoningiz yo&apos;q bo&apos;lsa, tiklash kodidan foydalaning.
-        </p>
+        <p className="text-muted">{a.codeHelp}</p>
         <div>
-          <label htmlFor="code" className="label">Tasdiqlash kodi</label>
+          <label htmlFor="code" className="label">{a.code}</label>
           <input
             id="code" name="code" required autoFocus inputMode="text" autoComplete="one-time-code"
             maxLength={20} className="input tracking-widest"
@@ -82,10 +78,10 @@ export function LoginForm() {
         </div>
         {error && <p className="alert-error" role="alert">{error}</p>}
         <button type="submit" disabled={loading || !hydrated} className="btn btn-primary">
-          {loading ? "Tekshirilmoqda..." : "Tasdiqlash"}
+          {loading ? a.verifying : a.verify}
         </button>
         <button type="button" onClick={() => { setChallenge(null); setError(""); }} className="text-center text-[0.9375rem] font-medium text-muted underline underline-offset-4">
-          Orqaga
+          {t.common.back}
         </button>
       </form>
     );
@@ -94,16 +90,16 @@ export function LoginForm() {
   return (
     <form onSubmit={onPassword} method="post" className="grid gap-4">
       <div>
-        <label htmlFor="identifier" className="label">Email yoki telefon raqam</label>
+        <label htmlFor="identifier" className="label">{a.identifier}</label>
         <input id="identifier" name="identifier" required autoComplete="username" className="input" />
       </div>
       <div>
-        <label htmlFor="password" className="label">Parol</label>
+        <label htmlFor="password" className="label">{a.password}</label>
         <input id="password" name="password" type="password" required autoComplete="current-password" className="input" />
       </div>
       {error && <p className="alert-error" role="alert">{error}</p>}
       <button type="submit" disabled={loading || !hydrated} className="btn btn-primary">
-        {loading ? "Kirilmoqda..." : "Kirish"}
+        {loading ? a.submitting : a.submit}
       </button>
     </form>
   );

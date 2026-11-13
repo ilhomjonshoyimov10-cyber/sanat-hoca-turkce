@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/client";
 
 interface Announcement {
   id: string;
@@ -24,14 +25,15 @@ interface Announcement {
   pinned: boolean;
 }
 
-const TONE: Record<Announcement["kind"], { ring: string; chip: string; label: string }> = {
-  INFO: { ring: "border-cobalt/35 bg-cobalt/[0.07]", chip: "badge", label: "Xabar" },
-  PROMO: { ring: "border-brass/45 bg-brass/[0.08]", chip: "badge badge-warn", label: "Taklif" },
-  EVENT: { ring: "border-turquoise/45 bg-turquoise/[0.08]", chip: "badge badge-ok", label: "Tadbir" },
-  WARNING: { ring: "border-danger/45 bg-danger/[0.08]", chip: "badge badge-bad", label: "Muhim" },
+const TONE: Record<Announcement["kind"], { ring: string; chip: string }> = {
+  INFO: { ring: "border-cobalt/35 bg-cobalt/[0.07]", chip: "badge" },
+  PROMO: { ring: "border-brass/45 bg-brass/[0.08]", chip: "badge badge-warn" },
+  EVENT: { ring: "border-turquoise/45 bg-turquoise/[0.08]", chip: "badge badge-ok" },
+  WARNING: { ring: "border-danger/45 bg-danger/[0.08]", chip: "badge badge-bad" },
 };
 
 export function AnnouncementBar() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const [items, setItems] = useState<Announcement[]>([]);
 
@@ -77,7 +79,7 @@ export function AnnouncementBar() {
               )}
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <span className={tone.chip}>{tone.label}</span>
+                  <span className={tone.chip}>{t.notif.kinds[a.kind]}</span>
                   <h2 className="text-[1.05rem] font-semibold">{a.title}</h2>
                 </div>
                 <p className="whitespace-pre-line text-[0.95rem] text-muted">{a.body}</p>
@@ -90,11 +92,11 @@ export function AnnouncementBar() {
                       rel="noopener noreferrer"
                       className="btn btn-outline mt-3 inline-flex"
                     >
-                      {a.linkLabel || "Batafsil"}
+                      {a.linkLabel || t.notif.more}
                     </a>
                   ) : (
                     <Link href={a.linkUrl} className="btn btn-outline mt-3 inline-flex">
-                      {a.linkLabel || "Batafsil"}
+                      {a.linkLabel || t.notif.more}
                     </Link>
                   ))}
               </div>
@@ -102,7 +104,7 @@ export function AnnouncementBar() {
                 <button
                   type="button"
                   onClick={() => dismiss(a.id)}
-                  aria-label={`"${a.title}" e'lonini yopish`}
+                  aria-label={`${t.common.close}: ${a.title}`}
                   className="btn btn-quiet shrink-0 px-3 py-1 text-lg leading-none"
                 >
                   ×

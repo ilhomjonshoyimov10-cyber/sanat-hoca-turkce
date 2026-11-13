@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { api, needs2fa } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/client";
 import { BuilderGame } from "./games/BuilderGame";
 import { ChainGame } from "./games/ChainGame";
 import { ListenGame } from "./games/ListenGame";
@@ -23,11 +24,8 @@ type Key =
 /** O'yin qaysi ko'nikmani mashq qiladi. Sahifa shu bo'yicha bo'linadi. */
 type Family = "words" | "grammar" | "speech";
 
-const FAMILIES: { key: Family; title: string; text: string }[] = [
-  { key: "words", title: "So'z boyligi", text: "Yangi so'zlarni yodlash va takrorlash" },
-  { key: "grammar", title: "Grammatika", text: "Qo'shimchalar, fe'l shakllari, gap tuzilishi" },
-  { key: "speech", title: "Jonli til", text: "Suhbat va tezkor fikrlash" },
-];
+// Nomlar va tavsiflar lug'atda: t.games.families / t.games.list
+const FAMILIES: Family[] = ["words", "grammar", "speech"];
 
 const Icon = ({ children }: { children: ReactNode }) => (
   <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -38,8 +36,6 @@ const Icon = ({ children }: { children: ReactNode }) => (
 interface GameDef {
   key: Key;
   family: Family;
-  title: string;
-  text: string;
   /** Akssent rangi: bir oilaning o'yinlari bir xil ohangda */
   tone: string;
   icon: ReactNode;
@@ -56,72 +52,74 @@ const TONE = {
 const GAMES: GameDef[] = [
   // ── So'z boyligi ──
   {
-    key: "quiz", family: "words", title: "So'z mashqi", text: "4 variantdan tarjimani toping",
+    key: "quiz", family: "words",
     tone: TONE.words, Comp: QuizGame,
     icon: <Icon><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></Icon>,
   },
   {
-    key: "match", family: "words", title: "Juftlikni top", text: "So'zni tarjimasi bilan bog'lang",
+    key: "match", family: "words",
     tone: TONE.words, Comp: MatchGame,
     icon: <Icon><circle cx="6" cy="12" r="3" /><circle cx="18" cy="12" r="3" /><path d="M9 12h6" /></Icon>,
   },
   {
-    key: "builder", family: "words", title: "Harflardan so'z", text: "Aralash harflardan so'zni yig'ing",
+    key: "builder", family: "words",
     tone: TONE.words, Comp: BuilderGame,
     icon: <Icon><rect x="3" y="5" width="7" height="7" rx="1.5" /><rect x="14" y="5" width="7" height="7" rx="1.5" /><path d="M5 18h14" /></Icon>,
   },
   {
-    key: "listen", family: "words", title: "Tinglab yozish", text: "Eshiting va to'g'ri yozing",
+    key: "listen", family: "words",
     tone: TONE.words, Comp: ListenGame,
     icon: <Icon><path d="M11 5 6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" /></Icon>,
   },
   {
-    key: "antonym", family: "words", title: "Zid ma'no", text: "Teskari ma'noli so'zni toping",
+    key: "antonym", family: "words",
     tone: TONE.words, Comp: AntonymGame, isNew: true,
     icon: <Icon><path d="M7 7 4 10l3 3" /><path d="M4 10h16" /><path d="m17 17 3-3-3-3" /><path d="M20 14H4" /></Icon>,
   },
   {
-    key: "odd", family: "words", title: "Ortiqcha so'z", text: "Mavzuga qo'shilmaydiganini toping",
+    key: "odd", family: "words",
     tone: TONE.words, Comp: OddOneOutGame, isNew: true,
     icon: <Icon><circle cx="7" cy="7" r="3" /><circle cx="17" cy="7" r="3" /><circle cx="7" cy="17" r="3" /><path d="M14 14h6v6h-6z" /></Icon>,
   },
 
   // ── Grammatika ──
   {
-    key: "sentence", family: "grammar", title: "Gap tuzish", text: "Aralash so'zlardan gap yasang",
+    key: "sentence", family: "grammar",
     tone: TONE.grammar, Comp: SentenceGame,
     icon: <Icon><path d="M4 7h16M4 12h10M4 17h13" /></Icon>,
   },
   {
-    key: "suffix", family: "grammar", title: "Qo'shimchalar", text: "Unlilar moslashuvi va yumshash",
+    key: "suffix", family: "grammar",
     tone: TONE.grammar, Comp: SuffixGame,
     icon: <Icon><path d="M7 8h10M12 8v9" /><circle cx="12" cy="19" r="1.6" /></Icon>,
   },
   {
-    key: "cloze", family: "grammar", title: "Bo'shliqni to'ldir", text: "Jumladagi yetishmagan qismni toping",
+    key: "cloze", family: "grammar",
     tone: TONE.grammar, Comp: ClozeGame, isNew: true,
     icon: <Icon><path d="M4 12h5" /><rect x="10" y="8" width="5" height="8" rx="1" strokeDasharray="3 2" /><path d="M16 12h4" /></Icon>,
   },
   {
-    key: "verb", family: "grammar", title: "Fe'l shakli", text: "Shaxs va zamonga qarab o'zgartiring",
+    key: "verb", family: "grammar",
     tone: TONE.grammar, Comp: VerbGame, isNew: true,
     icon: <Icon><path d="M4 6h16" /><path d="M4 12h8" /><path d="m15 15 3 3 4-5" /></Icon>,
   },
 
   // ── Jonli til ──
   {
-    key: "dialogue", family: "speech", title: "Suhbat", text: "To'g'ri javobni tanlang",
+    key: "dialogue", family: "speech",
     tone: TONE.speech, Comp: DialogueGame, isNew: true,
     icon: <Icon><path d="M4 5h11v8H8l-4 4z" /><path d="M9 9h8v6h3l-3 3v-3" /></Icon>,
   },
   {
-    key: "chain", family: "speech", title: "So'z zanjiri", text: "Oxirgi harfdan yangi so'z",
+    key: "chain", family: "speech",
     tone: TONE.speech, Comp: ChainGame,
     icon: <Icon><path d="M9 12a3 3 0 0 1 3-3h1a3 3 0 0 1 0 6h-1" /><path d="M15 12a3 3 0 0 0-3-3h-1a3 3 0 0 0 0 6h1" /></Icon>,
   },
 ];
 
 export function GamesPanel() {
+  const { t } = useI18n();
+  const g = t.games;
   const { user, loading } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
@@ -176,7 +174,7 @@ export function GamesPanel() {
     }
   }
 
-  if (loading || !user) return <p className="text-muted" role="status">Yuklanmoqda...</p>;
+  if (loading || !user) return <p className="text-muted" role="status">{t.common.loading}</p>;
 
   const active = GAMES.find((g) => g.key === game);
 
@@ -185,7 +183,7 @@ export function GamesPanel() {
       <div className="grid content-start gap-7">
         {stats && (
           <dl className="grid grid-cols-3 gap-px border border-cobalt/25 bg-cobalt/25">
-            {([["XP", stats.xp, "text-brass"], ["Daraja", stats.level, "text-cobalt"], ["Seriya", stats.streak, "text-turquoise"]] as const).map(
+            {([[g.xp, stats.xp, "text-brass"], [g.level, stats.level, "text-cobalt"], [g.streak, stats.streak, "text-turquoise"]] as const).map(
               ([label, value, tone]) => (
                 <div key={label} className="bg-ink px-4 py-5">
                   <dt className="text-[0.875rem] text-muted">{label}</dt>
@@ -201,19 +199,19 @@ export function GamesPanel() {
         {!active && (
           <>
             <div className="grid gap-4">
-              <div role="group" aria-label="Daraja tanlash" className="flex flex-wrap items-center gap-2">
-                <span className="mr-1 text-[0.9375rem] text-muted">Daraja:</span>
+              <div role="group" aria-label={g.chooseLevel} className="flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-[0.9375rem] text-muted">{g.levelLabel}</span>
                 {["", ...LEVELS].map((l) => (
                   <button key={l || "all"} type="button" aria-pressed={level === l} onClick={() => setLevel(l)}
                     className="tab" data-on={level === l || undefined}>
-                    {l || "Hammasi"}
+                    {l || t.common.all}
                   </button>
                 ))}
               </div>
               {stats && (
                 <p className="text-[0.9375rem] text-muted">
-                  Takrorlashga tayyor so&apos;zlar:{" "}
-                  <strong className="font-semibold text-porcelain">{stats.dueWords}</strong> · O&apos;rganilgan:{" "}
+                  {g.due}{" "}
+                  <strong className="font-semibold text-porcelain">{stats.dueWords}</strong> · {g.learned}{" "}
                   <strong className="font-semibold text-porcelain">{stats.learnedWords}</strong>
                 </p>
               )}
@@ -222,31 +220,31 @@ export function GamesPanel() {
             {/* O'yinlar ko'nikma bo'yicha guruhlangan: 12 tasini bitta
                 uzun ro'yxatda ko'rsatish tanlashni qiyinlashtiradi. */}
             {FAMILIES.map((fam) => {
-              const list = GAMES.filter((g) => g.family === fam.key);
+              const list = GAMES.filter((x) => x.family === fam);
               return (
-                <section key={fam.key} aria-labelledby={`fam-${fam.key}`}>
+                <section key={fam} aria-labelledby={`fam-${fam}`}>
                   <div className="mb-3">
-                    <h2 id={`fam-${fam.key}`} className="font-display text-[1.25rem] font-semibold tracking-[-0.015em]">
-                      {fam.title}
+                    <h2 id={`fam-${fam}`} className="font-display text-[1.25rem] font-semibold tracking-[-0.015em]">
+                      {g.families[fam].title}
                     </h2>
-                    <p className="text-[0.9375rem] text-muted">{fam.text}</p>
+                    <p className="text-[0.9375rem] text-muted">{g.families[fam].text}</p>
                   </div>
                   <ul className="grid gap-px border border-cobalt/25 bg-cobalt/25 sm:grid-cols-2">
-                    {list.map((g) => (
-                      <li key={g.key} className="contents">
+                    {list.map((x) => (
+                      <li key={x.key} className="contents">
                         <button
                           type="button"
-                          onClick={() => setGame(g.key)}
+                          onClick={() => setGame(x.key)}
                           className="group relative block h-full w-full bg-ink p-5 text-left transition-colors hover:bg-cobalt/10"
                         >
-                          {g.isNew && (
-                            <span className="badge badge-ok absolute right-4 top-4">Yangi</span>
+                          {x.isNew && (
+                            <span className="badge badge-ok absolute right-4 top-4">{t.common.new}</span>
                           )}
-                          <span className={`mb-3.5 grid size-10 place-items-center border ${g.tone}`}>{g.icon}</span>
+                          <span className={`mb-3.5 grid size-10 place-items-center border ${x.tone}`}>{x.icon}</span>
                           <span className="block font-display text-[1.15rem] font-semibold tracking-[-0.015em]">
-                            {g.title}
+                            {g.list[x.key].title}
                           </span>
-                          <span className="mt-1.5 block text-[0.9375rem] text-muted">{g.text}</span>
+                          <span className="mt-1.5 block text-[0.9375rem] text-muted">{g.list[x.key].text}</span>
                         </button>
                       </li>
                     ))}
@@ -263,7 +261,7 @@ export function GamesPanel() {
           <div className="grid gap-3">
             <button type="button" onClick={exitGame}
               className="justify-self-start text-[0.9375rem] text-muted transition-colors hover:text-porcelain">
-              ← O&apos;yinlar
+              {g.backToGames}
             </button>
             <active.Comp key={active.key} onStats={setStats} onFail={fail} onExit={exitGame} level={level} />
           </div>
@@ -274,9 +272,9 @@ export function GamesPanel() {
       {/* self-start: ilgari bu blok sahifa bo'yi cho'zilib, bo'sh baland
           quti bo'lib turardi */}
       <aside className="self-start border border-cobalt/25 bg-cobalt/[0.05] p-6 lg:sticky lg:top-24">
-        <h2 className="text-[1.2rem]">Haftalik reyting</h2>
+        <h2 className="text-[1.2rem]">{g.board}</h2>
         {board.length === 0 ? (
-          <p className="mt-2.5 text-[0.9375rem] text-muted">Birinchi javobdan keyin shu yerda paydo bo&apos;lasiz.</p>
+          <p className="mt-2.5 text-[0.9375rem] text-muted">{g.boardEmpty}</p>
         ) : (
           <ol className="mt-3 grid gap-2">
             {board.map((r) => (
@@ -292,7 +290,7 @@ export function GamesPanel() {
           <label className="mt-5 flex items-start gap-3 text-[0.9375rem]">
             <input type="checkbox" checked={stats.leaderboardOptIn} onChange={(e) => toggleOptIn(e.target.checked)}
               className="mt-0.5 size-5 shrink-0 accent-cobalt" />
-            <span>Reytingda ismim ko&apos;rinsin (faqat &quot;Ism F.&quot; ko&apos;rinishida)</span>
+            <span>{g.optIn}</span>
           </label>
         )}
       </aside>

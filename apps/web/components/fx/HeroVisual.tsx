@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useI18n } from "@/lib/i18n/client";
 import { MosqueArt } from "./MosqueArt";
 
 // three.js (og'ir kutubxona) faqat kerak bo'lganda, alohida fayl sifatida yuklanadi
@@ -12,6 +13,7 @@ type NavExtra = Navigator & { connection?: { saveData?: boolean }; deviceMemory?
 /** 3D masjid + suzuvchi kartochkalar. Zaif qurilmada, "kamroq harakat" yoki trafik tejash rejimida
  *  3D yuklanmaydi: o'rniga yengil SVG masjid ko'rsatiladi. */
 export function HeroVisual() {
+  const { t } = useI18n();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [mount3d, setMount3d] = useState(false);
   const [ready, setReady] = useState(false);
@@ -94,7 +96,7 @@ export function HeroVisual() {
             <span className="grid size-8 place-items-center bg-cobalt/25 font-display text-base text-cobalt">C</span>
             <span>
               <span lang="tr" className="block font-medium leading-tight">cami</span>
-              <span className="block text-xs text-muted">masjid</span>
+              <span className="block text-xs text-muted">{t.home.chips.mosque}</span>
             </span>
           </div>
         </div>
@@ -106,7 +108,7 @@ export function HeroVisual() {
             <span className="grid size-8 place-items-center bg-brass/25 font-display text-base text-brass">T</span>
             <span>
               <span lang="tr" className="block font-medium leading-tight">teşekkürler</span>
-              <span className="block text-xs text-muted">rahmat</span>
+              <span className="block text-xs text-muted">{t.home.chips.thanks}</span>
             </span>
           </div>
         </div>
@@ -118,7 +120,7 @@ export function HeroVisual() {
             <svg viewBox="0 0 24 24" className="size-5 text-brass" fill="currentColor" aria-hidden="true">
               <path d="M12 2c1 3.5 4.5 5.5 4.5 10a4.5 4.5 0 1 1-9 0c0-1.6.6-2.8 1.4-3.8.2 1.2.9 2 1.7 2.3C10.2 7.2 10.6 4.4 12 2z" />
             </svg>
-            <span className="font-medium">7 kunlik seriya</span>
+            <span className="font-medium">{t.home.chips.streak}</span>
           </div>
         </div>
       </div>
@@ -127,7 +129,7 @@ export function HeroVisual() {
         <div className="orbit-inner" style={{ "--fd": "-1.5s" } as React.CSSProperties}>
           <div className="glass-chip">
             <span className="font-display text-base text-turquoise">+10 XP</span>
-            <span className="text-xs text-muted">To&apos;g&apos;ri javob</span>
+            <span className="text-xs text-muted">{t.home.chips.correct}</span>
           </div>
         </div>
       </div>

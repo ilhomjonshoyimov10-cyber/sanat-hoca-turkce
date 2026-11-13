@@ -5,6 +5,7 @@ import { decrypt, encrypt } from '../auth/crypto.js';
 import { calcAge } from '../auth/auth.utils.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { AnswerDto, MatchAnswerDto, TypedAnswerDto } from './games.dto.js';
+import { isVerb, nearlySameAsTranslation, pickDistractors, sameAsTranslation, soften } from './distractors.js';
 import { dropRecentlySeen, markSeen, pickFresh } from './rotation.js';
 import { dayBefore, levelFromXp, nextState, nextStreak, shuffle, tashkentDay, XP_PER_CORRECT } from './srs.js';
 
@@ -81,9 +82,10 @@ export class GamesService {
     if (allWords.length < 4) throw new BadRequestException("So'zlar yetarli emas. Ustoz so'z qo'shishi kerak");
 
     const questions = targets.map((w) => {
-      const others = allWords.filter((o) => o.id !== w.id && o.uzbek !== w.uzbek);
-      const same = others.filter((o) => o.level === w.level); // noto'g'ri variantlar ham o'sha darajadan (aks holda javobni osongina topib bo'ladi)
-      const distractors = shuffle(same.length >= 6 ? same : others).slice(0, 3);
+      // Chalg'ituvchilar mavzu -> darslik bo'limi -> daraja tartibida
+      // tanlanadi (sababi distractors.ts da). Ilgari butun lug'atdan
+      // tasodifiy olinardi: "üzüm" ga "televizor boshlovchisi" varianti.
+      const distractors = pickDistractors(w, allWords, 3);
       const options = shuffle([w, ...distractors]);
       const payload: QuestionPayload = {
         u: userId,
@@ -96,7 +98,10 @@ export class GamesService {
         prompt: w.turkish,
         example: w.exampleTr,
         audioUrl: w.audioUrl,
-        options: options.map((o) => o.uzbek),
+        // Harf o'lchami bir xil bo'lsin: lug'atda ba'zi tarjimalar bosh harf
+        // bilan, ba'zilari kichik — va faqat to'g'ri javob kichik bo'lsa,
+        // u o'zini o'zi oshkor qilardi.
+        options: options.map((o) => soften(o.uzbek, 'uz')),
       };
     });
 
@@ -139,7 +144,9 @@ export class GamesService {
       .map((u) => u.wordId);
     const allWords = await this.prisma.word.findMany({ orderBy: [{ level: 'asc' }, { position: 'asc' }] });
     const byId = new Map(allWords.map((w) => [w.id, w]));
-    const ok = (w: Word) => !only || only(w);
+    // Tarjimasi o'zi bilan bir xil so'zlar (tuz/tuz, taksi/taksi) bu
+    // o'yinlarda savol bo'la olmaydi — javob ekranda yozilgan bo'ladi.
+    const ok = (w: Word) => !sameAsTranslation(w) && (!only || only(w));
     const due = dueIds.map((id) => byId.get(id)).filter((w): w is Word => !!w && ok(w)).slice(0, limit);
 
     // Yangi so'zlar: dars tartibida, lekin yaqinda ko'rsatilganlari
@@ -201,7 +208,11 @@ export class GamesService {
     if (words.length < 3) return { token: null, left: [], right: [] };
     const order = shuffle(words.map((_, i) => i)); // o'ng ustundagi j-element: chapdagi order[j]-so'zning tarjimasi
     const token = this.seal(PURPOSE_MATCH, { u: userId, w: words.map((w) => w.id), m: order });
-    return { token, left: words.map((w) => w.turkish), right: order.map((i) => words[i].uzbek) };
+    return {
+      token,
+      left: words.map((w) => soften(w.turkish, 'tr')),
+      right: order.map((i) => soften(words[i].uzbek, 'uz')),
+    };
   }
 
   async matchAnswer(userId: string, dto: MatchAnswerDto) {
@@ -224,7 +235,15 @@ export class GamesService {
 
   // ───────── 3) Harflardan so'z / 4) Tinglab yozish ─────────
   async typedSet(userId: string, level: Level | undefined, limit: number, kind: 'builder' | 'listen') {
-    const usable = (w: Word) => /^\p{L}+$/u.test(w.turkish) && [...w.turkish].length >= 3 && [...w.turkish].length <= 12; // faqat harflar (probel va tinish belgilarisiz)
+    // Faqat harflar (probel va tinish belgilarisiz), 3–12 harf.
+    // Va tarjimasi turkchasiga deyarli teng bo'lmasin: bu o'yinlarda
+    // tarjima ko'rsatiladi va turkchasi YOZILADI — "Tarjimasi: tennis"
+    // deb turib "tenis" ni so'rash savol emas.
+    const usable = (w: Word) =>
+      /^\p{L}+$/u.test(w.turkish) &&
+      [...w.turkish].length >= 3 &&
+      [...w.turkish].length <= 12 &&
+      !nearlySameAsTranslation(w);
     const { targets } = await this.pickTargets(userId, level, limit, usable);
     const items = targets.map((w) => {
       const letters = [...normTr(w.turkish)];
@@ -373,7 +392,15 @@ export class GamesService {
         note: s.note,
         // So'zlar aralashtirilgan holda beriladi. To'g'ri tartib klientga
         // YUBORILMAYDI — u faqat serverda tekshiriladi.
-        words: shuffle(s.turkish.split(/\s+/).filter(Boolean)),
+        // Gap boshidagi so'z kichik harf bilan beriladi: bosh harf
+        // "men birinchiman" deb o'zini oshkor qilardi. Javob katta-kichik
+        // harfni hisobga olmay tekshiriladi, shuning uchun bu xavfsiz.
+        words: shuffle(
+          s.turkish
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((w, i) => (i === 0 ? soften(w, 'tr') : w)),
+        ),
       })),
     };
   }
@@ -402,7 +429,7 @@ export class GamesService {
       where: { verified: true, ...(level ? { level } : {}), ...(rule ? { rule } : {}) },
       orderBy: { position: 'asc' },
       take: 200,
-      select: { id: true, base: true, prompt: true },
+      select: { id: true, base: true, prompt: true, rule: true },
     });
     if (rows.length === 0) return { items: [] };
 
@@ -412,6 +439,8 @@ export class GamesService {
         token: this.seal(PURPOSE_SUFFIX, { u: userId, d: d.id }),
         base: d.base,
         prompt: d.prompt,
+        // Qaysi qoida mashq qilinayotgani — o'quvchi nima so'ralayotganini bilsin
+        rule: d.rule,
       })),
     };
   }
@@ -454,7 +483,7 @@ export class GamesService {
     const start = shuffle(words)[0];
     return {
       token: this.seal(PURPOSE_CHAIN, { u: userId, c: start.turkish, used: [normTr(start.turkish)], n: 1 }),
-      current: start.turkish,
+      current: soften(start.turkish, 'tr'),
       currentUz: start.uzbek,
       nextLetter: this.lastLetter(start.turkish),
       step: 1,
@@ -693,14 +722,36 @@ export class GamesService {
     return {
       items: chosen.map((pair) => {
         // Chalg'ituvchilar — boshqa juftliklarning "ikkinchi" so'zlari.
-        // O'sha darajadan olinadi, aks holda javob ko'zga tashlanib qoladi.
-        const wrong = pool.filter((o) => o.id !== pair.id).map((o) => o.second);
+        //
+        // Jonli o'yinda topilgan ikki kamchilik shu yerda edi:
+        //  • "temiz" (A2, sifat) savoliga "geçicilik" (C1) va "reddetmek"
+        //    (fe'l) variantlari chiqardi — darajasi va so'z turi boshqa
+        //    variantni o'ylamasdan chiqarib tashlash mumkin.
+        //  • Shu sababli avval O'SHA darajadan va O'SHA so'z turidan
+        //    olinadi, yetmasa — kengaytiriladi.
+        const others = pool.filter((o) => o.id !== pair.id && o.second !== pair.second);
+        const verb = isVerb(pair.second);
+        const tiers = [
+          others.filter((o) => o.level === pair.level && isVerb(o.second) === verb),
+          others.filter((o) => isVerb(o.second) === verb),
+          others,
+        ];
+        const wrong: string[] = [];
+        for (const tier of tiers) {
+          for (const o of shuffle(tier)) {
+            if (wrong.length >= 3) break;
+            if (!wrong.includes(o.second)) wrong.push(o.second);
+          }
+          if (wrong.length >= 3) break;
+        }
         const { options, correctIndex } = this.mixOptions(pair.second, wrong);
         return {
           token: this.seal(PURPOSE_PAIR, { u: userId, i: pair.id, c: correctIndex }),
           word: pair.first,
-          uzbek: pair.uzbek,
-          options,
+          // MUHIM: kontentda tarjima "toza — kir" shaklida, ya'ni IKKALA so'z.
+          // Ikkinchi yarmi javobni aytib qo'yardi — faqat birinchisi ko'rsatiladi.
+          uzbek: pair.uzbek ? pair.uzbek.split(/\s+[—–-]\s+/)[0] : null,
+          options: options.map((o) => soften(o, 'tr')),
         };
       }),
     };
@@ -766,9 +817,11 @@ export class GamesService {
       const otherCats = usable.filter(([c]) => c !== category);
       const [, otherList] = otherCats[Math.floor(Math.random() * otherCats.length)];
       const stranger = shuffle(otherList)[0];
+      // Harf o'lchami bir xil bo'lsin ("Satranç" va "ders" — bosh harf
+      // savolga aloqasi yo'q belgi bo'lib, e'tiborni chalg'itardi)
       const { options, correctIndex } = this.mixOptions(
-        stranger.turkish,
-        same.map((w) => w.turkish),
+        soften(stranger.turkish, 'tr'),
+        same.map((w) => soften(w.turkish, 'tr')),
       );
       return {
         // Mavzu nomi ID o'rnida — bu o'yinda saqlanadigan element yo'q

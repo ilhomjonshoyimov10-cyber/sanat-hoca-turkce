@@ -271,7 +271,9 @@ export function GamesPanel() {
       </div>
 
       {/* Reyting */}
-      <aside className="content-start border border-cobalt/25 bg-cobalt/[0.05] p-6">
+      {/* self-start: ilgari bu blok sahifa bo'yi cho'zilib, bo'sh baland
+          quti bo'lib turardi */}
+      <aside className="self-start border border-cobalt/25 bg-cobalt/[0.05] p-6 lg:sticky lg:top-24">
         <h2 className="text-[1.2rem]">Haftalik reyting</h2>
         {board.length === 0 ? (
           <p className="mt-2.5 text-[0.9375rem] text-muted">Birinchi javobdan keyin shu yerda paydo bo&apos;lasiz.</p>

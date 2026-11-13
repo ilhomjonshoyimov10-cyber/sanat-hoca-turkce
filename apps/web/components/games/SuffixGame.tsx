@@ -4,7 +4,27 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import { levelParam, TURKISH_LETTERS, type GameProps, type Stats } from "./types";
 
-type Item = { token: string; base: string; prompt: string };
+type Item = { token: string; base: string; prompt: string; rule?: string | null };
+
+/**
+ * Qaysi qoida so'ralayotgani. Ilgari ekranda faqat "ev" va "«uyLAR»"
+ * chiqardi — nima qilish kerakligini o'quvchi o'zi taxmin qilishi kerak edi.
+ */
+const RULE_LABEL: Record<string, string> = {
+  locative: "O'rin kelishigi",
+  dative: "Yo'nalish kelishigi",
+  ablative: "Chiqish kelishigi",
+  accusative: "Tushum kelishigi",
+  genitive: "Qaratqich kelishigi",
+  possessive: "Egalik qo'shimchasi",
+  plural: "Ko'plik qo'shimchasi",
+  "present-continuous": "Hozirgi zamon",
+  past: "O'tgan zamon",
+  future: "Kelasi zamon",
+  ability: "Imkoniyat",
+  negation: "Bo'lishsiz shakl",
+  softening: "Undosh yumshashi",
+};
 type Result = {
   correct: boolean;
   almost: boolean;
@@ -141,6 +161,11 @@ export function SuffixGame({ onStats, onFail, onExit, level }: GameProps) {
           {item.base}
         </p>
         <p className="mt-2 text-lg text-muted">{item.prompt}</p>
+        {item.rule && RULE_LABEL[item.rule] && (
+          <p className="mt-2">
+            <span className="badge">{RULE_LABEL[item.rule]}</span>
+          </p>
+        )}
       </div>
 
       <div>

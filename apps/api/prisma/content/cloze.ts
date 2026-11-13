@@ -33,7 +33,7 @@ export const clozeItems: Cloze[] = [
     options: ['de', 'ta', 'te'],
     uzbek: 'Men maktabda dars qilyapman.',
     explanation: "okul — oxirgi unli «u» (qalin), oxirgi harf jarangli «l» → -da.",
-    topic: 'O‘rin kelishigi (-da/-de)',
+    topic: 'O‘rin kelishigi',
     level: 'A1',
   },
   {
@@ -43,7 +43,7 @@ export const clozeItems: Cloze[] = [
     options: ['de', 'ta', 'te'],
     uzbek: 'Kitob stolda turibdi.',
     explanation: "masa — oxirgi unli «a» (qalin) → -da.",
-    topic: 'O‘rin kelishigi (-da/-de)',
+    topic: 'O‘rin kelishigi',
     level: 'A1',
   },
   {
@@ -53,7 +53,7 @@ export const clozeItems: Cloze[] = [
     options: ['da', 'te', 'ta'],
     uzbek: 'Ukam uyda uxlayapti.',
     explanation: "ev — oxirgi unli «e» (ingichka), «v» jarangli → -de.",
-    topic: 'O‘rin kelishigi (-da/-de)',
+    topic: 'O‘rin kelishigi',
     level: 'A1',
   },
   {
@@ -63,7 +63,7 @@ export const clozeItems: Cloze[] = [
     options: ['de', 'ta', 'te'],
     uzbek: 'Daftar sumkada.',
     explanation: "çanta — oxirgi unli «a» → -da.",
-    topic: 'O‘rin kelishigi (-da/-de)',
+    topic: 'O‘rin kelishigi',
     level: 'A1',
   },
   {
@@ -73,7 +73,7 @@ export const clozeItems: Cloze[] = [
     options: ['da', 'te', 'de'],
     uzbek: 'O‘quvchilar sinfda kutyapti.',
     explanation: "sınıf — «f» JARANGSIZ undosh, shuning uchun qo‘shimcha ham jarangsiz: -ta (fıstıkçı şahap qoidasi).",
-    topic: 'O‘rin kelishigi (-ta/-te)',
+    topic: 'O‘rin kelishigi',
     level: 'A1',
   },
   {
@@ -83,7 +83,7 @@ export const clozeItems: Cloze[] = [
     options: ['da', 'te', 'de'],
     uzbek: 'Onam oshxonada ovqat tayyorlayapti.',
     explanation: "mutfak — «k» jarangsiz → -ta.",
-    topic: 'O‘rin kelishigi (-ta/-te)',
+    topic: 'O‘rin kelishigi',
     level: 'A1',
   },
   {
@@ -93,7 +93,7 @@ export const clozeItems: Cloze[] = [
     options: ['a', 'de', 'den'],
     uzbek: 'Men uyga ketyapman.',
     explanation: "Yo‘nalish kelishigi: ev — ingichka unli → -e.",
-    topic: 'Yo‘nalish kelishigi (-a/-e)',
+    topic: 'Yo‘nalish kelishigi',
     level: 'A1',
   },
   {
@@ -103,7 +103,7 @@ export const clozeItems: Cloze[] = [
     options: ['e', 'da', 'dan'],
     uzbek: 'Ertaga Istanbulga boraman.',
     explanation: "Atoqli otdan keyin qo‘shimcha apostrof bilan yoziladi: İstanbul’a. Oxirgi unli «u» qalin → -a.",
-    topic: 'Yo‘nalish kelishigi (-a/-e)',
+    topic: 'Yo‘nalish kelishigi',
     level: 'A1',
   },
   {
@@ -113,7 +113,7 @@ export const clozeItems: Cloze[] = [
     options: ['den', 'tan', 'ten'],
     uzbek: 'Maktabdan kelyapman.',
     explanation: "Chiqish kelishigi: okul — qalin unli, «l» jarangli → -dan.",
-    topic: 'Chiqish kelishigi (-dan/-den)',
+    topic: 'Chiqish kelishigi',
     level: 'A1',
   },
   {
@@ -123,7 +123,7 @@ export const clozeItems: Cloze[] = [
     options: ['de', 'ta', 'da'],
     uzbek: 'Do‘konda non oldim.',
     explanation: "market — «t» jarangsiz, oxirgi unli «e» ingichka → -te.",
-    topic: 'O‘rin kelishigi (-ta/-te)',
+    topic: 'O‘rin kelishigi',
     level: 'A1',
   },
   {
@@ -185,7 +185,7 @@ export const clozeItems: Cloze[] = [
     options: ['dim', 'tım', 'dım'],
     uzbek: 'Kecha kinoga bordim.',
     explanation: "O‘tgan zamon: git- «t» jarangsiz bilan tugaydi → -ti; «i» ingichka → -tim.",
-    topic: "O‘tgan zamon (-di)",
+    topic: "O‘tgan zamon",
     level: 'A2',
   },
   {
@@ -195,7 +195,7 @@ export const clozeItems: Cloze[] = [
     options: ['erim', 'ırım', 'uyorum'],
     uzbek: 'Har kuni ertalab erta turaman.',
     explanation: "Odatiy harakat — keng zamon: kalk- qalin unli → -ar, keyin -ım.",
-    topic: 'Keng zamon (-ar/-er)',
+    topic: 'Keng zamon',
     level: 'A2',
   },
   {
@@ -205,7 +205,7 @@ export const clozeItems: Cloze[] = [
     options: ['yeceğim', 'acağım', 'dım'],
     uzbek: 'Ertaga senga qo‘ng‘iroq qilaman.',
     explanation: "Kelasi zamon: ara- unli bilan tugaydi → «y» qo‘shiladi; qalin unli → -yacak.",
-    topic: 'Kelasi zamon (-acak/-ecek)',
+    topic: 'Kelasi zamon',
     level: 'A2',
   },
   {
@@ -235,7 +235,7 @@ export const clozeItems: Cloze[] = [
     options: ['mak', 'erek', 'ince'],
     uzbek: 'Men ham sen bilan bormoqchiman.',
     explanation: "«istemek» masdar talab qiladi: gel- ingichka unli → -mek.",
-    topic: 'Masdar (-mak/-mek)',
+    topic: 'Masdar',
     level: 'A2',
   },
   {
@@ -255,7 +255,7 @@ export const clozeItems: Cloze[] = [
     options: ['mıştım', 'dim', 'yordum'],
     uzbek: 'Bu filmni avvalroq ko‘rgan edim.',
     explanation: "Uzoq o‘tgan zamon: izle- ingichka unli → -miş + -ti + -m.",
-    topic: 'O‘tgan zamon (-mişti)',
+    topic: 'O‘tgan zamon',
     level: 'A2',
   },
   {
@@ -265,7 +265,7 @@ export const clozeItems: Cloze[] = [
     options: ['ebiliyorum', 'uyorum', 'amıyorum'],
     uzbek: 'Turkcha gapira olaman.',
     explanation: "Imkoniyat: konuş- qalin unli → -abil.",
-    topic: 'Imkoniyat (-abil/-ebil)',
+    topic: 'Imkoniyat',
     level: 'A2',
   },
   {
@@ -287,7 +287,7 @@ export const clozeItems: Cloze[] = [
     options: ['erse', 'dıysa', 'ınca'],
     uzbek: 'Agar ertaga yomg‘ir yog‘sa, piknikka bormaymiz.',
     explanation: "Shart: yağ- qalin unli → -arsa.",
-    topic: 'Shart mayli (-sa/-se)',
+    topic: 'Shart mayli',
     level: 'B1',
   },
   {
@@ -297,7 +297,7 @@ export const clozeItems: Cloze[] = [
     options: ['ınca', 'erek', 'meden'],
     uzbek: 'Uyga kelganingda menga qo‘ng‘iroq qil.',
     explanation: "«-ince» — «...ganda». gel- ingichka unli → -ince.",
-    topic: 'Ravishdosh (-ince)',
+    topic: 'Ravishdosh',
     level: 'B1',
   },
   {
@@ -307,7 +307,7 @@ export const clozeItems: Cloze[] = [
     options: ['erek', 'ınca', 'madan'],
     uzbek: 'Yugurib uyga keldim.',
     explanation: "«-arak/-erek» harakat tarzini bildiradi; koş- qalin unli → -arak.",
-    topic: 'Ravishdosh (-arak)',
+    topic: 'Ravishdosh',
     level: 'B1',
   },
   {
@@ -317,7 +317,7 @@ export const clozeItems: Cloze[] = [
     options: ['madan', 'ince', 'erek'],
     uzbek: 'Ovqat yemasdan chiqdim.',
     explanation: "«-madan/-meden» — «...masdan»; ye- ingichka → -meden.",
-    topic: 'Ravishdosh (-madan)',
+    topic: 'Ravishdosh',
     level: 'B1',
   },
   {
@@ -327,7 +327,7 @@ export const clozeItems: Cloze[] = [
     options: ['diğim', 'acağım', 'an'],
     uzbek: 'Kecha olgan kitobim menga juda yoqdi.',
     explanation: "Sifatdosh: al- qalin unli → -dığım («men olgan»).",
-    topic: 'Sifatdosh (-dık)',
+    topic: 'Sifatdosh',
     level: 'B1',
   },
   {

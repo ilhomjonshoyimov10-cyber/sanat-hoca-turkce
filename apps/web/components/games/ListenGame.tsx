@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { api } from "@/lib/api";
 import { speakTurkish, subscribeVoices, turkishVoiceAvailable } from "@/lib/speech";
 import { levelParam, TURKISH_LETTERS, type GameProps, type Stats } from "./types";
@@ -17,6 +17,14 @@ export function ListenGame({ onStats, onFail, onExit, level }: GameProps) {
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const hasVoice = useSyncExternalStore(subscribeVoices, turkishVoiceAvailable, () => false);
+  // Brauzer ovozlar ro'yxatini sahifa ochilgandan KEYIN yuklaydi. Darhol
+  // "ovoz yo'q" deyish xato bo'lardi — biroz kutamiz.
+  const [voiceChecked, setVoiceChecked] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setVoiceChecked(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+  const noVoice = voiceChecked && !hasVoice;
 
   async function start() {
     setBusy(true);
@@ -63,12 +71,37 @@ export function ListenGame({ onStats, onFail, onExit, level }: GameProps) {
     });
   }
 
+  // Turkcha ovoz yo'q bo'lsa, o'yin ma'nosiz: ilgari so'zning o'zi ekranga
+  // chiqarilardi va "tinglab yozish" oddiy ko'chirib yozishga aylanardi.
+  // Endi qanday qilib ovozni yoqishni tushuntiramiz.
+  if (noVoice) {
+    return (
+      <div className="card grid gap-4">
+        <h2 className="text-xl font-bold">Tinglab yozish</h2>
+        <p className="alert-error" role="note">
+          Bu qurilmada turkcha ovoz topilmadi. Bu o&apos;yin uchun brauzer so&apos;zni turkcha talaffuz
+          qilishi kerak.
+        </p>
+        <div className="grid gap-2 text-[0.95rem] text-muted">
+          <p className="font-semibold text-porcelain">Qanday yoqiladi:</p>
+          <p><strong>Kompyuterda:</strong> Google Chrome yoki Microsoft Edge brauzeridan foydalaning — ularda turkcha ovoz o&apos;rnatilgan bo&apos;ladi.</p>
+          <p><strong>Android:</strong> Sozlamalar → Tizim → Til → Matnni nutqqa aylantirish → &laquo;Google&raquo; → Turkcha ovozni yuklab oling.</p>
+          <p><strong>iPhone:</strong> Sozlamalar → Maxsus imkoniyatlar → Gapirish → Ovozlar → Turkcha.</p>
+          <p>Ovozni o&apos;rnatgach, sahifani yangilang.</p>
+        </div>
+        <button type="button" onClick={onExit} className="btn btn-outline">Boshqa o&apos;yin tanlash</button>
+      </div>
+    );
+  }
+
   if (!items) {
     return (
       <div className="card grid gap-3">
         <h2 className="text-xl font-bold">Tinglab yozish</h2>
         <p className="text-muted">Turkcha so&apos;zni eshiting va to&apos;g&apos;ri yozing. Telefoningiz yoki brauzeringizning ovozidan foydalaniladi. 5 ta so&apos;z.</p>
-        <button type="button" onClick={start} disabled={busy} className="btn btn-primary">{busy ? "Yuklanmoqda..." : "Boshlash"}</button>
+        <button type="button" onClick={start} disabled={busy || !voiceChecked} className="btn btn-primary">
+          {busy ? "Yuklanmoqda..." : !voiceChecked ? "Ovoz tekshirilmoqda..." : "Boshlash"}
+        </button>
       </div>
     );
   }
@@ -116,11 +149,7 @@ export function ListenGame({ onStats, onFail, onExit, level }: GameProps) {
           <button type="button" onClick={() => speakTurkish(item.text, 0.9)} disabled={!hasVoice} className="btn btn-primary">Tinglash</button>
           <button type="button" onClick={() => speakTurkish(item.text, 0.55)} disabled={!hasVoice} className="btn btn-outline">Sekin</button>
         </div>
-        {!hasVoice && (
-          <p className="alert-error" role="note">
-            Qurilmangizda turkcha ovoz topilmadi. O&apos;rniga so&apos;zni ko&apos;rib yozing: <strong lang="tr">{item.text}</strong>
-          </p>
-        )}
+
       </div>
 
       <div>

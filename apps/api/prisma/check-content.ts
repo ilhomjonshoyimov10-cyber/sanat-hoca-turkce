@@ -62,6 +62,15 @@ perLevel('Bo‘shliq', clozeItems, 4);
 for (const [i, c] of clozeItems.entries()) {
   const n = i + 1;
   if (!c.masked.includes('___')) fail(`Bo‘shliq ${n}: "___" belgisi yo‘q — savol bo‘shliqsiz chiqadi`);
+  // Mavzu yorlig'i savol bilan birga ko'rinadi. "O'rin kelishigi (-ta/-te)"
+  // deb yozilsa, -da/-de variantlari darhol chiqib ketadi — ya'ni yorliq
+  // javobning yarmini aytib qo'yadi. Jonli o'yinda shunday bo'lgan edi.
+  if (/\(-/.test(c.topic)) {
+    fail(`Bo‘shliq ${n}: mavzu yorlig‘ida qo‘shimcha shakli bor ("${c.topic}") — javobni oshkor qiladi`);
+  }
+  if (c.topic.toLocaleLowerCase('tr').includes(c.answer.toLocaleLowerCase('tr')) && c.answer.length > 2) {
+    fail(`Bo‘shliq ${n}: mavzu yorlig‘ida javobning o‘zi bor ("${c.topic}" / "${c.answer}")`);
+  }
   if (c.options.includes(c.answer)) {
     fail(`Bo‘shliq ${n}: to‘g‘ri javob "${c.answer}" chalg‘ituvchilar ichida ham bor — ikki marta chiqadi`);
   }
@@ -100,6 +109,13 @@ for (const [i, d] of dialogues.entries()) {
 // ───────────── Zid ma'noli so'zlar ─────────────
 
 uniqueKeys('Juftlik', antonyms, (p) => `${p.first} | ${p.second}`);
+for (const [i, p] of antonyms.entries()) {
+  // Server tarjimaning faqat birinchi yarmini ko'rsatadi ("toza — kir" -> "toza").
+  // Ajratuvchi bo'lmasa, IKKALA so'z ekranga chiqib, javobni aytib qo'yadi.
+  if (p.uzbek && !/\s[—–-]\s/.test(p.uzbek)) {
+    fail(`Juftlik ${i + 1}: tarjima "birinchi — ikkinchi" shaklida emas ("${p.uzbek}") — javob oshkor bo‘ladi`);
+  }
+}
 perLevel('Juftlik', antonyms, 4);
 {
   // Chalg'ituvchilar bir darajadagi boshqa juftliklarning "ikkinchi"

@@ -397,6 +397,23 @@ export const uz = {
     freeText: "Mualliflik huquqi muddati tugagan turk klassikasi — rasmiy ochiq kutubxonalarda bepul.",
   },
 
+  achievements: {
+    title: "Yutuqlar",
+    count: "{got} / {total} ta nishon",
+    done: "olingan",
+    list: {
+      first: { title: "Birinchi qadam", text: "10 XP to'plang" },
+      week: { title: "Bir hafta tinmay", text: "7 kun ketma-ket mashq" },
+      month: { title: "Temir iroda", text: "30 kun ketma-ket mashq" },
+      w100: { title: "100 so'z", text: "100 ta so'zni o'rganing" },
+      w500: { title: "So'z ustasi", text: "500 ta so'zni o'rganing" },
+      mastered: { title: "Mustahkam xotira", text: "50 ta so'z beshinchi qutida" },
+      lvl5: { title: "5-daraja", text: "Beshinchi darajaga chiqing" },
+      lvl10: { title: "10-daraja", text: "O'ninchi darajaga chiqing" },
+      reader: { title: "Kitobxon", text: "Kutubxonadan bitta kitobni oxirigacha o'qing" },
+    },
+  },
+
   notFound: {
     title: "Bu sahifa topilmadi",
     text: "Havola eskirgan yoki manzil xato yozilgan bo'lishi mumkin.",

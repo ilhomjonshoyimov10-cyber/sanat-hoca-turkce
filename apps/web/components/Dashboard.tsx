@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmt } from "@/lib/i18n/config";
 import { useI18n } from "@/lib/i18n/client";
+import { Achievements } from "./Achievements";
 import type { Stats } from "./games/types";
 
 const Icon = ({ children }: { children: React.ReactNode }) => (
@@ -131,6 +132,9 @@ export function Dashboard() {
           <Metric value={String(stats.masteredWords)} label={d.mastered} note={d.masteredNote} tone="text-turquoise" />
         </section>
       )}
+
+      {/* ═════ Yutuqlar ═════ */}
+      {stats && !isStaff && <Achievements stats={stats} />}
 
       {/* ═════ Bo'limlar ═════ */}
       <section>

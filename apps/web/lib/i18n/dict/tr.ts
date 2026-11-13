@@ -386,6 +386,23 @@ export const tr: Dict = {
     freeText: "Telif süresi dolmuş Türk klasikleri — resmî açık kütüphanelerde ücretsiz.",
   },
 
+  achievements: {
+    title: "Başarılar",
+    count: "{total} rozetten {got} tanesi",
+    done: "kazanıldı",
+    list: {
+      first: { title: "İlk adım", text: "10 XP toplayın" },
+      week: { title: "Bir hafta aralıksız", text: "7 gün üst üste çalışın" },
+      month: { title: "Demir irade", text: "30 gün üst üste çalışın" },
+      w100: { title: "100 kelime", text: "100 kelime öğrenin" },
+      w500: { title: "Kelime ustası", text: "500 kelime öğrenin" },
+      mastered: { title: "Sağlam hafıza", text: "Beşinci kutuda 50 kelime" },
+      lvl5: { title: "5. seviye", text: "Beşinci seviyeye çıkın" },
+      lvl10: { title: "10. seviye", text: "Onuncu seviyeye çıkın" },
+      reader: { title: "Kitap kurdu", text: "Kütüphaneden bir kitabı bitirin" },
+    },
+  },
+
   notFound: {
     title: "Bu sayfa bulunamadı",
     text: "Bağlantı eskimiş ya da adres yanlış yazılmış olabilir.",

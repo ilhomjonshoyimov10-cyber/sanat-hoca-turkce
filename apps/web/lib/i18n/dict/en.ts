@@ -383,6 +383,23 @@ export const en: Dict = {
     freeText: "Turkish classics now in the public domain — free in official open libraries.",
   },
 
+  achievements: {
+    title: "Achievements",
+    count: "{got} of {total} badges",
+    done: "earned",
+    list: {
+      first: { title: "First step", text: "Earn 10 XP" },
+      week: { title: "A full week", text: "Practise 7 days in a row" },
+      month: { title: "Iron will", text: "Practise 30 days in a row" },
+      w100: { title: "100 words", text: "Learn 100 words" },
+      w500: { title: "Word master", text: "Learn 500 words" },
+      mastered: { title: "Solid memory", text: "50 words in the fifth box" },
+      lvl5: { title: "Level 5", text: "Reach level five" },
+      lvl10: { title: "Level 10", text: "Reach level ten" },
+      reader: { title: "Bookworm", text: "Finish one book from the library" },
+    },
+  },
+
   notFound: {
     title: "We couldn't find this page",
     text: "The link may be out of date or the address mistyped.",

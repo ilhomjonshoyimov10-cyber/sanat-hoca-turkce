@@ -128,3 +128,34 @@ Hech bir nashriyot darsligidan yoki boshqa saytdan ko'chirilmagan.
 Bu muhim: ko'chirilgan matn bilan sayt bir shikoyat bilan yopilishi
 mumkin. Shuning uchun boshqa saytdagi dars yoqib qolsa ham, uni
 nusxalamaymiz — o'sha g'oyani **o'z so'zlarimiz bilan** qayta yozamiz.
+
+---
+
+## 8. Kutubxona (bob-bob hikoyalar)
+
+Fayllar: `apps/web/lib/library/books-a.ts` (A1–A2) va `books-b.ts` (B1–B2).
+6 ta original kitob, har biri 3 bob, har bobda lug'at va 2 ta savol.
+
+- Matnda lug'at so'zi shunday belgilanadi: `[[şehir]]` yoki shakl boshqa
+  bo'lsa `[[yurtta|yurt]]` (ko'rinadigan shakl | lug'atdagi kalit).
+- Har bir kalit o'sha bobning `glossary` ro'yxatida bo'lishi shart.
+- Tekshirish: `cd apps/web && pnpm check:library`
+- Ustoz tekshiruvi kerak: turkcha matn, o'zbek/rus/ingliz tarjimalari.
+
+Ustoz yuklagan PDF kitoblar (Materiallar) endi **sayt ichida** o'qiladi
+(pdf.js), qolgan sahifa avtomatik saqlanadi.
+
+## 9. Kino va musiqa (YouTube)
+
+Boshlang'ich ro'yxat: `apps/api/prisma/content/media.ts`. Qo'shishning
+eng qulay yo'li — admin panel → "Kino va musiqa": havolani qo'yasiz,
+server YouTube'dan tekshiradi va kanal nomini o'zi oladi.
+
+**Qoida — faqat rasmiy kanal** (serial kanali, kinostudiya, ijrochining
+o'z kanali). Boshqa odam qayta yuklagan film — qaroqchilik, uni saytga
+qo'yish markazga muammo keltiradi. Kanal nomi admin ro'yxatida ko'rinadi.
+
+- Video bizda saqlanmaydi — faqat ID. Pleyer: `youtube-nocookie.com`.
+- Egasi embed'ni o'chirsa yoki video o'chirilsa — sayt haftada bir
+  qayta tekshiradi va uni avtomatik yashiradi.
+- "Turkcha subtitr" tugmasi: videoda turkcha subtitr bo'lsa yoqiladi.

@@ -1266,3 +1266,55 @@ model SeenItem {
   @@id([userId, kind, itemId])
   @@index([userId, kind, seenAt])
 }
+
+// ───────────── Kino, serial, musiqa (YouTube) ─────────────
+
+enum MediaKind {
+  SERIES // serial
+  FILM // kino
+  MUSIC // qo'shiq
+  KIDS // multfilm, bolalar qo'shig'i
+  LESSON // video dars
+}
+
+/// YouTube videosi yoki pleylisti — sayt ichida youtube-nocookie orqali
+/// ko'rsatiladi. Video fayl bizda SAQLANMAYDI: faqat havola.
+///
+/// Mualliflik huquqi: faqat rasmiy kanaldan (huquq egasi yuklagan) va
+/// boshqa saytda ko'rsatishga ruxsat berilgan videolar qo'shiladi.
+/// YouTube oEmbed tekshiruvi buni avtomatik tasdiqlaydi: egasi
+/// "embed"ni o'chirgan bo'lsa, video saytda chiqmaydi.
+model MediaItem {
+  id          String    @id @default(cuid())
+  kind        MediaKind
+  /// Asl nomi (odatda turkcha)
+  title       String
+  /// Qisqa tavsif (o'zbekcha): nima haqida, nimaga foydali
+  description String    @default("")
+  /// Boshqa tillardagi tavsif: { "ru": "...", "en": "...", "tr": "..." }
+  descI18n    Json?
+  level       Level?
+  /// 11 belgili video ID (youtu.be/<id>)
+  videoId     String?
+  /// Pleylist ID (youtube.com/playlist?list=<id>)
+  playlistId  String?
+
+  /// YouTube'ning o'zidan (oEmbed) olingan ma'lumot — biz o'ylab topmaymiz
+  channel   String?
+  ytTitle   String?
+  thumbnail String?
+  checkedAt DateTime?
+  /// Tekshiruv natijasi: null = joyida; "not_found" | "not_embeddable"
+  checkNote String?
+
+  position  Int     @default(0)
+  published Boolean @default(true)
+  /// Kontent faylidan kelgan bo'lsa — qayta seed qilganda takrorlanmasin
+  seedKey   String? @unique
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([published, kind, position])
+}

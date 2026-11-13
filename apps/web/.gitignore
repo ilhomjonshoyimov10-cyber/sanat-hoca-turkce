@@ -2,3 +2,6 @@
 .env.local
 next-env.d.ts
 *.tsbuildinfo
+
+# yig'ishda node_modules dan ko'chiriladi
+public/pdfjs/

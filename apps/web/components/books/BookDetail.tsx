@@ -1,8 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -25,6 +26,23 @@ type Book = {
   chapters: Chapter[];
   progress: { lastPage: number; finished: boolean } | null;
 };
+
+// pdf.js og'ir — faqat PDF ochilganda yuklanadi
+const PdfReader = dynamic(() => import("./PdfReader").then((m) => m.PdfReader), {
+  ssr: false,
+  loading: () => <p className="text-muted" role="status">PDF o&apos;quvchi yuklanmoqda...</p>,
+});
+
+/** Sayt ichida o'qiladimi: faqat o'z omborimizdagi PDF (begona sayt CORS ga ruxsat bermasligi mumkin). */
+function isOwnPdf(b: { fileUrl: string | null; mimeType: string | null; fileName: string | null }): boolean {
+  if (!b.fileUrl) return false;
+  const pdf = b.mimeType === "application/pdf" || /\.pdf$/i.test(b.fileName ?? "") || /\.pdf(\?|$)/i.test(b.fileUrl);
+  try {
+    return pdf && new URL(b.fileUrl).hostname.endsWith(".blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}
 
 /** Havola qaysi saytga olib borishini ko'rsatamiz — foydalanuvchi bosishdan
  *  oldin bilsin (ustoz qo'ygan tashqi havola har qanday joyga ketishi mumkin). */
@@ -55,12 +73,12 @@ export function BookDetail() {
       .catch((e) => setError(e instanceof ApiError ? e.message : "Kitob topilmadi"));
   }, [params?.id]);
 
-  async function saveProgress(finished?: boolean) {
+  async function saveProgress(finished?: boolean, at: number = page) {
     if (!book) return;
     try {
       const r = await api<{ lastPage: number; finished: boolean }>(`/books/${book.id}/progress`, {
         method: "PUT",
-        body: { lastPage: page, ...(finished === undefined ? {} : { finished }) },
+        body: { lastPage: at, ...(finished === undefined ? {} : { finished }) },
       });
       setBook({ ...book, progress: r });
       setSaved("Saqlandi");
@@ -69,6 +87,19 @@ export function BookDetail() {
       setError(e instanceof ApiError ? e.message : "Saqlab bo'lmadi");
     }
   }
+
+  // PDF varaqlanganda — qayerda qolgani 1.5 soniyadan keyin avtomatik saqlanadi
+  const timer = useRef<number | undefined>(undefined);
+  const bookId = book?.id;
+  const onPdfPage = useCallback((n: number) => {
+    setPage(n);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      if (!bookId) return;
+      void api(`/books/${bookId}/progress`, { method: "PUT", body: { lastPage: n } }).catch(() => undefined);
+    }, 1500);
+  }, [bookId]);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
   async function remove() {
     if (!book) return;
@@ -119,6 +150,13 @@ export function BookDetail() {
       </div>
 
       {book.description && <p className="mt-5 whitespace-pre-wrap text-[1.0625rem]">{book.description}</p>}
+
+      {/* Sayt ichida o'qish */}
+      {isOwnPdf(book) && (
+        <section className="mt-7">
+          <PdfReader url={book.fileUrl!} initialPage={book.progress?.lastPage ?? 1} onPage={onPdfPage} />
+        </section>
+      )}
 
       {/* Faylni ochish */}
       {book.fileUrl ? (

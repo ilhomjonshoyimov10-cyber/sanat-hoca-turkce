@@ -338,7 +338,7 @@ export const en: Dict = {
       "Like a phrase? Pause and repeat it out loud.",
       "Look up unknown words in the site's dictionary.",
     ],
-    notAvailable: "The video didn't load. The channel may have disabled playback on other sites — open it on YouTube.",
+    notAvailable: "If the video doesn't play, the channel may have disabled playback on other sites — open it on YouTube instead.",
     source: "Source: official channel",
     adminTitle: "Films & music",
     add: "Add",

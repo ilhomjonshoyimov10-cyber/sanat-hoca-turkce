@@ -300,7 +300,7 @@ export function createFakePrisma() {
   const db = { users: [], tokens: [], audits: [], leads: [], recovery: [], words: [], userWords: [], stats: [], results: [], groups: [], members: [], homework: [], submissions: [], attendance: [], messages: [], notifications: [], lessons: [], lessonAttendees: [],
     // Yangi modellar — umumiy collection() orqali ishlaydi
     books: [], bookChapters: [], bookProgress: [], readingTexts: [], readingQuestions: [], readingGlossary: [], readingAttempts: [], aiConversations: [], aiMessages: [], aiUsage: [], wordSets: [], wordSetItems: [], sentences: [], suffixDrills: [], verificationCodes: [],
-    announcements: [], announcementDismissals: [], supportRequests: [], supportReplies: [],
+    announcements: [], announcementDismissals: [], supportRequests: [], supportReplies: [], mediaItems: [],
     lessonVideos: [], leadVideos: [], leadMessages: [], liveSessions: [], liveAttendees: [],
     clozeItems: [], verbForms: [], dialogueItems: [], wordPairs: [], seenItems: [] };
   let n = 0;
@@ -686,6 +686,15 @@ export function createFakePrisma() {
     suffixDrill: collection((c) => c.suffixDrills, id, db, { defaults: { alternates: [], explanation: null, rule: null, verified: false, position: 0, createdAt: new Date() } }),
     verificationCode: collection((c) => c.verificationCodes, id, db, {
       defaults: { attempts: 0, usedAt: null, createdAt: new Date() },
+    }),
+    mediaItem: collection((c) => c.mediaItems, id, db, {
+      uniques: [['seedKey']],
+      defaults: {
+        description: '', descI18n: null, level: null, videoId: null, playlistId: null,
+        channel: null, ytTitle: null, thumbnail: null, checkedAt: null, checkNote: null,
+        position: 0, published: true, seedKey: null, createdById: null,
+        createdAt: new Date(), updatedAt: new Date(),
+      },
     }),
     announcement: collection((c) => c.announcements, id, db, {
       defaults: {

@@ -351,7 +351,7 @@ export const uz = {
       "Yoqqan iborani to'xtatib, ovoz chiqarib takrorlang.",
       "Notanish so'zni lug'atdan qidiring — sayt lug'ati shu yerda.",
     ],
-    notAvailable: "Video ochilmadi. Ehtimol, kanal uni boshqa saytlarda ko'rsatishni cheklagan — YouTube'da oching.",
+    notAvailable: "Video ochilmasa — kanal uni boshqa saytlarda ko'rsatishni cheklagan bo'lishi mumkin. Unda YouTube'da oching.",
     source: "Manba: rasmiy kanal",
     // Admin
     adminTitle: "Kino va musiqa",

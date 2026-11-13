@@ -18,6 +18,8 @@ import { dialogues } from './content/dialogues.js';
 import { antonyms } from './content/pairs.js';
 import { topics, topicWordCount } from './content/topics.js';
 import { verbForms } from './content/verbs.js';
+import { mediaSeeds } from './content/media.js';
+import { oembed } from '../src/media/youtube.js';
 
 const prisma = new PrismaClient();
 
@@ -291,6 +293,40 @@ async function seedPairs() {
   console.log(`Zid ma'noli juftliklar: ${antonyms.length} ta`);
 }
 
+/**
+ * Kino va musiqa. seedKey bo'yicha: admin keyin o'zgartirgan yozuvga
+ * (tavsif, tartib, nashr holati) tegilmaydi — faqat yangilari qo'shiladi.
+ * Qo'shilganda YouTube'dan tekshiriladi (tarmoq bo'lmasa — keyin sayt o'zi).
+ */
+async function seedMedia() {
+  let added = 0;
+  for (const [i, m] of mediaSeeds.entries()) {
+    const exists = await prisma.mediaItem.findUnique({ where: { seedKey: m.key }, select: { id: true } });
+    if (exists) continue;
+    const ref = { videoId: m.videoId ?? null, playlistId: m.playlistId ?? null };
+    const check = await oembed(ref, 5000);
+    await prisma.mediaItem.create({
+      data: {
+        seedKey: m.key,
+        kind: m.kind,
+        level: m.level,
+        title: m.title,
+        description: m.uz,
+        descI18n: { ru: m.ru, en: m.en, tr: m.tr },
+        videoId: ref.videoId,
+        playlistId: ref.playlistId,
+        position: i,
+        ...(check.ok ? { channel: check.channel, ytTitle: check.title, thumbnail: check.thumbnail, checkedAt: new Date() } : {}),
+        // Bitta video topilmasa yoki embed taqiqlangan bo'lsa — yashiriladi
+        ...(!check.ok && check.reason === 'not_embeddable' ? { checkNote: 'not_embeddable', checkedAt: new Date() } : {}),
+        ...(!check.ok && check.reason === 'not_found' && ref.videoId ? { checkNote: 'not_found', checkedAt: new Date() } : {}),
+      },
+    });
+    added++;
+  }
+  console.log(`Kino va musiqa: ${added} ta yangi (jami ro'yxatda ${mediaSeeds.length})`);
+}
+
 async function main() {
   await seedReading();
   await seedSentences();
@@ -300,6 +336,7 @@ async function main() {
   await seedVerbs();
   await seedDialogues();
   await seedPairs();
+  await seedMedia();
 
   const [texts, questions, sentences, drills, cloze, verbs, dlg, pairs, words] = await Promise.all([
     prisma.readingText.count(),

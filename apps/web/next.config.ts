@@ -35,11 +35,15 @@ const nextConfig: NextConfig = {
   ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   // Monorepo ildizi: standalone yig'masiga kerakli fayllar to'g'ri topilishi uchun
   outputFileTracingRoot: path.join(process.cwd(), "../../"),
-  // Rasmlar FAQAT o'z fayl omborimizdan. Boshqa manzil qo'shilmaydi:
-  // begona saytdagi rasm sahifani ochgan har bir odamning IP manzilini
-  // o'sha saytga beradi, va server tomonida ham xuddi shu tekshiruv bor.
+  // Rasmlar faqat o'z fayl omborimizdan va YouTube muqovalaridan.
+  // Ikkalasi ham next/image orqali O'ZIMIZNING domenimizdan beriladi:
+  // brauzer begona saytga murojaat qilmaydi, ya'ni o'quvchining IP
+  // manzili YouTube'ga faqat video BOSILGANDA ketadi (oldin emas).
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "**.blob.vercel-storage.com" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "**.blob.vercel-storage.com" },
+      { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
+    ],
   },
   cacheComponents: true,
   partialPrefetching: true,

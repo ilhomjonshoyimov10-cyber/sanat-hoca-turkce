@@ -18,6 +18,7 @@ import { GroupsModule } from './groups/groups.module.js';
 import { LeadsModule } from './leads/leads.module.js';
 import { LessonsModule } from './lessons/lessons.module.js';
 import { LiveModule } from './live/live.module.js';
+import { MediaModule } from './media/media.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ReadingModule } from './reading/reading.module.js';
@@ -39,6 +40,7 @@ import { VerifyModule } from './verify/verify.module.js';
     ChatModule,
     LessonsModule,
     BooksModule,
+    MediaModule,
     ReadingModule,
     DictionaryModule,
     AiModule,

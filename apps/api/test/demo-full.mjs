@@ -19,7 +19,7 @@ const here = fileURLToPath(new URL('.', import.meta.url));
 const C = JSON.parse(
   execFileSync('npx', ['tsx', 'test/dump-content.ts'], { cwd: here + '..', maxBuffer: 64 * 1024 * 1024 }).toString(),
 );
-const { READING_TEXTS, DRILLS, SENTENCES, clozeItems, dialogues, antonyms, topics, verbForms } = C;
+const { READING_TEXTS, DRILLS, SENTENCES, clozeItems, dialogues, antonyms, topics, verbForms, mediaSeeds } = C;
 
 process.env.NODE_ENV ??= 'development';
 process.env.JWT_ACCESS_SECRET ??= 'demo-secret-demo-secret-demo-secret-1234';
@@ -105,6 +105,16 @@ verbForms.forEach((v, i) => db.verbForms.push({ id: `v${i + 1}`, verified: true,
 dialogues.forEach((d, i) => db.dialogueItems.push({ id: `dg${i + 1}`, verified: true, position: i, createdAt: now, ...d }));
 antonyms.forEach((p, i) => db.wordPairs.push({
   id: `p${i + 1}`, kind: 'ANTONYM', verified: true, position: i, createdAt: now, ...p,
+}));
+
+// Kino va musiqa: demoda internet yo'q — kanal nomi va muqova
+// "tekshirilgan" deb belgilanadi (sahifa ko'rinishini ko'rish uchun)
+mediaSeeds.forEach((m, i) => db.mediaItems.push({
+  id: `m${i + 1}`, seedKey: m.key, kind: m.kind, level: m.level, title: m.title,
+  description: m.uz, descI18n: { ru: m.ru, en: m.en, tr: m.tr },
+  videoId: m.videoId ?? null, playlistId: m.playlistId ?? null,
+  channel: 'Demo kanal', ytTitle: m.title, thumbnail: m.videoId ? `https://i.ytimg.com/vi/${m.videoId}/hqdefault.jpg` : null,
+  checkedAt: now, checkNote: null, position: i, published: true, createdById: null, createdAt: now, updatedAt: now,
 }));
 
 const mod = await Test.createTestingModule({ imports: [AppModule] })

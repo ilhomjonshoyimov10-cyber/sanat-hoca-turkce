@@ -21,6 +21,7 @@ import { antonyms } from './content/pairs.js';
 import { READING_TEXTS } from './content/reading-texts.js';
 import { topics } from './content/topics.js';
 import { verbForms } from './content/verbs.js';
+import { mediaSeeds } from './content/media.js';
 
 const problems: string[] = [];
 const notes: string[] = [];
@@ -202,6 +203,20 @@ for (const t of READING_TEXTS) {
     }
   }
 }
+
+// ───────────── Kino va musiqa ─────────────
+
+uniqueKeys('Media', mediaSeeds, (m) => m.key);
+uniqueKeys('Media (havola)', mediaSeeds, (m) => `${m.videoId ?? ''}|${m.playlistId ?? ''}`);
+for (const m of mediaSeeds) {
+  if (!m.videoId && !m.playlistId) fail(`Media "${m.key}": video ham, pleylist ham yo'q`);
+  if (m.videoId && !/^[A-Za-z0-9_-]{11}$/.test(m.videoId)) fail(`Media "${m.key}": video ID noto'g'ri (11 belgi bo'lishi kerak)`);
+  if (m.playlistId && !/^(PL|UU|OL)[A-Za-z0-9_-]{10,60}$/.test(m.playlistId)) fail(`Media "${m.key}": pleylist ID noto'g'ri`);
+  for (const lang of ['uz', 'ru', 'en', 'tr'] as const) {
+    if (!m[lang].trim()) fail(`Media "${m.key}": ${lang} tavsif bo'sh`);
+  }
+}
+note(`Kino va musiqa: ${mediaSeeds.length} ta`);
 
 // ───────────── Natija ─────────────
 

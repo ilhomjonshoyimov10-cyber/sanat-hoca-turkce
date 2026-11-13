@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/copy-pdf-worker.mjs && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:library": "npx tsx scripts/check-library.ts"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
@@ -15,6 +16,7 @@
     "@fontsource-variable/manrope": "^5.3.0",
     "@vercel/blob": "2.8.2",
     "next": "16.4.1",
+    "pdfjs-dist": "5.4.296",
     "qrcode": "^1.5.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",

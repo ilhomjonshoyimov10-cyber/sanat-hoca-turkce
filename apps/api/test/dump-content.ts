@@ -11,7 +11,8 @@ import { dialogues } from '../prisma/content/dialogues.js';
 import { antonyms } from '../prisma/content/pairs.js';
 import { topics } from '../prisma/content/topics.js';
 import { verbForms } from '../prisma/content/verbs.js';
+import { mediaSeeds } from '../prisma/content/media.js';
 
 process.stdout.write(
-  JSON.stringify({ READING_TEXTS, DRILLS, SENTENCES, clozeItems, dialogues, antonyms, topics, verbForms }),
+  JSON.stringify({ READING_TEXTS, DRILLS, SENTENCES, clozeItems, dialogues, antonyms, topics, verbForms, mediaSeeds }),
 );

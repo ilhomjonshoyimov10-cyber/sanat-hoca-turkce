@@ -341,7 +341,7 @@ export const tr: Dict = {
       "Hoşunuza giden ifadede durdurun, sesli tekrar edin.",
       "Bilmediğiniz kelimeyi sitenin sözlüğünde arayın.",
     ],
-    notAvailable: "Video açılmadı. Kanal başka sitelerde oynatmayı kapatmış olabilir — YouTube'da açın.",
+    notAvailable: "Video açılmazsa, kanal başka sitelerde oynatmayı kapatmış olabilir — o zaman YouTube'da açın.",
     source: "Kaynak: resmî kanal",
     adminTitle: "Film ve müzik",
     add: "Ekle",

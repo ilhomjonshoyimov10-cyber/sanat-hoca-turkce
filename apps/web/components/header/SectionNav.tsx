@@ -27,7 +27,9 @@ export function SectionNav() {
 
   return (
     <div className="border-b border-cobalt/25 bg-cobalt/[0.05]">
-      <nav aria-label={t.nav.section} className="container-page flex items-center gap-1 overflow-x-auto py-1.5 [scrollbar-width:none]">
+      {/* Sig'masa (tor ekran / katta zoom) o'ngga suriladi; o'ng chetdagi
+          xiralik "yana bor" degan ishora */}
+      <nav aria-label={t.nav.section} className="container-page flex items-center gap-1 overflow-x-auto py-1.5 [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_calc(100%_-_2.5rem),transparent)]">
         {sectionLinks(user.role).map((l) => (
           <Link
             key={l.href}

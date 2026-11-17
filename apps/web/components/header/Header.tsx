@@ -38,10 +38,14 @@ export async function Header() {
               priority
               className="brand-logo size-9 shrink-0 transition-transform duration-500 [transition-timing-function:var(--ease-out)] group-hover:-translate-y-0.5 group-hover:rotate-[-4deg] sm:size-11"
             />
-            <span className="truncate whitespace-nowrap max-[350px]:hidden">{site.name}</span>
+            {/* 896–1200 px (masalan 1366 ekranda 125–150% zoom): nom ikki qatorga
+                tushadi — kesilib "San..." bo'lib qolmasin, menyu ham sig'sin */}
+            <span className="truncate whitespace-nowrap max-[350px]:hidden lg:max-[75rem]:max-w-[6.6rem] lg:max-[75rem]:whitespace-normal lg:max-[75rem]:text-[1rem] lg:max-[75rem]:leading-[1.02]">
+              {site.name}
+            </span>
           </Link>
 
-          <nav aria-label={t.nav.main} className="ml-4 hidden items-center gap-0.5 lg:flex">
+          <nav aria-label={t.nav.main} className="ml-4 hidden items-center gap-0.5 lg:flex lg:max-[75rem]:ml-1 lg:max-[66rem]:[&_a]:!px-2">
             {/* usePathname() so'rov vaqtida ma'lum bo'ladi — Suspense kerak */}
             <Suspense fallback={<NavLinksStatic />}>
               <NavLinks />

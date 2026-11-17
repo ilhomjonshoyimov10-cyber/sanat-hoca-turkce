@@ -93,7 +93,7 @@ export function FreeLessonPanel() {
   return (
     <div className="grid gap-8">
       <header className="border-b border-cobalt/25 pb-6">
-        <h1 className="text-[clamp(1.9rem,4vw,2.6rem)]">Bepul dars</h1>
+        <h1 className="text-[clamp(1.9rem,4vw,2.6rem)] lg:text-[2.6rem]">Bepul dars</h1>
         {data?.lead && <p className="mt-2 text-muted">{STATUS[data.lead.status] ?? ""}</p>}
       </header>
 

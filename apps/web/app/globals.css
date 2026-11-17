@@ -53,6 +53,15 @@
   --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
 }
 
+/* "Kompyuter" ko'rinishi 896px dan (Tailwind standarti 1024px edi).
+   Sabab: brauzer zoom'i (Ctrl +) ekran kengligini CSS pikselda kichraytiradi.
+   1366 px noutbukda 150% zoom = 911 px. Chegara 1024 bo'lsa, shu zahoti
+   telefon ko'rinishiga sakrab o'tardi; endi 50%–150% oralig'ida sayt
+   bir xil tuzilishda, faqat kattalashib/kichrayib qoladi. */
+@theme {
+  --breakpoint-lg: 56rem;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

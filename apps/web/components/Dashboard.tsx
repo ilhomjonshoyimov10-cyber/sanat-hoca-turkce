@@ -69,7 +69,7 @@ export function Dashboard() {
     <div className="grid gap-10">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-cobalt/25 pb-7">
         <div>
-          <h1 className="text-[clamp(2rem,4vw,2.8rem)]">{fmt(d.hello, { name: user.firstName })}</h1>
+          <h1 className="text-[clamp(2rem,4vw,2.8rem)] lg:text-[2.8rem]">{fmt(d.hello, { name: user.firstName })}</h1>
           <p className="mt-2 text-muted">{t.user.roles[user.role]}</p>
         </div>
         <button

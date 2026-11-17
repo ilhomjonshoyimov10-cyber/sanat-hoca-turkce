@@ -34,7 +34,7 @@ export default async function BookPage({ params }: PageProps<"/[lang]/kutubxona/
         </div>
         <div>
           <span className="badge">{book.level}</span>
-          <h1 lang="tr" className="mt-3 text-[clamp(2.2rem,5vw,3.4rem)] leading-[1.05]">{book.title}</h1>
+          <h1 lang="tr" className="mt-3 text-[clamp(2.2rem,5vw,3.4rem)] lg:text-[3.4rem] leading-[1.05]">{book.title}</h1>
           <p className="mt-5 max-w-[56ch] text-lg text-muted">{blurbFor(book, locale)}</p>
           <p className="mt-4 text-[0.9375rem] text-muted">
             {fmt(L.chapters, { n: book.chapters.length })} · {fmt(L.words, { n: wordCount(book) })} · {L.original}

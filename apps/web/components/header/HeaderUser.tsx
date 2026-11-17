@@ -35,7 +35,7 @@ export function HeaderUser() {
   return (
     <>
       <Link href="/login" className="btn btn-outline !min-h-10 !px-4 !py-1.5 text-sm">{t.nav.login}</Link>
-      <Link href="/#ariza" className="btn btn-primary !min-h-10 !px-4 !py-1.5 text-sm max-sm:hidden">{t.nav.freeLessonCta}</Link>
+      <Link href="/#ariza" className="btn btn-primary !min-h-10 !px-4 !py-1.5 text-sm max-sm:hidden lg:max-[62.5rem]:hidden">{t.nav.freeLessonCta}</Link>
     </>
   );
 }

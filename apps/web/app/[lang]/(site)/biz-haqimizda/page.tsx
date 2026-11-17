@@ -44,7 +44,7 @@ export default async function AboutPage() {
               <span className="size-1.5 rotate-45 bg-turquoise" />
               {a.teacherRole}
             </p>
-            <h1 className="mt-3 text-[clamp(2.1rem,5vw,3.2rem)] leading-[1.1]">{teacher.name}</h1>
+            <h1 className="mt-3 text-[clamp(2.1rem,5vw,3.2rem)] lg:text-[3.2rem] leading-[1.1]">{teacher.name}</h1>
             <p className="mt-5 max-w-xl text-[1.05rem] leading-relaxed text-muted">{a.intro}</p>
 
             <dl className="mt-8 grid max-w-lg grid-cols-3 gap-4">
@@ -72,7 +72,7 @@ export default async function AboutPage() {
       {/* ═════ Aloqa ═════ */}
       <section aria-labelledby="aloqa-h" className="container-page py-16">
         <Star className="mb-4 text-brass" />
-        <h2 id="aloqa-h" className="text-[clamp(1.6rem,3.5vw,2.2rem)]">{a.contactTitle}</h2>
+        <h2 id="aloqa-h" className="text-[clamp(1.6rem,3.5vw,2.2rem)] lg:text-[2.2rem]">{a.contactTitle}</h2>
         <p className="mt-2 max-w-2xl text-muted">
           {a.contactText}
         </p>
@@ -108,7 +108,7 @@ export default async function AboutPage() {
       {/* ═════ Xarita ═════ */}
       <section aria-labelledby="xarita-h" className="container-page pb-16">
         <Star className="mb-4 text-brass" />
-        <h2 id="xarita-h" className="text-[clamp(1.6rem,3.5vw,2.2rem)]">{a.whereTitle}</h2>
+        <h2 id="xarita-h" className="text-[clamp(1.6rem,3.5vw,2.2rem)] lg:text-[2.2rem]">{a.whereTitle}</h2>
         <p className="mt-2 text-muted">{a.addressLine}</p>
 
         <div className="mt-6 overflow-hidden border border-cobalt/25">
@@ -137,7 +137,7 @@ export default async function AboutPage() {
       {certificates.length > 0 && (
         <section aria-labelledby="sert-h" className="container-page pb-20">
           <Star className="mb-4 text-brass" />
-          <h2 id="sert-h" className="text-[clamp(1.6rem,3.5vw,2.2rem)]">{a.certificates}</h2>
+          <h2 id="sert-h" className="text-[clamp(1.6rem,3.5vw,2.2rem)] lg:text-[2.2rem]">{a.certificates}</h2>
           <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {certificates.map((c) => (
               <li key={c.src} className="border border-cobalt/25 bg-cobalt/[0.05] p-3">

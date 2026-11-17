@@ -34,7 +34,7 @@ export async function AuthShell({
           </div>
 
           <div className="relative">
-            <p lang="tr" className="t-word text-[clamp(3rem,5vw,4rem)] text-porcelain">{word}</p>
+            <p lang="tr" className="t-word text-[clamp(3rem,5vw,4rem)] lg:text-[4rem] text-porcelain">{word}</p>
             <p className="mt-2 text-lg text-brass">{translation}</p>
             <div className="rule my-7 max-w-[14rem]" />
             <p lang="tr" className="text-[1.0625rem] text-muted">{sentence}</p>

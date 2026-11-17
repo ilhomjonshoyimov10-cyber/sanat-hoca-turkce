@@ -40,7 +40,9 @@ export default async function HomePage() {
       <section className="relative overflow-x-clip">
         <div className="cini-field absolute inset-0 -z-10" aria-hidden="true" />
 
-        <div className="container-page grid items-center gap-y-14 pb-20 pt-12 lg:grid-cols-[1fr_28rem] lg:gap-x-16 lg:pb-28 lg:pt-20">
+        {/* Rasm ustuni tor ekranda (yoki katta zoom'da) o'zi torayadi: sarlavha
+            100% dagidek qatorlarga bo'linsin, kompozitsiya o'zgarmasin. */}
+        <div className="container-page grid items-center gap-y-14 pb-20 pt-12 lg:grid-cols-[1fr_clamp(17rem,calc(100%_-_41rem),28rem)] lg:gap-x-[clamp(2rem,5%,4rem)] lg:pb-28 lg:pt-20">
           <div>
             <p className="lamp flex items-center gap-2.5 text-sm font-medium text-turquoise" style={{ "--d": "0ms" } as React.CSSProperties}>
               <span className="size-1.5 rotate-45 bg-turquoise" />
@@ -48,7 +50,7 @@ export default async function HomePage() {
             </p>
 
             {/* Sarlavha: bitta so'zni bo'yash yo'q — butun satr bir xil vaznda. */}
-            <h1 className="t-hero lamp mt-5 text-[clamp(2.9rem,7vw,5.4rem)]" style={{ "--d": "80ms" } as React.CSSProperties}>
+            <h1 className="t-hero lamp mt-5 text-[clamp(2.9rem,7vw,5.4rem)] lg:text-[5.4rem]" style={{ "--d": "80ms" } as React.CSSProperties}>
               {h.title}
             </h1>
 
@@ -100,7 +102,7 @@ export default async function HomePage() {
         <div className="grid gap-6 border-t border-cobalt/25 pt-8 lg:grid-cols-[1.25fr_1fr] lg:gap-16">
           <div>
             <Star className="mb-5 text-cobalt" />
-            <h2 className="text-[clamp(2.2rem,4.6vw,3.6rem)]">{h.sectionTitle}</h2>
+            <h2 className="text-[clamp(2.2rem,4.6vw,3.6rem)] lg:text-[3.6rem]">{h.sectionTitle}</h2>
           </div>
           <p className="text-lg text-muted lg:pt-14">{h.sectionText}</p>
         </div>
@@ -145,7 +147,7 @@ export default async function HomePage() {
         <div className="relative container-page grid gap-px sm:grid-cols-2 lg:grid-cols-4">
           {h.stats.map(({ n, label, note }) => (
             <div key={label} className="py-10 lg:py-14 lg:pr-8">
-              <p className="t-num text-[clamp(2.8rem,5vw,4rem)] leading-none text-porcelain">{n}</p>
+              <p className="t-num text-[clamp(2.8rem,5vw,4rem)] lg:text-[4rem] leading-none text-porcelain">{n}</p>
               <p className="mt-4 text-[1.15rem] font-medium text-brass">{label}</p>
               <p className="mt-1.5 text-[0.9375rem] text-muted">{note}</p>
             </div>
@@ -158,7 +160,7 @@ export default async function HomePage() {
         <div className="grid gap-6 border-t border-cobalt/25 pt-8 lg:grid-cols-[1.25fr_1fr] lg:gap-16">
           <div>
             <Star className="mb-5 text-cobalt" />
-            <h2 className="text-[clamp(2.2rem,4.6vw,3.6rem)]">{h.exploreTitle}</h2>
+            <h2 className="text-[clamp(2.2rem,4.6vw,3.6rem)] lg:text-[3.6rem]">{h.exploreTitle}</h2>
           </div>
           <p className="text-lg text-muted lg:pt-14">{h.exploreText}</p>
         </div>
@@ -194,7 +196,7 @@ export default async function HomePage() {
           <div className="grid gap-6 border-t border-cobalt/25 pt-8 lg:grid-cols-[1.25fr_1fr] lg:gap-16">
             <div>
               <Star className="mb-5 text-cobalt" />
-              <h2 className="text-[clamp(2.2rem,4.6vw,3.6rem)]">{h.levelsTitle}</h2>
+              <h2 className="text-[clamp(2.2rem,4.6vw,3.6rem)] lg:text-[3.6rem]">{h.levelsTitle}</h2>
             </div>
             <p className="text-lg text-muted lg:pt-14">{h.levelsText}</p>
           </div>
@@ -222,7 +224,7 @@ export default async function HomePage() {
         <div className="grid gap-6 border-t border-cobalt/25 pt-8 lg:grid-cols-[1.25fr_1fr] lg:gap-16">
           <div>
             <Star className="mb-5 text-cobalt" />
-            <h2 className="text-[clamp(2.2rem,4.6vw,3.6rem)]">{h.stepsTitle}</h2>
+            <h2 className="text-[clamp(2.2rem,4.6vw,3.6rem)] lg:text-[3.6rem]">{h.stepsTitle}</h2>
           </div>
           <p className="text-lg text-muted lg:pt-14">{h.stepsText}</p>
         </div>
@@ -245,7 +247,7 @@ export default async function HomePage() {
         <div className="relative grid items-start gap-12 overflow-hidden border border-cobalt/25 bg-cobalt/[0.05] p-7 sm:p-10 lg:grid-cols-[1fr_26rem] lg:gap-16 lg:p-14">
           <div className="cini-field absolute inset-0 opacity-70 [mask-image:radial-gradient(70%_90%_at_15%_0%,#000,transparent)]" aria-hidden="true" />
           <div className="relative">
-            <h2 className="text-[clamp(2.2rem,4.6vw,3.3rem)]">{h.applyTitle}</h2>
+            <h2 className="text-[clamp(2.2rem,4.6vw,3.3rem)] lg:text-[3.3rem]">{h.applyTitle}</h2>
             <p className="mt-5 max-w-[42ch] text-lg text-muted">{h.applyText}</p>
             <ul className="mt-9 grid gap-3.5">
               {h.benefits.map((b) => (

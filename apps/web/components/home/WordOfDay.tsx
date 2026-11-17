@@ -49,7 +49,7 @@ export function WordOfDay() {
         </div>
 
         <div className="mt-6 flex flex-wrap items-end gap-x-5 gap-y-3">
-          <p lang="tr" className="t-word text-[clamp(2.8rem,6vw,4.2rem)] leading-none text-porcelain">{word.tr}</p>
+          <p lang="tr" className="t-word text-[clamp(2.8rem,6vw,4.2rem)] lg:text-[4.2rem] leading-none text-porcelain">{word.tr}</p>
           {voice && (
             <button
               type="button"
@@ -84,7 +84,7 @@ export function WordOfDay() {
             <span className="size-1.5 rotate-45 bg-brass" />
             {t.wotd.proverb}
           </p>
-          <blockquote lang="tr" className="t-word mt-6 text-[clamp(1.5rem,2.6vw,2rem)] leading-snug text-porcelain">
+          <blockquote lang="tr" className="t-word mt-6 text-[clamp(1.5rem,2.6vw,2rem)] lg:text-[2rem] leading-snug text-porcelain">
             &ldquo;{proverb.tr}&rdquo;
           </blockquote>
           <p className="mt-4 text-[1.0625rem] text-muted">{gloss(proverb.meaning, locale)}</p>

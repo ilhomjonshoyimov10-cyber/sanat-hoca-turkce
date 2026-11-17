@@ -55,7 +55,7 @@ export function AdminPanel() {
     <div className="grid gap-8">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-cobalt/25 pb-6">
         <div>
-          <h1 className="text-[clamp(1.9rem,4vw,2.6rem)]">Administrator paneli</h1>
+          <h1 className="text-[clamp(1.9rem,4vw,2.6rem)] lg:text-[2.6rem]">Administrator paneli</h1>
           <p className="mt-2 text-muted">Butun tizim shu yerdan boshqariladi.</p>
         </div>
         <div className="segment" role="tablist" aria-label="Bo'limlar">

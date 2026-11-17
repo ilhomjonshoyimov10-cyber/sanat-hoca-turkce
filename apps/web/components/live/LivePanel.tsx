@@ -176,7 +176,7 @@ export function LivePanel() {
   return (
     <div className="grid gap-8">
       <header className="border-b border-cobalt/25 pb-6">
-        <h1 className="text-[clamp(1.9rem,4vw,2.6rem)]">Jonli darslar</h1>
+        <h1 className="text-[clamp(1.9rem,4vw,2.6rem)] lg:text-[2.6rem]">Jonli darslar</h1>
         <p className="mt-2 max-w-2xl text-muted">
           Ustoz efirni boshlashi bilan &quot;Kirish&quot; tugmasi yonadi va ekraningizga xabar keladi.
           Dars yangi oynada ochiladi — kamera, mikrofon va ekran ulashish o&apos;sha yerda ishlaydi.

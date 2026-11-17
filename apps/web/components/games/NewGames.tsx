@@ -29,7 +29,7 @@ export function ClozeGame(props: GameProps) {
         path: "cloze",
         prompt: (it) => (
           <>
-            <p lang="tr" className="font-display text-[clamp(1.4rem,4vw,2.1rem)] font-bold leading-snug">
+            <p lang="tr" className="font-display text-[clamp(1.4rem,4vw,2.1rem)] lg:text-[2.1rem] font-bold leading-snug">
               {it.masked}
             </p>
             {it.uzbek && <p className="mt-3 text-muted">{it.uzbek}</p>}
@@ -62,7 +62,7 @@ export function DialogueGame(props: GameProps) {
             {it.situation && <p className="mb-2 text-sm text-muted">{it.situation}</p>}
             <p
               lang="tr"
-              className="mx-auto max-w-md rounded-[var(--r-tile)] border border-cobalt/30 bg-cobalt/[0.08] px-5 py-4 font-display text-[clamp(1.3rem,3.5vw,1.8rem)] font-bold"
+              className="mx-auto max-w-md rounded-[var(--r-tile)] border border-cobalt/30 bg-cobalt/[0.08] px-5 py-4 font-display text-[clamp(1.3rem,3.5vw,1.8rem)] lg:text-[1.8rem] font-bold"
             >
               {it.prompt}
             </p>
@@ -92,7 +92,7 @@ export function AntonymGame(props: GameProps) {
         prompt: (it) => (
           <>
             <p className="text-sm text-muted">Bu so&apos;zning teskarisi qaysi?</p>
-            <p lang="tr" className="mt-2 font-display text-[clamp(1.8rem,5vw,2.8rem)] font-bold">
+            <p lang="tr" className="mt-2 font-display text-[clamp(1.8rem,5vw,2.8rem)] lg:text-[2.8rem] font-bold">
               {it.word}
             </p>
             {it.uzbek && <p className="mt-2 text-muted">{it.uzbek}</p>}
@@ -123,7 +123,7 @@ export function OddOneOutGame(props: GameProps) {
           "Bu o'yin uchun lug'atda mavzu bo'yicha ajratilgan so'zlar yetarli emas. " +
           "Ustoz lug'atga mavzu qo'shgach ishlaydi.",
         prompt: () => (
-          <p className="font-display text-[clamp(1.2rem,3vw,1.6rem)] font-bold">
+          <p className="font-display text-[clamp(1.2rem,3vw,1.6rem)] lg:text-[1.6rem] font-bold">
             Qaysi so&apos;z boshqalarga qo&apos;shilmaydi?
           </p>
         ),
@@ -251,7 +251,7 @@ export function VerbGame({ onStats, onFail, onExit, level }: GameProps) {
       </div>
 
       <div className="text-center">
-        <p lang="tr" className="font-display text-[clamp(1.8rem,5vw,2.6rem)] font-bold">{it.infinitive}</p>
+        <p lang="tr" className="font-display text-[clamp(1.8rem,5vw,2.6rem)] lg:text-[2.6rem] font-bold">{it.infinitive}</p>
         <p className="mt-3 flex flex-wrap justify-center gap-2">
           <span className="badge">{it.person}</span>
           <span className="badge" lang="tr">{it.tense}</span>

@@ -122,7 +122,7 @@ export function SupportPanel() {
   return (
     <div className="grid gap-8">
       <header className="border-b border-cobalt/25 pb-6">
-        <h1 className="text-[clamp(1.9rem,4vw,2.6rem)]">Administratorga murojaat</h1>
+        <h1 className="text-[clamp(1.9rem,4vw,2.6rem)] lg:text-[2.6rem]">Administratorga murojaat</h1>
         <p className="mt-2 max-w-2xl text-muted">
           Ma&apos;lumotlaringizni o&apos;zgartirish, dars yoki to&apos;lov bo&apos;yicha savol —
           shu yerga yozing. Javob bildirishnoma orqali keladi.

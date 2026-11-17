@@ -73,6 +73,8 @@ function messageFrom(data: unknown, fallback: string): string {
   if (data && typeof data === "object" && "message" in data) {
     const m = (data as { message: unknown }).message;
     if (Array.isArray(m) && m.length) return String(m[0]);
+    // Nest'ning standart inglizcha matni — foydalanuvchiga tushunarli qilib
+    if (m === "Forbidden resource") return "Bu bo'lim sizga ochiq emas";
     if (typeof m === "string" && m) return m;
   }
   return fallback;

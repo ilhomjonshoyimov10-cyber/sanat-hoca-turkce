@@ -51,7 +51,7 @@ export function QuoteBanner({ t, locale }: { t: Dict; locale: Locale }) {
                 &ldquo;{QUOTE_TR}&rdquo;
               </blockquote>
               {locale !== "tr" && (
-                <p className="mt-3 max-w-[52ch] font-display text-[clamp(1.15rem,2vw,1.45rem)] italic leading-snug text-muted sm:mt-4 sm:text-porcelain/85">
+                <p className="mt-3 max-w-[52ch] font-display text-[clamp(1.15rem,2vw,1.45rem)] lg:text-[1.45rem] italic leading-snug text-muted sm:mt-4 sm:text-porcelain/85">
                   {t.banner.translation}
                 </p>
               )}

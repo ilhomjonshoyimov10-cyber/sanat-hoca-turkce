@@ -24,7 +24,7 @@ export default async function LibraryPage() {
             <span className="size-1.5 rotate-45 bg-brass" />
             {L.original}
           </p>
-          <h1 className="mt-3 text-[clamp(2.3rem,5vw,3.6rem)]">{L.title}</h1>
+          <h1 className="mt-3 text-[clamp(2.3rem,5vw,3.6rem)] lg:text-[3.6rem]">{L.title}</h1>
           <p className="mt-4 text-lg text-muted">{L.lead}</p>
         </header>
 

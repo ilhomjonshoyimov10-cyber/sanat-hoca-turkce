@@ -45,7 +45,7 @@ export default async function ChapterPage({ params }: PageProps<"/[lang]/kutubxo
           <span className="size-1.5 rotate-45 bg-brass" />
           {fmt(L.chapter, { n })} · {book.level}
         </p>
-        <h1 lang="tr" className="mt-3 text-[clamp(2rem,4.6vw,3rem)] leading-[1.08]">{chapter.title}</h1>
+        <h1 lang="tr" className="mt-3 text-[clamp(2rem,4.6vw,3rem)] lg:text-[3rem] leading-[1.08]">{chapter.title}</h1>
       </header>
 
       <ChapterReader slug={book.slug} chapter={n} paragraphs={chapter.paragraphs} glossary={chapter.glossary} />

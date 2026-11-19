@@ -1,6 +1,7 @@
 "use client";
 
 import { useAdminData } from "./AdminPanel";
+import { Dashboard } from "./Dashboard";
 
 interface Stats {
   users: number;
@@ -32,11 +33,13 @@ function Card({ value, label, note, tone = "text-porcelain" }: { value: number |
 export function StatsCards({ onError }: { onError: (m: string) => void }) {
   const { data, busy } = useAdminData<Stats>("/admin/stats", onError);
 
-  if (busy) return <div className="grid gap-px border border-cobalt/25 bg-cobalt/25 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <div key={i} className="skeleton h-32" />)}</div>;
-  if (!data) return null;
-
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-10">
+      <Dashboard onError={onError} />
+      <h2 className="-mb-4 border-t border-cobalt/25 pt-8 text-[1.3rem]">Umumiy holat</h2>
+      {busy || !data ? (
+        <div className="grid gap-px border border-cobalt/25 bg-cobalt/25 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton h-32" />)}</div>
+      ) : (<>
       <div className="grid gap-px border border-cobalt/25 bg-cobalt/25 sm:grid-cols-2 lg:grid-cols-4">
         <Card value={data.users} label="Foydalanuvchi" note="Jami ro'yxatdan o'tganlar" tone="text-brass" />
         <Card value={data.activeGroups} label="Faol guruh" note={`Jami ${data.groups} ta`} tone="text-cobalt" />
@@ -57,6 +60,7 @@ export function StatsCards({ onError }: { onError: (m: string) => void }) {
         <Card value={data.words} label="Lug'atdagi so'z" />
         <Card value={data.lessons} label="Video dars" />
       </div>
+      </>)}
     </div>
   );
 }

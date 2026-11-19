@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { errorText, type GroupInfo } from "../groups/shared";
 import { FreeLessonTab } from "../admin/FreeLessonTab";
 import { PageLoader } from "@/components/Loader";
+import { TeacherOverview } from "./TeacherOverview";
 
 interface Row extends GroupInfo {
   memberCount: number;
@@ -76,11 +77,10 @@ export function TeacherPanel() {
   if (loading || !user) return <PageLoader />;
   if (user.role === "STUDENT" || user.role === "PARENT") return null;
 
-  const totalStudents = groups.reduce((n, g) => n + g.memberCount, 0);
   const toGrade = pending.reduce((n, p) => n + p.count, 0);
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-1 gap-8">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-cobalt/25 pb-6">
         <div>
           <h1 className="text-[clamp(1.9rem,4vw,2.6rem)] lg:text-[2.6rem]">Ustoz paneli</h1>
@@ -94,20 +94,7 @@ export function TeacherPanel() {
 
       {error && <p className="alert-error" role="alert">{error}</p>}
 
-      <section className="grid gap-px border border-cobalt/25 bg-cobalt/25 sm:grid-cols-3">
-        <div className="bg-ink p-6 raise">
-          <p className="t-num text-[2.4rem] leading-none text-cobalt">{groups.length}</p>
-          <p className="mt-3 font-medium">Guruh</p>
-        </div>
-        <div className="bg-ink p-6 raise">
-          <p className="t-num text-[2.4rem] leading-none text-brass">{totalStudents}</p>
-          <p className="mt-3 font-medium">O&apos;quvchi</p>
-        </div>
-        <div className="bg-ink p-6 raise">
-          <p className={`t-num text-[2.4rem] leading-none ${toGrade ? "text-bole" : "text-turquoise"}`}>{toGrade}</p>
-          <p className="mt-3 font-medium">Baholanmagan ish</p>
-        </div>
-      </section>
+      <TeacherOverview onError={setError} />
 
       {toGrade > 0 && (
         <section aria-labelledby="grade-h">
@@ -135,28 +122,30 @@ export function TeacherPanel() {
         <FreeLessonTab onError={setError} isAdmin={false} />
       </section>
 
-      <section aria-labelledby="groups-h">
-        <h2 id="groups-h" className="mb-4 text-[1.4rem]">Guruhlarim</h2>
-        {busy && <div className="skeleton h-28" />}
-        {!busy && groups.length === 0 && (
-          <p className="border border-cobalt/25 bg-ink p-6 text-muted">
-            Hali guruhingiz yo&apos;q. <Link href="/groups" className="text-brass underline underline-offset-4">Birinchi guruhni yarating</Link>.
-          </p>
-        )}
-        <div className="grid gap-px border border-cobalt/25 bg-cobalt/25 sm:grid-cols-2 lg:grid-cols-3">
-          {groups.map((g) => (
-            <Link key={g.id} href={`/groups/${g.id}`} className="block bg-ink p-6 transition-colors hover:bg-cobalt/10">
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="text-[1.2rem]">{g.name}</h3>
-                <span className="badge">{LEVELS[g.level] ?? g.level}</span>
-              </div>
-              <p className="mt-2 text-[0.9375rem] text-muted">{g.memberCount} o&apos;quvchi</p>
-              {g.schedule && <p className="mt-1 text-[0.875rem] text-muted">{g.schedule}</p>}
-              {!g.isActive && <span className="badge badge-bad mt-3">Nofaol</span>}
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Faol guruhlar yuqorida ("Guruhlar kesimida"). Bu yerda — yangi ustoz uchun
+          birinchi qadam va nofaol guruhlar. */}
+      {!busy && groups.length === 0 && (
+        <p className="border border-cobalt/25 bg-ink p-6 text-muted">
+          Hali guruhingiz yo&apos;q. <Link href="/groups" className="text-brass underline underline-offset-4">Birinchi guruhni yarating</Link>.
+        </p>
+      )}
+      {groups.some((g) => !g.isActive) && (
+        <section aria-labelledby="groups-h">
+          <h2 id="groups-h" className="mb-4 text-[1.4rem]">Nofaol guruhlar</h2>
+          <div className="grid gap-px border border-cobalt/25 bg-cobalt/25 sm:grid-cols-2 lg:grid-cols-3">
+            {groups.filter((g) => !g.isActive).map((g) => (
+              <Link key={g.id} href={`/groups/${g.id}`} className="block bg-ink p-6 transition-colors hover:bg-cobalt/10">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-[1.2rem]">{g.name}</h3>
+                  <span className="badge">{LEVELS[g.level] ?? g.level}</span>
+                </div>
+                <p className="mt-2 text-[0.9375rem] text-muted">{g.memberCount} o&apos;quvchi</p>
+                <span className="badge badge-bad mt-3">Nofaol</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

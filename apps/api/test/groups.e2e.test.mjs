@@ -234,3 +234,33 @@ describe("a'zoni chiqarish", () => {
     assert.equal((await S1.agent.get(`/groups/${group.id}/homework`)).status, 404);
   });
 });
+
+describe('ustoz paneli: umumiy ko\'rinish', () => {
+  it("ustoz faqat o'z guruhlarini ko'radi: faollik, o'quvchilar, vazifalar", async () => {
+    // Oldingi test S1 ni chiqarib yuborgan — qayta a'zo qilamiz
+    if (!ctx.prisma.db.members.some((m) => m.groupId === group.id && m.userId === S1.id)) {
+      ctx.prisma.db.members.push({ groupId: group.id, userId: S1.id, joinedAt: new Date() });
+    }
+    ctx.prisma.db.results.push({ id: 'ov-1', userId: S1.id, game: 'FILL_GAP', score: 10, createdAt: new Date() });
+    const r = await A.agent.get('/teacher/overview');
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(r.body.days.length, 14);
+    const g = r.body.groups.find((x) => x.id === group.id);
+    assert.ok(g, 'o\'z guruhi chiqmadi');
+    assert.equal(g.activity.length, 14);
+    assert.ok(g.activity.at(-1) >= 1, 'bugungi faollik hisoblanmadi');
+    const s1 = r.body.students.find((x) => x.id === S1.id);
+    assert.ok(s1 && s1.xp7 >= 10);
+    assert.equal(s1.inactiveDays, 0);
+    for (const s of r.body.students) assert.equal(s.email, undefined, 'aloqa ma\'lumoti kerak emas');
+
+    // Boshqa ustoz bu guruhni ko'rmaydi
+    const other = await B.agent.get('/teacher/overview');
+    assert.equal(other.status, 200);
+    assert.ok(!other.body.groups.some((x) => x.id === group.id));
+    assert.ok(!other.body.students.some((x) => x.id === S1.id));
+
+    // O'quvchi kira olmaydi
+    assert.equal((await S1.agent.get('/teacher/overview')).status, 403);
+  });
+});

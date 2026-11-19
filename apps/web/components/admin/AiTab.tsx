@@ -13,6 +13,11 @@ interface Stats {
   conversations: number; questions: number;
   today: { answered: number; users: number; failed: number };
   health: { lastOkAt: string | null; lastErrorAt: string | null; lastError: string | null };
+  memory?: { workingModel: string | null; missing: string[] };
+}
+interface Diagnosis {
+  provider: string; keyProblem: boolean; available: string[] | null; listError: string | null; workingModel: string | null;
+  results: { model: string; ok: boolean; ms: number; status?: number; error?: string; sample?: string }[];
 }
 interface Row {
   id: string; title: string; task: string; updatedAt: string; messages: number;
@@ -33,6 +38,8 @@ export function AiTab({ onError }: { onError: (m: string) => void }) {
   const [failed, setFailed] = useState(false);
   const [page, setPage] = useState(0);
   const [open, setOpen] = useState<Thread | null>(null);
+  const [diag, setDiag] = useState<Diagnosis | null>(null);
+  const [testing, setTesting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -78,6 +85,19 @@ export function AiTab({ onError }: { onError: (m: string) => void }) {
     }
   }
 
+  async function runTest() {
+    setTesting(true);
+    onError("");
+    try {
+      setDiag(await api<Diagnosis>("/ai/admin/test", { method: "POST" }));
+      await load();
+    } catch (e) {
+      onError(errorText(e));
+    } finally {
+      setTesting(false);
+    }
+  }
+
   function search(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPage(0);
@@ -95,7 +115,12 @@ export function AiTab({ onError }: { onError: (m: string) => void }) {
             <p className={`mt-1 font-semibold ${!stats.enabled ? "text-danger" : healthy || !stats.health.lastErrorAt ? "text-turquoise" : "text-brass"}`}>
               {!stats.enabled ? "O'chiq (kalit yo'q)" : healthy || !stats.health.lastErrorAt ? "Ishlayapti" : "Oxirgi so'rov xato"}
             </p>
-            <p className="mt-1 text-[0.8125rem] text-muted">{stats.model}{stats.fallbackModels.length > 0 && ` → ${stats.fallbackModels.join(", ")}`}</p>
+            <p className="mt-1 text-[0.8125rem] text-muted" title={[stats.model, ...stats.fallbackModels].join(" → ")}>
+              {stats.memory?.workingModel ? `Ishlayotgan: ${stats.memory.workingModel}` : `${stats.model} → +${stats.fallbackModels.length} zaxira`}
+            </p>
+            <button type="button" className="btn btn-outline btn-sm mt-3" disabled={testing || !stats.enabled} onClick={() => void runTest()}>
+              {testing ? "Tekshirilmoqda..." : "AI ni tekshirish"}
+            </button>
           </div>
           <div className="bg-ink p-5">
             <p className="t-meta">Bugun javob berildi</p>
@@ -112,6 +137,39 @@ export function AiTab({ onError }: { onError: (m: string) => void }) {
             <p className="t-num mt-1 text-[1.8rem] leading-none">{stats.questions}</p>
             <p className="mt-1 text-[0.8125rem] text-muted">savol · {stats.conversations} suhbat</p>
           </div>
+        </section>
+      )}
+
+      {diag && (
+        <section aria-labelledby="ai-diag-h" className="grid gap-3 border border-cobalt/25 bg-cobalt/[0.04] p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="ai-diag-h" className="text-[1.125rem]">Tekshiruv natijasi</h2>
+            <button type="button" className="btn btn-quiet btn-sm" onClick={() => setDiag(null)}>Yopish</button>
+          </div>
+          {diag.results.some((r) => r.ok) ? (
+            <p className="alert-success" role="status">AI ishlayapti: <b>{diag.workingModel}</b>. O&apos;quvchilar endi javob oladi.</p>
+          ) : diag.keyProblem ? (
+            <p className="alert-error" role="alert">
+              Kalit ishlamayapti. Google AI Studio&apos;da yangi kalit yarating va Vercel&apos;da <code>AI_API_KEY</code> ni almashtiring
+              (keyin API loyihasini qayta deploy qiling).
+            </p>
+          ) : (
+            <p className="alert-error" role="alert">Hech bir model javob bermadi. Pastdagi sabablarni ko&apos;ring.</p>
+          )}
+          <ul className="grid gap-1.5 text-[0.9375rem]">
+            {diag.results.map((r) => (
+              <li key={r.model} className="flex flex-wrap items-baseline gap-x-3">
+                <span className={`badge ${r.ok ? "badge-ok" : "badge-bad"}`}>{r.ok ? "ishladi" : r.status ?? "xato"}</span>
+                <code className="text-[0.875rem]">{r.model}</code>
+                <span className="text-[0.8125rem] text-muted">{(r.ms / 1000).toFixed(1)} s</span>
+                <span className="min-w-0 flex-1 text-[0.8125rem] text-muted">{r.ok ? `“${r.sample}”` : r.error}</span>
+              </li>
+            ))}
+          </ul>
+          {diag.listError && <p className="text-[0.8125rem] text-danger">Modellar ro&apos;yxati: {diag.listError}</p>}
+          {diag.available && diag.available.length > 0 && (
+            <p className="text-[0.8125rem] text-muted">Kalitga ochiq modellar: {diag.available.join(", ")}</p>
+          )}
         </section>
       )}
 

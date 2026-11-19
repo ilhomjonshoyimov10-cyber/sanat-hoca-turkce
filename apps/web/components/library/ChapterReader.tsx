@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useI18n } from "@/lib/i18n/client";
 import { meaning, plain, segments, type Gloss } from "@/lib/library/types";
-import { speakTurkish, subscribeVoices, turkishVoiceAvailable } from "@/lib/speech";
+import { useAuth } from "@/lib/auth";
+import { chunkText, fetchVoice, playTurkish, speakTurkish, stopSpeech, subscribeVoices, turkishVoiceAvailable } from "@/lib/speech";
 import { useDismiss } from "@/lib/useDismiss";
 import { markDone } from "./BookProgress";
 
@@ -68,7 +69,11 @@ export function ChapterReader({
   const savedSize = useSyncExternalStore(noop, readSize, () => 1);
   const [size, setSize] = useState<number | null>(null);
   const [speaking, setSpeaking] = useState(false);
-  const voice = useSyncExternalStore(subscribeVoices, turkishVoiceAvailable, () => false);
+  const browserVoice = useSyncExternalStore(subscribeVoices, turkishVoiceAvailable, () => false);
+  const { user } = useAuth();
+  // Brauzerda turkcha ovoz bo'lmasa ham, kirgan foydalanuvchi server ovozini eshitadi
+  const voice = browserVoice || !!user;
+  const reading = useRef(0);
   const end = useRef<HTMLDivElement>(null);
   const fontIdx = size ?? savedSize;
 
@@ -89,7 +94,7 @@ export function ChapterReader({
   }, [slug, chapter]);
 
   // Sahifadan chiqilganda ovoz to'xtasin
-  useEffect(() => () => window.speechSynthesis?.cancel(), []);
+  useEffect(() => () => { reading.current++; stopSpeech(); }, []);
 
   function changeSize(d: number) {
     const n = Math.max(0, Math.min(SIZES.length - 1, fontIdx + d));
@@ -102,24 +107,42 @@ export function ChapterReader({
   }
 
   function toggleSpeak() {
-    const synth = window.speechSynthesis;
-    if (!synth) return;
     if (speaking) {
-      synth.cancel();
+      reading.current++;
+      stopSpeech();
       setSpeaking(false);
       return;
     }
-    synth.cancel();
+    stopSpeech();
     const text = paragraphs.map(plain).join(" ");
-    speakTurkish(text, 0.9);
     setSpeaking(true);
-    // Ovoz tugaganini kuzatamiz
-    const timer = window.setInterval(() => {
-      if (!synth.speaking) {
-        setSpeaking(false);
-        window.clearInterval(timer);
+    const my = ++reading.current;
+
+    if (browserVoice) {
+      // Brauzer ovozi bor: butun bob bir zumda, internet sarflanmaydi
+      const synth = window.speechSynthesis;
+      speakTurkish(text, 0.9);
+      const timer = window.setInterval(() => {
+        if (!synth.speaking || reading.current !== my) {
+          if (reading.current === my) setSpeaking(false);
+          window.clearInterval(timer);
+        }
+      }, 500);
+      return;
+    }
+
+    // Server ovozi: bob gap-gap bo'laklarda, keyingisi oldindan tayyorlanadi
+    void (async () => {
+      const parts = chunkText(text);
+      for (let i = 0; i < parts.length && reading.current === my; i++) {
+        if (i + 1 < parts.length) void fetchVoice(parts[i + 1]).catch(() => undefined);
+        const used = await new Promise<string>((done) => {
+          void playTurkish(parts[i], { rate: 0.9, onEnd: () => done("ok") }).then((src) => { if (src === "none") done("none"); });
+        });
+        if (used === "none") break;
       }
-    }, 500);
+      if (reading.current === my) setSpeaking(false);
+    })();
   }
 
   return (

@@ -38,7 +38,7 @@ export function QuizGame({ onStats, onFail, onExit, level }: GameProps) {
     try {
       const res = await api<Answer>("/games/answer", { method: "POST", body: { token: questions[index].token, choice: i } });
       setAnswer(res);
-      onStats(res.stats);
+      onStats(res.stats, { correct: res.correct, xp: res.xpGained });
       setSession((s) => ({ correct: s.correct + (res.correct ? 1 : 0), xp: s.xp + res.xpGained }));
     } catch (e) {
       setChosen(null);

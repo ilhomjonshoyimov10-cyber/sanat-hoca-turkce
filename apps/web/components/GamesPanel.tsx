@@ -14,7 +14,9 @@ import { QuizGame } from "./games/QuizGame";
 import { SentenceGame } from "./games/SentenceGame";
 import { SuffixGame } from "./games/SuffixGame";
 import { Leaderboard } from "./games/Leaderboard";
-import { errorText, LEVELS, type GameProps, type Stats } from "./games/types";
+import { errorText, LEVELS, type GameProps, type Outcome, type Stats } from "./games/types";
+import { CelebrationToast, DailyRing, Hud, SoundToggle, type Celebration } from "./games/GameHud";
+import { playSfx } from "@/lib/sfx";
 import { PageLoader } from "@/components/Loader";
 
 type Key =
@@ -153,6 +155,22 @@ export function GamesPanel() {
     return () => { cancelled = true; };
   }, [user, fail]);
 
+  // O'yin ichidagi holat: ketma-ket to'g'ri javoblar va shu o'yindagi XP
+  const [combo, setCombo] = useState(0);
+  const [bump, setBump] = useState(0);
+  const [sessionXp, setSessionXp] = useState(0);
+  const [cheer, setCheer] = useState<Celebration | null>(null);
+  const statsRef = useRef<Stats | null>(null);
+  const comboRef = useRef(0);
+  useEffect(() => { statsRef.current = stats; }, [stats]);
+
+  function openGame(k: Key) {
+    setGame(k);
+    setCombo(0);
+    comboRef.current = 0;
+    setSessionXp(0);
+  }
+
   function exitGame() {
     setGame(null);
     setBoardKey((k) => k + 1);
@@ -160,13 +178,47 @@ export function GamesPanel() {
 
   // Har javobdan keyin (XP o'zgarganda) reyting ham yangilanadi — 3 soniyada ko'pi bilan bir marta
   const lastBump = useRef(0);
-  const onStats = useCallback((next: Stats | ((s: Stats | null) => Stats | null)) => {
-    setStats(next as Stats);
-    if (Date.now() - lastBump.current > 3000) {
+  const onStats = useCallback((next: Stats | null, outcome?: Outcome) => {
+    const prev = statsRef.current;
+    let celebrated = false;
+    if (next) {
+      statsRef.current = next;
+      setStats(next);
+      if (prev && next.level > prev.level) {
+        playSfx("level");
+        setCheer({ key: Date.now(), title: `${next.level}-daraja!`, text: "Yangi darajaga chiqdingiz. Shunday davom eting!", tone: "brass" });
+        celebrated = true;
+      } else if (prev && next.dailyGoal && (prev.todayXp ?? 0) < next.dailyGoal && (next.todayXp ?? 0) >= next.dailyGoal) {
+        playSfx("goal");
+        setCheer({ key: Date.now(), title: "Kunlik maqsad bajarildi", text: `Bugun ${next.todayXp} XP — seriya ${next.streak} kun`, tone: "turquoise" });
+        celebrated = true;
+      }
+    }
+    if (outcome) {
+      if (outcome.correct) {
+        const c = comboRef.current + 1;
+        comboRef.current = c;
+        setCombo(c);
+        setBump((b) => b + 1);
+        if (!celebrated) {
+          if (c === 3 || c === 5 || c % 10 === 0) {
+            playSfx("combo");
+            if (c >= 5) setCheer({ key: Date.now(), title: `${c} ta ketma-ket!`, text: "Xatosiz seriya — zo'r diqqat", tone: "bole" });
+          } else playSfx("correct");
+        }
+      } else {
+        comboRef.current = 0;
+        setCombo(0);
+        playSfx("wrong");
+      }
+      if (outcome.xp > 0) setSessionXp((x) => x + outcome.xp);
+    }
+    if (next && Date.now() - lastBump.current > 3000) {
       lastBump.current = Date.now();
       setBoardKey((k) => k + 1);
     }
   }, []);
+  const clearCheer = useCallback(() => setCheer(null), []);
 
   async function toggleOptIn(optIn: boolean) {
     setError("");
@@ -187,8 +239,9 @@ export function GamesPanel() {
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
       <div className="grid content-start gap-7">
+        <CelebrationToast item={cheer} onDone={clearCheer} />
         {stats && (
-          <dl className="grid grid-cols-3 gap-px border border-cobalt/25 bg-cobalt/25">
+          <dl className="grid grid-cols-2 gap-px border border-cobalt/25 bg-cobalt/25 sm:grid-cols-4">
             {([[g.xp, stats.xp, "text-brass"], [g.level, stats.level, "text-cobalt"], [g.streak, stats.streak, "text-turquoise"]] as const).map(
               ([label, value, tone]) => (
                 <div key={label} className="bg-ink px-4 py-5">
@@ -197,6 +250,15 @@ export function GamesPanel() {
                 </div>
               ),
             )}
+            <div className="flex items-center gap-3 bg-ink px-4 py-5">
+              <DailyRing value={stats.todayXp ?? 0} goal={stats.dailyGoal ?? 50} size={46} />
+              <div className="min-w-0">
+                <dt className="whitespace-nowrap text-[0.875rem] text-muted" title="Kunlik maqsad">Bugun</dt>
+                <dd className="t-num mt-1.5 whitespace-nowrap text-[1.6rem] leading-none text-porcelain">
+                  {Math.min(stats.todayXp ?? 0, stats.dailyGoal ?? 50)}<span className="text-[0.95rem] text-muted">/{stats.dailyGoal ?? 50} XP</span>
+                </dd>
+              </div>
+            </div>
           </dl>
         )}
 
@@ -213,6 +275,7 @@ export function GamesPanel() {
                     {l || t.common.all}
                   </button>
                 ))}
+                <span className="ml-auto"><SoundToggle /></span>
               </div>
               {stats && (
                 <p className="text-[0.9375rem] text-muted">
@@ -240,7 +303,7 @@ export function GamesPanel() {
                       <li key={x.key} className="contents">
                         <button
                           type="button"
-                          onClick={() => setGame(x.key)}
+                          onClick={() => openGame(x.key)}
                           className="group relative block h-full w-full bg-ink p-5 text-left transition-colors hover:bg-cobalt/10"
                         >
                           {x.isNew && (
@@ -265,10 +328,13 @@ export function GamesPanel() {
 
         {active && (
           <div className="grid gap-3">
-            <button type="button" onClick={exitGame}
-              className="justify-self-start text-[0.9375rem] text-muted transition-colors hover:text-porcelain">
-              {g.backToGames}
-            </button>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button type="button" onClick={exitGame}
+                className="text-[0.9375rem] text-muted transition-colors hover:text-porcelain">
+                {g.backToGames}
+              </button>
+            </div>
+            {stats && <Hud todayXp={stats.todayXp ?? 0} goal={stats.dailyGoal ?? 50} combo={combo} sessionXp={sessionXp} bump={bump} />}
             <active.Comp key={active.key} onStats={onStats} onFail={fail} onExit={exitGame} level={level} />
           </div>
         )}

@@ -13,6 +13,7 @@ export class GroupsController {
   constructor(private readonly groups: GroupsService) {}
 
   @Get('groups') list(@CurrentUser() u: AuthUser) { return this.groups.list(u); }
+  @Roles('TEACHER', 'ADMIN') @Get('teacher/overview') overview(@CurrentUser() u: AuthUser) { return this.groups.overview(u); }
   @Roles('TEACHER', 'ADMIN') @Post('groups') create(@CurrentUser() u: AuthUser, @Body() dto: CreateGroupDto) { return this.groups.create(u, dto); }
   @Get('groups/:id') detail(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.groups.detail(id, u); }
   @Roles('TEACHER', 'ADMIN') @Patch('groups/:id') update(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: UpdateGroupDto) { return this.groups.update(id, u, dto); }

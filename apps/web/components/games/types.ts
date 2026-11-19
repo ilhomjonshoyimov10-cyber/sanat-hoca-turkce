@@ -1,12 +1,20 @@
 import { ApiError } from "@/lib/api";
 
 export type Stats = {
+  /** Bugun yig'ilgan XP va kunlik maqsad (server hisoblaydi) */
+  todayXp?: number; dailyGoal?: number;
   xp: number; level: number; streak: number; longestStreak: number;
   learnedWords: number; masteredWords: number; dueWords: number; leaderboardOptIn: boolean;
 };
 
 /** Har bir o'yin shu props bilan ishlaydi: statistikani yangilaydi, xatoni markazga uzatadi. */
-export type GameProps = { onStats: (s: Stats) => void; onFail: (e: unknown) => void; onExit: () => void; level: string };
+export type GameProps = {
+  /** Har javobdan keyin: yangi statistika va javob natijasi (ovoz, ketma-ketlik hisobi uchun) */
+  onStats: (s: Stats | null, outcome?: Outcome) => void;
+  onFail: (e: unknown) => void; onExit: () => void; level: string;
+};
+
+export type Outcome = { correct: boolean; xp: number };
 
 export const LEVELS = ["A1", "A2", "B1", "B2", "C1"] as const;
 /** Daraja tanlangan bo'lsa so'rovga qo'shiladigan qism (masalan "&level=B1"); bo'sh = hamma daraja */

@@ -337,7 +337,7 @@ export function createFakePrisma() {
     books: [], bookChapters: [], bookProgress: [], readingTexts: [], readingQuestions: [], readingGlossary: [], readingAttempts: [], aiConversations: [], aiMessages: [], aiUsage: [], wordSets: [], wordSetItems: [], sentences: [], suffixDrills: [], verificationCodes: [],
     announcements: [], announcementDismissals: [], supportRequests: [], supportReplies: [], mediaItems: [],
     lessonVideos: [], leadVideos: [], leadMessages: [], liveSessions: [], liveAttendees: [],
-    clozeItems: [], verbForms: [], dialogueItems: [], wordPairs: [], seenItems: [] };
+    clozeItems: [], verbForms: [], dialogueItems: [], wordPairs: [], seenItems: [], ttsClips: [] };
   let n = 0;
   const id = () => `id${++n}`;
 
@@ -556,6 +556,7 @@ export function createFakePrisma() {
       },
     },
     userStats: {
+      async findMany({ where = {}, select } = {}) { return db.stats.filter((r) => match(r, where)).map((r) => pick(r, select)); },
       async upsert({ where, create }) {
         let row = db.stats.find((t) => t.userId === where.userId);
         if (!row) {
@@ -751,6 +752,7 @@ export function createFakePrisma() {
     verificationCode: collection((c) => c.verificationCodes, id, db, {
       defaults: { attempts: 0, usedAt: null, createdAt: new Date() },
     }),
+    ttsClip: collection((c) => c.ttsClips, id, db, { defaults: { createdById: null, createdAt: () => tick() } }),
     mediaItem: collection((c) => c.mediaItems, id, db, {
       uniques: [['seedKey']],
       defaults: {

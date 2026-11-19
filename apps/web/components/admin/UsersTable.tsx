@@ -67,7 +67,7 @@ export function UsersTable({ meId, onError }: { meId: string; onError: (m: strin
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid grid-cols-1 gap-5">
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[14rem] flex-1">
           <label htmlFor="u-q" className="label">Qidirish</label>

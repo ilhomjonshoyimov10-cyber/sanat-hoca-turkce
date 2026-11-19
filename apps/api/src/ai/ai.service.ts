@@ -2,7 +2,10 @@ import { BadRequestException, Injectable, Logger, NotFoundException, ServiceUnav
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { AskDto } from './ai.dto.js';
 import { MAX_INPUT_CHARS, MAX_OUTPUT_CHARS, systemPrompt, type PromptTask } from './ai.prompts.js';
-import { AiProviderError, aiEnabled, callAi, readAiConfig, type AiChatMessage, type AiConfig } from './ai.provider.js';
+import {
+  AiProviderError, aiEnabled, aiMemory, callAi, diagnoseAi, isKeyProblem, readAiConfig, shortError,
+  type AiChatMessage, type AiConfig,
+} from './ai.provider.js';
 
 /** Kunlik so'rov chegarasi. Bepul tierda butun markazga umumiy kvota bor,
  *  shuning uchun bitta foydalanuvchi hammaning kvotasini yeb qo'ymasligi kerak. */
@@ -23,13 +26,7 @@ const TEACHER_ONLY: PromptTask[] = ['EXERCISE'];
 const health = { lastOkAt: null as Date | null, lastErrorAt: null as Date | null, lastError: null as string | null };
 
 /** Provayder xatosidan admin uchun qisqa, kalitsiz izoh. */
-function describeError(error: unknown): string {
-  if (error instanceof AiProviderError) {
-    const msg = /"message"\s*:\s*"([^"]{1,200})/.exec(error.detail)?.[1] ?? error.detail.slice(0, 200);
-    return `${error.status}: ${msg}`.replace(/AIza[0-9A-Za-z_-]{20,}/g, '[kalit]');
-  }
-  return String(error).slice(0, 200);
-}
+const describeError = shortError;
 
 @Injectable()
 export class AiService {
@@ -44,7 +41,7 @@ export class AiService {
     return {
       enabled: aiEnabled(this.config),
       provider: aiEnabled(this.config) ? this.config.provider : null,
-      model: aiEnabled(this.config) ? this.config.model : null,
+      model: aiEnabled(this.config) ? (aiMemory().workingModel ?? this.config.model) : null,
       dailyLimit: DAILY_LIMIT[role] ?? 0,
       usedToday: used,
       canUseExercise: role === 'TEACHER' || role === 'ADMIN',
@@ -149,7 +146,22 @@ export class AiService {
       questions: messages,
       today: { answered: usage.reduce((n, u) => n + u.requests, 0), users: usage.length, failed: failedToday },
       health,
+      memory: aiMemory(),
     };
+  }
+
+  /** Admin: "AI ni tekshirish" — har model qisqa savol bilan sinaladi. */
+  async adminTest() {
+    if (!aiEnabled(this.config)) {
+      return { provider: this.config.provider, keyProblem: true, available: null, listError: 'AI_API_KEY berilmagan', results: [], workingModel: null };
+    }
+    const r = await diagnoseAi(this.config);
+    if (r.results.some((x) => x.ok)) health.lastOkAt = new Date();
+    else {
+      health.lastErrorAt = new Date();
+      health.lastError = r.results.at(-1)?.error ?? r.listError ?? 'Hech bir model javob bermadi';
+    }
+    return r;
   }
 
   /** Bugungi kun (UTC yarim tunidan). AiUsage.day = DATE turida. */
@@ -287,6 +299,13 @@ export class AiService {
       // Provayderning xato matnida kalit bo'lishi mumkin — faqat jurnalga.
       if (error instanceof AiProviderError) {
         this.log.error(`AI ${this.config.provider} ${error.status}: ${error.detail}`);
+        if (isKeyProblem(error)) {
+          throw new ServiceUnavailableException({
+            message: "AI hozir sozlanmoqda (kalit muammosi). Admin xabardor — birozdan keyin urinib ko'ring",
+            code: 'AI_KEY',
+            conversationId,
+          });
+        }
         if (error.status === 429) {
           throw new ServiceUnavailableException({
             message: "AI xizmati hozir band (kunlik umumiy kvota). Birozdan keyin urinib ko'ring",

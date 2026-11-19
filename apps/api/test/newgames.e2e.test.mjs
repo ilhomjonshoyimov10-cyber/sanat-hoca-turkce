@@ -184,6 +184,10 @@ describe('XP kunlik chegarasi', () => {
 
     assert.ok(capped, "chegara hech qachon ishga tushmadi — XP cheksiz yigiladi");
     assert.ok(total <= 120, `chegaradan oshdi: ${total} XP`);
+    // Kunlik maqsad halqasi: bugungi XP aynan yig'ilgan XP ga teng
+    const me = await student.agent.get('/games/me');
+    assert.equal(me.body.todayXp, total);
+    assert.equal(me.body.dailyGoal, 50);
   });
 });
 

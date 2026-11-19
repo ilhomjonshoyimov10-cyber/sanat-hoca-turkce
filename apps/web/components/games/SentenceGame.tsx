@@ -50,7 +50,7 @@ export function SentenceGame({ onStats, onFail, onExit, level }: GameProps) {
         body: { token: item.token, answer: slots.map((i) => item.words[i]).join(" ") },
       });
       setResult(res);
-      onStats(res.stats);
+      onStats(res.stats, { correct: res.correct, xp: res.xpGained });
       setSession((s) => ({ correct: s.correct + (res.correct ? 1 : 0), xp: s.xp + res.xpGained }));
     } catch (e) {
       onFail(e);

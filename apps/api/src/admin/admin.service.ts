@@ -6,6 +6,11 @@ import { checkPassword } from '../auth/password.policy.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateUserDto, ListUsersQuery, ResetPasswordDto, UpdateUserDto } from './admin.dto.js';
+import { tashkentDay } from '../games/srs.js';
+
+const DAY_MS = 24 * 3600_000;
+/** Toshkent vaqti: UTC+5, yozgi vaqt yo'q */
+const TZ_MS = 5 * 3600_000;
 
 export interface Actor { id: string; role: Role }
 
@@ -49,6 +54,156 @@ export class AdminService {
     return {
       users, roles, groups, activeGroups, leads, newLeads, words,
       submissions, ungraded, lessons,
+    };
+  }
+
+  /**
+   * Boshqaruv paneli: tanlangan davr (7/30/90 kun) va undan oldingi xuddi
+   * shunday davr — o'sish/pasayish foizi shu ikkisini solishtiradi.
+   * Kunlar Toshkent vaqti bo'yicha. Hammasi bitta so'rovda: sahifa tez ochiladi.
+   */
+  async dashboard(daysRaw?: number) {
+    const days = [7, 30, 90].includes(Number(daysRaw)) ? Number(daysRaw) : 30;
+    const now = new Date();
+    const todayKey = tashkentDay(now);
+    const start = new Date(Date.parse(`${todayKey}T00:00:00+05:00`) - (days - 1) * DAY_MS);
+    const prevStart = new Date(start.getTime() - days * DAY_MS);
+    const since = { gte: prevStart };
+
+    const [users, results, aiMsgs, aiUsage, leadsAll, openSupport, ungraded, stats, groups, members, upcomingLive] = await Promise.all([
+      this.prisma.user.findMany({ where: { createdAt: since }, select: { createdAt: true, role: true } }),
+      this.prisma.gameResult.findMany({ where: { createdAt: since }, select: { userId: true, game: true, score: true, createdAt: true } }),
+      this.prisma.aiMessage.findMany({ where: { createdAt: since }, select: { role: true, error: true, createdAt: true } }),
+      this.prisma.aiUsage.findMany({ where: { day: since }, select: { userId: true, day: true } }),
+      this.prisma.lead.findMany({ select: { status: true, createdAt: true } }),
+      this.prisma.supportRequest.count({ where: { status: 'OPEN' } }),
+      this.prisma.submission.count({ where: { score: null } }),
+      this.prisma.userStats.findMany({ select: { userId: true, xp: true } }),
+      this.prisma.group.findMany({ where: { isActive: true }, select: { id: true, level: true } }),
+      this.prisma.groupMember.findMany({ select: { groupId: true, userId: true } }),
+      this.prisma.liveSession.count({ where: { status: 'SCHEDULED', startsAt: { gte: now } } }),
+    ]);
+
+    // Toshkent kuni kaliti: "2026-11-20"
+    const dayOf = (d: Date) => new Date(d.getTime() + TZ_MS).toISOString().slice(0, 10);
+    const keys: string[] = [];
+    for (let i = 0; i < days; i++) keys.push(new Date(start.getTime() + i * DAY_MS + TZ_MS).toISOString().slice(0, 10));
+    const series = new Map(keys.map((k) => [k, { day: k, users: 0, plays: 0, xp: 0, ai: 0, leads: 0, active: new Set<string>() }]));
+    const inCur = (d: Date) => d >= start;
+
+    const tally = { users: [0, 0], plays: [0, 0], xp: [0, 0], ai: [0, 0], aiFailed: 0, leads: [0, 0] };
+    const activeCur = new Set<string>();
+    const activePrev = new Set<string>();
+    for (const u of users) {
+      tally.users[inCur(u.createdAt) ? 0 : 1]++;
+      const row = series.get(dayOf(u.createdAt));
+      if (row) row.users++;
+    }
+    const gameAgg = new Map<string, { plays: number; players: Set<string>; xp: number }>();
+    const heat = Array.from({ length: 7 }, () => Array<number>(24).fill(0));
+    const xpByUser = new Map<string, number>();
+    for (const r of results) {
+      const cur = inCur(r.createdAt);
+      tally.plays[cur ? 0 : 1]++;
+      tally.xp[cur ? 0 : 1] += r.score;
+      (cur ? activeCur : activePrev).add(r.userId);
+      if (!cur) continue;
+      const row = series.get(dayOf(r.createdAt));
+      if (row) {
+        row.plays++;
+        row.xp += r.score;
+        row.active.add(r.userId);
+      }
+      const g = gameAgg.get(r.game) ?? { plays: 0, players: new Set<string>(), xp: 0 };
+      g.plays++;
+      g.xp += r.score;
+      g.players.add(r.userId);
+      gameAgg.set(r.game, g);
+      // Hafta kuni (dushanba = 0) x soat — Toshkent vaqtida
+      const local = new Date(r.createdAt.getTime() + TZ_MS);
+      heat[(local.getUTCDay() + 6) % 7][local.getUTCHours()]++;
+      xpByUser.set(r.userId, (xpByUser.get(r.userId) ?? 0) + r.score);
+    }
+    for (const m of aiMsgs) {
+      const cur = inCur(m.createdAt);
+      if (m.role === 'USER') {
+        tally.ai[cur ? 0 : 1]++;
+        const row = cur ? series.get(dayOf(m.createdAt)) : undefined;
+        if (row) row.ai++;
+      } else if (m.error && cur) tally.aiFailed++;
+    }
+    for (const a of aiUsage) {
+      // AiUsage.day — UTC sana (DATE). Faollik uchun kun aniqligi yetarli.
+      const k = a.day.toISOString().slice(0, 10);
+      const cur = a.day >= new Date(`${keys[0]}T00:00:00Z`);
+      (cur ? activeCur : activePrev).add(a.userId);
+      series.get(k)?.active.add(a.userId);
+    }
+    for (const l of leadsAll) {
+      if (l.createdAt < prevStart) continue;
+      const cur = inCur(l.createdAt);
+      tally.leads[cur ? 0 : 1]++;
+      const row = cur ? series.get(dayOf(l.createdAt)) : undefined;
+      if (row) row.leads++;
+    }
+
+    // Arizalar voronkasi (butun vaqt): kelib tushdi -> bog'lanildi -> o'qishga yozildi
+    const byStatus = (st: string) => leadsAll.filter((l) => l.status === st).length;
+    const enrolled = byStatus('ENROLLED');
+    const contacted = byStatus('CONTACTED') + enrolled;
+    const funnel = [
+      { key: 'ALL', label: 'Ariza keldi', count: leadsAll.length },
+      { key: 'CONTACTED', label: "Bog'lanildi", count: contacted },
+      { key: 'ENROLLED', label: "O'qishga yozildi", count: enrolled },
+    ];
+
+    // Faol guruhlardagi o'quvchilar — daraja bo'yicha
+    const levelOf = new Map(groups.map((g) => [g.id, g.level as string]));
+    const perLevel = new Map<string, Set<string>>();
+    for (const m of members) {
+      const lv = levelOf.get(m.groupId);
+      if (!lv) continue;
+      if (!perLevel.has(lv)) perLevel.set(lv, new Set());
+      perLevel.get(lv)!.add(m.userId);
+    }
+    const levels = ['A1', 'A2', 'B1', 'B2', 'C1'].map((level) => ({ level, students: perLevel.get(level)?.size ?? 0 }));
+
+    // Davrning eng faol o'quvchilari (XP bo'yicha). Admin ismlarni ko'radi —
+    // bu ichki panel; ommaviy reytingdagi rozilik qoidasi bu yerga tegishli emas.
+    const topIds = [...xpByUser.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const names = topIds.length
+      ? await this.prisma.user.findMany({ where: { id: { in: topIds.map(([id]) => id) } }, select: { id: true, firstName: true, lastName: true } })
+      : [];
+    const top = topIds.map(([id, xp]) => {
+      const u = names.find((n) => n.id === id);
+      return { id, name: u ? `${u.firstName} ${(u.lastName ?? '').charAt(0)}.`.trim() : '—', xp };
+    });
+
+    return {
+      days,
+      from: start.toISOString(),
+      generatedAt: now.toISOString(),
+      kpi: {
+        newUsers: tally.users,
+        activeUsers: [activeCur.size, activePrev.size],
+        plays: tally.plays,
+        xp: tally.xp,
+        aiQuestions: tally.ai,
+        aiFailed: tally.aiFailed,
+        leads: tally.leads,
+        openSupport,
+        ungraded,
+        upcomingLive,
+        totalXp: stats.reduce((n, s) => n + s.xp, 0),
+      },
+      series: [...series.values()].map(({ active, ...r }) => ({ ...r, active: active.size })),
+      games: [...gameAgg.entries()]
+        .map(([game, g]) => ({ game, plays: g.plays, players: g.players.size, xp: g.xp }))
+        .sort((a, b) => b.plays - a.plays),
+      funnel,
+      levels,
+      heat,
+      top,
     };
   }
 

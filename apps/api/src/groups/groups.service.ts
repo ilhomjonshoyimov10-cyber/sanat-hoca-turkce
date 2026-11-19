@@ -85,6 +85,143 @@ export class GroupsService {
     }));
   }
 
+  /**
+   * Ustoz paneli uchun bitta so'rov: guruhlar faolligi (14 kun), harakatsiz
+   * o'quvchilar, yaqin muddatli vazifalar, rejadagi jonli darslar.
+   * Ustoz faqat O'Z guruhlarini ko'radi; admin — barcha faol guruhlarni.
+   */
+  async overview(actor: Actor) {
+    const now = new Date();
+    const groups = await this.prisma.group.findMany({
+      where: actor.role === 'ADMIN' ? { isActive: true } : { teacherId: actor.id, isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    const ids = groups.map((g) => g.id);
+    const DAYS = 14;
+    const todayKey = tashkentDay(now);
+    const start = new Date(Date.parse(`${todayKey}T00:00:00+05:00`) - (DAYS - 1) * DAY);
+    const keys = Array.from({ length: DAYS }, (_, i) => tashkentDay(new Date(start.getTime() + i * DAY + 3600_000)));
+    if (!ids.length) {
+      return { days: keys, groups: [], students: [], dueSoon: [], upcoming: [], totals: { students: 0, active7: 0, plays7: 0, ungraded: 0 } };
+    }
+
+    const members = await this.prisma.groupMember.findMany({ where: { groupId: { in: ids } } });
+    const userIds = [...new Set(members.map((m) => m.userId))];
+    const monthAgo = new Date(now.getTime() - 30 * DAY);
+    const [users, results, stats, homework, attendance, live] = await Promise.all([
+      userIds.length
+        ? this.prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, firstName: true, lastName: true, lastLoginAt: true, avatarUrl: true } })
+        : [],
+      userIds.length
+        ? this.prisma.gameResult.findMany({ where: { userId: { in: userIds }, createdAt: { gte: start } }, select: { userId: true, score: true, createdAt: true } })
+        : [],
+      userIds.length ? this.prisma.userStats.findMany({ where: { userId: { in: userIds } }, select: { userId: true, streak: true, lastActiveDay: true } }) : [],
+      this.prisma.homework.findMany({ where: { groupId: { in: ids } }, orderBy: { createdAt: 'desc' } }),
+      this.prisma.attendance.findMany({ where: { groupId: { in: ids }, date: { gte: monthAgo } } }),
+      this.prisma.liveSession.findMany({
+        where: { status: { in: ['SCHEDULED', 'LIVE'] }, startsAt: { gte: new Date(now.getTime() - 3 * 3600_000) }, OR: [{ hostId: actor.id }, { groupId: { in: ids } }] },
+        orderBy: { startsAt: 'asc' },
+        take: 6,
+      }),
+    ]);
+    const hwIds = homework.map((h) => h.id);
+    const subs = hwIds.length ? await this.prisma.submission.findMany({ where: { homeworkId: { in: hwIds } } }) : [];
+
+    const dayIdx = new Map(keys.map((k, i) => [k, i]));
+    const weekAgo = new Date(now.getTime() - 7 * DAY);
+    const lastSeen = new Map<string, Date>();
+    const xp7 = new Map<string, number>();
+    const perUserDay = new Map<string, number[]>();
+    for (const r of results) {
+      const i = dayIdx.get(tashkentDay(r.createdAt));
+      if (i === undefined) continue;
+      const arr = perUserDay.get(r.userId) ?? Array<number>(DAYS).fill(0);
+      arr[i]++;
+      perUserDay.set(r.userId, arr);
+      if (r.createdAt >= weekAgo) xp7.set(r.userId, (xp7.get(r.userId) ?? 0) + r.score);
+      const prev = lastSeen.get(r.userId);
+      if (!prev || r.createdAt > prev) lastSeen.set(r.userId, r.createdAt);
+    }
+    const userById = new Map(users.map((u) => [u.id, u]));
+    for (const u of users) {
+      if (u.lastLoginAt && (!lastSeen.has(u.id) || u.lastLoginAt > lastSeen.get(u.id)!)) lastSeen.set(u.id, u.lastLoginAt);
+    }
+    for (const st of stats) {
+      // lastActiveDay — sana (Toshkent kuni); kunning oxiri deb olamiz
+      if (!st.lastActiveDay) continue;
+      const d = new Date(`${st.lastActiveDay.toISOString().slice(0, 10)}T12:00:00+05:00`);
+      if (!lastSeen.has(st.userId) || d > lastSeen.get(st.userId)!) lastSeen.set(st.userId, d);
+    }
+    const streak = new Map(stats.map((st) => [st.userId, st.streak]));
+
+    const groupRows = groups.map((g) => {
+      const mine = members.filter((m) => m.groupId === g.id).map((m) => m.userId);
+      const activity = Array<number>(DAYS).fill(0);
+      for (const uid of mine) perUserDay.get(uid)?.forEach((n, i) => (activity[i] += n));
+      const att = attendance.filter((a) => a.groupId === g.id);
+      const hw = homework.filter((h) => h.groupId === g.id).map((h) => h.id);
+      const ungraded = subs.filter((x) => hw.includes(x.homeworkId) && x.score === null).length;
+      return {
+        id: g.id, name: g.name, level: g.level, schedule: g.schedule, members: mine.length,
+        activity,
+        active7: mine.filter((uid) => (lastSeen.get(uid) ?? new Date(0)) >= weekAgo).length,
+        attendance: att.length ? Math.round((att.filter((a) => a.present).length / att.length) * 100) : null,
+        ungraded,
+      };
+    });
+
+    const groupNames = new Map<string, string[]>();
+    for (const m of members) {
+      const gname = groups.find((g) => g.id === m.groupId)?.name ?? '';
+      groupNames.set(m.userId, [...(groupNames.get(m.userId) ?? []), gname]);
+    }
+    const students = userIds
+      .map((uid) => {
+        const u = userById.get(uid);
+        const seen = lastSeen.get(uid) ?? null;
+        return {
+          id: uid,
+          name: u ? `${u.firstName} ${u.lastName}`.trim() : '—',
+          avatarUrl: u?.avatarUrl ?? null,
+          groups: groupNames.get(uid) ?? [],
+          xp7: xp7.get(uid) ?? 0,
+          streak: streak.get(uid) ?? 0,
+          lastSeenAt: seen?.toISOString() ?? null,
+          inactiveDays: seen ? Math.floor((now.getTime() - seen.getTime()) / DAY) : null,
+        };
+      })
+      .sort((a, b) => b.xp7 - a.xp7);
+
+    const dueSoon = homework
+      .filter((h) => h.dueAt && h.dueAt >= new Date(now.getTime() - DAY) && h.dueAt <= new Date(now.getTime() + 7 * DAY))
+      .map((h) => ({
+        id: h.id, title: h.title, groupId: h.groupId, groupName: groups.find((g) => g.id === h.groupId)?.name ?? '',
+        dueAt: h.dueAt!.toISOString(),
+        submitted: subs.filter((x) => x.homeworkId === h.id).length,
+        members: members.filter((m) => m.groupId === h.groupId).length,
+      }))
+      .sort((a, b) => a.dueAt.localeCompare(b.dueAt));
+
+    const upcoming = live.map((l) => ({
+      id: l.id, title: l.title, startsAt: l.startsAt.toISOString(), status: l.status,
+      groupName: groups.find((g) => g.id === l.groupId)?.name ?? null,
+    }));
+
+    return {
+      days: keys,
+      groups: groupRows,
+      students,
+      dueSoon,
+      upcoming,
+      totals: {
+        students: userIds.length,
+        active7: students.filter((x) => x.inactiveDays !== null && x.inactiveDays < 7).length,
+        plays7: results.filter((r) => r.createdAt >= weekAgo).length,
+        ungraded: groupRows.reduce((n, g) => n + g.ungraded, 0),
+      },
+    };
+  }
+
   async create(actor: Actor, dto: CreateGroupDto) {
     let teacherId = actor.id;
     if (dto.teacherId && dto.teacherId !== actor.id) {

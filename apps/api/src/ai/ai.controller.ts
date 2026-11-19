@@ -21,6 +21,14 @@ export class AiController {
     return this.ai.adminStats();
   }
 
+  // Har bosilganda Google'ga bir nechta so'rov ketadi — tez-tez bosilmasin
+  @Roles('ADMIN')
+  @Throttle({ default: { limit: 4, ttl: 60 * 1000 } })
+  @Post('admin/test')
+  adminTest() {
+    return this.ai.adminTest();
+  }
+
   @Roles('ADMIN')
   @Get('admin/conversations')
   adminConversations(

@@ -15,6 +15,11 @@ export class AdminController {
     return this.admin.stats();
   }
 
+  @Get('dashboard')
+  dashboard(@Query('days') days?: string) {
+    return this.admin.dashboard(Number(days) || 30);
+  }
+
   @Get('users')
   listUsers(@Query() q: ListUsersQuery) {
     return this.admin.listUsers(q);

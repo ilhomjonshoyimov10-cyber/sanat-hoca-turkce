@@ -283,6 +283,38 @@ describe('admin paneli', () => {
     assert.equal(typeof r.body.roles.STUDENT, 'number');
   });
 
+  it('boshqaruv paneli: davr, kunlik qatorlar, o\'sish solishtiruvi', async () => {
+    // Bugun 2 ta o'yin natijasi va 1 ta ariza — kunlik qatorda ko'rinsin
+    const db = ctx.prisma.db;
+    db.results.push({ id: 'r-d1', userId: S1.id, game: 'FILL_GAP', score: 10, createdAt: new Date() });
+    db.results.push({ id: 'r-d2', userId: S2.id, game: 'FILL_GAP', score: 10, createdAt: new Date() });
+    // 10 kun oldin — 7 kunlik davrga kirmaydi, "oldingi davr"ga kiradi
+    db.results.push({ id: 'r-d3', userId: S1.id, game: 'ANTONYM', score: 10, createdAt: new Date(Date.now() - 10 * 86400000) });
+
+    for (const who of [S1, TEACHER]) assert.equal((await who.agent.get('/admin/dashboard')).status, 403);
+
+    const r = await ADMIN.agent.get('/admin/dashboard?days=7');
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(r.body.days, 7);
+    assert.equal(r.body.series.length, 7);
+    const today = r.body.series.at(-1);
+    assert.ok(today.plays >= 2, JSON.stringify(today));
+    assert.ok(today.active >= 2);
+    assert.ok(r.body.kpi.plays[0] >= 2);
+    assert.ok(r.body.kpi.plays[1] >= 1, 'oldingi davr hisoblanmadi');
+    assert.equal(r.body.heat.length, 7);
+    assert.equal(r.body.heat[0].length, 24);
+    assert.ok(r.body.games.some((g) => g.game === 'FILL_GAP' && g.players >= 2));
+    assert.ok(!r.body.games.some((g) => g.game === 'ANTONYM'), 'davrdan tashqari natija kirdi');
+    assert.equal(r.body.funnel[0].key, 'ALL');
+    assert.equal(r.body.levels.length, 5);
+    assert.ok(r.body.top.length >= 1);
+    assert.ok(!JSON.stringify(r.body).includes('passwordHash'));
+    // Noto'g'ri davr — 30 kunga tushadi
+    const bad = await ADMIN.agent.get('/admin/dashboard?days=5000');
+    assert.equal(bad.body.days, 30);
+  });
+
   it('foydalanuvchilarni qidiradi va rol bo\'yicha filtrlaydi', async () => {
     const r = await ADMIN.agent.get('/admin/users?role=TEACHER');
     assert.equal(r.status, 200);

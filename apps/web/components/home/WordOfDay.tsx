@@ -4,7 +4,8 @@ import { useSyncExternalStore } from "react";
 import { useI18n } from "@/lib/i18n/client";
 import type { Locale } from "@/lib/i18n/config";
 import { toCyrillic } from "@/lib/i18n/translit";
-import { speakTurkish, subscribeVoices, turkishVoiceAvailable } from "@/lib/speech";
+import { useAuth } from "@/lib/auth";
+import { playTurkish, subscribeVoices, turkishVoiceAvailable } from "@/lib/speech";
 import { tashkentDayNumber, todays, type Gloss } from "@/lib/wotd";
 
 // Kun raqami faqat brauzerda hisoblanadi: sahifa oldindan (statik)
@@ -28,7 +29,11 @@ const Speaker = () => (
 export function WordOfDay() {
   const { t, locale } = useI18n();
   const day = useDay();
-  const voice = useSyncExternalStore(subscribeVoices, turkishVoiceAvailable, () => false);
+  const browserVoice = useSyncExternalStore(subscribeVoices, turkishVoiceAvailable, () => false);
+  const { user } = useAuth();
+  // Kirgan foydalanuvchi server ovozini oladi; mehmon — qurilma ovozini (bo'lsa)
+  const voice = browserVoice || !!user;
+  const say = (text: string) => void playTurkish(text, { rate: 0.85, server: !!user });
 
   if (day < 0) {
     // Server va birinchi chizish: joy band qilinadi, sahifa sakramaydi
@@ -53,7 +58,7 @@ export function WordOfDay() {
           {voice && (
             <button
               type="button"
-              onClick={() => speakTurkish(word.tr, 0.85)}
+              onClick={() => say(word.tr)}
               className="btn btn-outline !min-h-10 !px-3.5 !py-1.5 text-sm"
               aria-label={`${t.wotd.listen}: ${word.tr}`}
             >
@@ -69,7 +74,7 @@ export function WordOfDay() {
         <p lang="tr" className="mt-2 text-[1.15rem] text-porcelain">
           {word.example}
           {voice && (
-            <button type="button" onClick={() => speakTurkish(word.example, 0.85)} className="ml-2 inline-grid size-7 translate-y-1 place-items-center rounded-full text-muted transition-colors hover:text-porcelain" aria-label={`${t.wotd.listen}: ${word.example}`}>
+            <button type="button" onClick={() => say(word.example)} className="ml-2 inline-grid size-7 translate-y-1 place-items-center rounded-full text-muted transition-colors hover:text-porcelain" aria-label={`${t.wotd.listen}: ${word.example}`}>
               <Speaker />
             </button>
           )}

@@ -24,6 +24,7 @@ import { NotificationsModule } from './notifications/notifications.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ReadingModule } from './reading/reading.module.js';
 import { SupportModule } from './support/support.module.js';
+import { TtsModule } from './tts/tts.module.js';
 import { UsersModule } from './users/users.module.js';
 import { VerifyModule } from './verify/verify.module.js';
 
@@ -48,6 +49,7 @@ import { VerifyModule } from './verify/verify.module.js';
     VerifyModule,
     AnnouncementsModule,
     SupportModule,
+    TtsModule,
     FreeLessonModule,
     LiveModule,
     AdminModule,

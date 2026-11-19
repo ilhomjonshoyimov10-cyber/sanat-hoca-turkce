@@ -72,6 +72,7 @@ export function ChainGame({ onStats, onFail, onExit, level }: GameProps) {
       });
 
       if (!r.correct) {
+        onStats(null, { correct: false, xp: 0 });
         setWrong(true);
         setMessage(r.reason ?? "Qabul qilinmadi");
         return;
@@ -82,7 +83,7 @@ export function ChainGame({ onStats, onFail, onExit, level }: GameProps) {
       setXp((x) => x + r.xpGained);
       setValue("");
       setMessage(r.capped ? "To'g'ri! (bugunlik XP chegarasi tugadi)" : `To'g'ri! +${r.xpGained} XP`);
-      if (r.stats) onStats(r.stats);
+      onStats(r.stats ?? null, { correct: true, xp: r.xpGained });
 
       if (r.finished || !r.token) {
         setDone(true);

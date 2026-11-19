@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import { speakTurkish, subscribeVoices, turkishVoiceAvailable } from "@/lib/speech";
+import { fetchVoice, playTurkish, prefetchVoices, stopSpeech, turkishVoiceAvailable } from "@/lib/speech";
 import { levelParam, TURKISH_LETTERS, type GameProps, type Stats } from "./types";
 
 type Item = { token: string; hint: string; example: string | null; length: number; text: string };
@@ -16,21 +16,44 @@ export function ListenGame({ onStats, onFail, onExit, level }: GameProps) {
   const [session, setSession] = useState({ correct: 0, xp: 0 });
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
-  const hasVoice = useSyncExternalStore(subscribeVoices, turkishVoiceAvailable, () => false);
-  // Brauzer ovozlar ro'yxatini sahifa ochilgandan KEYIN yuklaydi. Darhol
-  // "ovoz yo'q" deyish xato bo'lardi — biroz kutamiz.
-  const [voiceChecked, setVoiceChecked] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setVoiceChecked(true), 1500);
-    return () => clearTimeout(t);
+  // Ovoz holati: "checking" — birinchi so'z tayyorlanmoqda; "ready" — server
+  // ovozi bor; "browser" — faqat brauzer ovozi; "none" — hech qaysi yo'q.
+  const [voice, setVoice] = useState<"checking" | "ready" | "browser" | "none">("checking");
+  const [playing, setPlaying] = useState(false);
+
+  // O'yindan chiqilsa ovoz to'xtasin
+  useEffect(() => () => stopSpeech(), []);
+
+  const say = useCallback(async (text: string, rate = 0.9) => {
+    setPlaying(true);
+    const used = await playTurkish(text, { rate, onEnd: () => setPlaying(false) });
+    if (used === "none") {
+      setPlaying(false);
+      setVoice("none");
+    }
   }, []);
-  const noVoice = voiceChecked && !hasVoice;
+
+  /** Birinchi so'zning ovozini olib ko'ramiz: server ishlasa — qolganlari fon rejimida. */
+  async function prepareVoice(list: Item[]) {
+    if (!list.length) return;
+    setVoice("checking");
+    try {
+      await fetchVoice(list[0].text);
+      setVoice("ready");
+      void prefetchVoices(list.slice(1).map((x) => x.text));
+    } catch {
+      // Brauzer ovozlar ro'yxatini kechikib yuklaydi — biroz kutib tekshiramiz
+      await new Promise((r) => setTimeout(r, 600));
+      setVoice(turkishVoiceAvailable() ? "browser" : "none");
+    }
+  }
 
   async function start() {
     setBusy(true);
     try {
       const r = await api<{ items: Item[] }>(`/games/listen?limit=5${levelParam(level)}`);
       setItems(r.items);
+      void prepareVoice(r.items);
       setIndex(0);
       setValue("");
       setResult(null);
@@ -49,7 +72,7 @@ export function ListenGame({ onStats, onFail, onExit, level }: GameProps) {
     try {
       const res = await api<Result>("/games/listen/answer", { method: "POST", body: { token: items[index].token, answer: value } });
       setResult(res);
-      onStats(res.stats);
+      onStats(res.stats, { correct: res.correct, xp: res.xpGained });
       setSession((s) => ({ correct: s.correct + (res.correct ? 1 : 0), xp: s.xp + res.xpGained }));
     } catch (err) {
       onFail(err);
@@ -71,25 +94,34 @@ export function ListenGame({ onStats, onFail, onExit, level }: GameProps) {
     });
   }
 
-  // Turkcha ovoz yo'q bo'lsa, o'yin ma'nosiz: ilgari so'zning o'zi ekranga
-  // chiqarilardi va "tinglab yozish" oddiy ko'chirib yozishga aylanardi.
-  // Endi qanday qilib ovozni yoqishni tushuntiramiz.
-  if (noVoice) {
+  // Yangi so'z chiqqanda ovoz o'zi bir marta eshittiriladi
+  const current = items && index < items.length ? items[index] : null;
+  useEffect(() => {
+    if (!current || result || (voice !== "ready" && voice !== "browser")) return;
+    const t = setTimeout(() => void say(current.text), 250);
+    return () => clearTimeout(t);
+    // result o'zgarganda qayta o'qimasin — faqat yangi so'z yoki ovoz tayyor bo'lganda
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.token, voice]);
+
+  // Hech qanday ovoz yo'q (server ham, brauzer ham) — o'yin ma'nosiz:
+  // so'zni ekranga chiqarsak, "tinglab yozish" ko'chirib yozishga aylanadi.
+  if (voice === "none") {
     return (
       <div className="card grid gap-4">
         <h2 className="text-xl font-bold">Tinglab yozish</h2>
         <p className="alert-error" role="note">
-          Bu qurilmada turkcha ovoz topilmadi. Bu o&apos;yin uchun brauzer so&apos;zni turkcha talaffuz
-          qilishi kerak.
+          Ovoz hozir yuklanmadi. Internet aloqasini tekshirib, qayta urinib ko&apos;ring.
         </p>
         <div className="grid gap-2 text-[0.95rem] text-muted">
-          <p className="font-semibold text-porcelain">Qanday yoqiladi:</p>
-          <p><strong>Kompyuterda:</strong> Google Chrome yoki Microsoft Edge brauzeridan foydalaning — ularda turkcha ovoz o&apos;rnatilgan bo&apos;ladi.</p>
-          <p><strong>Android:</strong> Sozlamalar → Tizim → Til → Matnni nutqqa aylantirish → &laquo;Google&raquo; → Turkcha ovozni yuklab oling.</p>
+          <p>Agar takrorlansa, qurilmangizga turkcha ovozni o&apos;rnatish ham yordam beradi:</p>
+          <p><strong>Android:</strong> Sozlamalar → Tizim → Til → Matnni nutqqa aylantirish → &laquo;Google&raquo; → Turkcha.</p>
           <p><strong>iPhone:</strong> Sozlamalar → Maxsus imkoniyatlar → Gapirish → Ovozlar → Turkcha.</p>
-          <p>Ovozni o&apos;rnatgach, sahifani yangilang.</p>
         </div>
-        <button type="button" onClick={onExit} className="btn btn-outline">Boshqa o&apos;yin tanlash</button>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button type="button" onClick={() => (items ? void prepareVoice(items.slice(index)) : void start())} className="btn btn-primary">Qayta urinish</button>
+          <button type="button" onClick={onExit} className="btn btn-outline">Boshqa o&apos;yin tanlash</button>
+        </div>
       </div>
     );
   }
@@ -98,9 +130,9 @@ export function ListenGame({ onStats, onFail, onExit, level }: GameProps) {
     return (
       <div className="card grid gap-3">
         <h2 className="text-xl font-bold">Tinglab yozish</h2>
-        <p className="text-muted">Turkcha so&apos;zni eshiting va to&apos;g&apos;ri yozing. Telefoningiz yoki brauzeringizning ovozidan foydalaniladi. 5 ta so&apos;z.</p>
-        <button type="button" onClick={start} disabled={busy || !voiceChecked} className="btn btn-primary">
-          {busy ? "Yuklanmoqda..." : !voiceChecked ? "Ovoz tekshirilmoqda..." : "Boshlash"}
+        <p className="text-muted">Turkcha so&apos;zni eshiting va to&apos;g&apos;ri yozing. 5 ta so&apos;z. Ovozni yoqib qo&apos;ying yoki quloqchin taqing.</p>
+        <button type="button" onClick={start} disabled={busy} className="btn btn-primary">
+          {busy ? "Yuklanmoqda..." : "Boshlash"}
         </button>
       </div>
     );
@@ -146,9 +178,15 @@ export function ListenGame({ onStats, onFail, onExit, level }: GameProps) {
       <div className="grid gap-3 text-center">
         <p className="text-muted">Tarjimasi: <strong className="text-foreground">{item.hint}</strong></p>
         <div className="flex justify-center gap-2">
-          <button type="button" onClick={() => speakTurkish(item.text, 0.9)} disabled={!hasVoice} className="btn btn-primary">Tinglash</button>
-          <button type="button" onClick={() => speakTurkish(item.text, 0.55)} disabled={!hasVoice} className="btn btn-outline">Sekin</button>
+          <button type="button" onClick={() => void say(item.text, 0.9)} disabled={voice === "checking"} className="btn btn-primary" aria-busy={playing}>
+            <svg viewBox="0 0 24 24" className={`size-5 ${playing ? "animate-pulse" : ""}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 9v6h4l5 4V5L8 9H4Z" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" />
+            </svg>
+            {voice === "checking" ? "Ovoz tayyorlanmoqda..." : "Tinglash"}
+          </button>
+          <button type="button" onClick={() => void say(item.text, 0.55)} disabled={voice === "checking"} className="btn btn-outline">Sekin</button>
         </div>
+        {voice === "browser" && <p className="text-[0.8125rem] text-muted">Qurilmangiz ovozi ishlatilmoqda.</p>}
 
       </div>
 

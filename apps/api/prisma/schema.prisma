@@ -1345,3 +1345,19 @@ model MediaItem {
 
   @@index([published, kind, position])
 }
+
+/// Sintez qilingan turkcha ovoz (o'yin va o'qish uchun). Har bir matn
+/// BIR MARTA yaratiladi, Vercel Blob'da saqlanadi va hammaga ulashiladi.
+model TtsClip {
+  /// sha256("v1|ovoz|matn") — bir xil matn = bir xil fayl
+  id          String   @id
+  text        String
+  url         String
+  bytes       Int
+  model       String
+  /// Kunlik chegara uchun: kim birinchi so'radi
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdById, createdAt])
+}

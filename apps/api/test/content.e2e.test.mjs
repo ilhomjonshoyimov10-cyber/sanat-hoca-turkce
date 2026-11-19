@@ -38,6 +38,7 @@ let ctx, TEACHER, OTHER_TEACHER, ADMIN, S1, OUTSIDER, group, otherGroup;
 // ───────── Soxta AI: tashqi tarmoqqa chiqmaydi ─────────
 const aiCalls = [];
 // Har model uchun javob rejimi: 'ok' | 'down' (500) | 'thinking-only' (bo'sh javob)
+// | 'gone' (404 — model o'chirilgan) | 'no-minimal' (thinkingLevel=minimal ni rad etadi)
 const aiMode = { default: 'ok' };
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
@@ -48,7 +49,23 @@ globalThis.fetch = async (url, init) => {
     const mode = aiMode[model] ?? aiMode.default;
     const json = (o, status = 200) =>
       new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json' } });
+    if (model.includes('tts')) {
+      if (mode === 'gone') return json({ error: { code: 404, message: `models/${model} is not found`, status: 'NOT_FOUND' } }, 404);
+      // 10 ms sukunat: 240 namuna x 2 bayt
+      return json({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/L16;codec=pcm;rate=24000', data: Buffer.alloc(480).toString('base64') } }] } }] });
+    }
+    if (u.includes('/models?')) {
+      return json({ models: [
+        { name: 'models/gemini-9.1-flash', supportedGenerationMethods: ['generateContent'] },
+        { name: 'models/gemini-9.1-flash-tts', supportedGenerationMethods: ['generateContent'] },
+        { name: 'models/text-embedding-9', supportedGenerationMethods: ['embedContent'] },
+      ] });
+    }
+    if (mode === 'gone') return json({ error: { code: 404, message: `models/${model} is not found for API version v1beta`, status: 'NOT_FOUND' } }, 404);
     if (mode === 'down') return json({ error: { code: 500, message: 'Internal error' } }, 500);
+    if (mode === 'no-minimal' && JSON.parse(String(init?.body ?? '{}')).generationConfig?.thinkingConfig?.thinkingLevel === 'minimal') {
+      return json({ error: { code: 400, message: 'thinking_level minimal is not supported by this model' } }, 400);
+    }
     if (mode === 'thinking-only') {
       return json({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ thought: true, text: 'O‘ylayapman...' }] } }] });
     }
@@ -402,26 +419,114 @@ describe('AI yordamchi', () => {
     assert.equal(r.status, 400);
   });
 
-  it("'thinking' qismi javobga aralashmaydi va o'chirib so'raladi", async () => {
+  it("'thinking' qismi javobga aralashmaydi, o'ylash eng past darajada so'raladi", async () => {
     aiCalls.length = 0;
     const r = await S1.agent.post('/ai/ask').send({ task: 'CHAT', message: 'Teşekkürler' });
     assert.equal(r.status, 201, JSON.stringify(r.body));
     assert.equal(r.body.answer, 'Merhaba! (Salom!)');
-    assert.equal(aiCalls[0].body.generationConfig.thinkingConfig.thinkingBudget, 0);
-    assert.ok(aiCalls[0].body.generationConfig.maxOutputTokens >= 2048);
+    const g = aiCalls[0].body.generationConfig;
+    assert.ok(g.thinkingConfig.thinkingLevel, JSON.stringify(g));
+    assert.equal(g.thinkingConfig.thinkingBudget, undefined, 'ikkalasi birga 400 beradi');
+    assert.equal(g.temperature, undefined, 'Gemini 3 uchun harorat standart qoladi');
+    assert.ok(g.maxOutputTokens >= 4096);
   });
 
-  it('asosiy model ishlamasa zaxira model javob beradi', async () => {
+  it('asosiy model ishlamasa zaxira model javob beradi va eslab qolinadi', async () => {
     aiMode['test-model'] = 'thinking-only';
     aiCalls.length = 0;
     try {
       const r = await S1.agent.post('/ai/ask').send({ task: 'CHAT', message: 'Nasılsın?' });
       assert.equal(r.status, 201, JSON.stringify(r.body));
       assert.equal(aiCalls.length, 2);
-      assert.match(aiCalls[1].url, /gemini-2\.5-flash/);
-      assert.equal(r.body.model, 'gemini-2.5-flash');
+      assert.match(aiCalls[1].url, /gemini-3\.6-flash/);
+      assert.equal(r.body.model, 'gemini-3.6-flash');
+      // Keyingi savol to'g'ridan-to'g'ri ishlagan modelga ketadi
+      aiCalls.length = 0;
+      const r2 = await S1.agent.post('/ai/ask').send({ task: 'CHAT', message: 'İyiyim' });
+      assert.equal(r2.status, 201);
+      assert.equal(aiCalls.length, 1);
+      assert.match(aiCalls[0].url, /gemini-3\.6-flash/);
     } finally {
       delete aiMode['test-model'];
+    }
+  });
+
+  it("o'chirilgan modellar (404) o'tkazib yuboriladi, gemini-2.5 uchun byudjet 0", async () => {
+    const { resetAiMemory } = await import('../dist/ai/ai.provider.js');
+    resetAiMemory();
+    for (const m of ['test-model', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3-flash-preview', 'gemini-flash-latest', 'gemini-flash-lite-latest']) aiMode[m] = 'gone';
+    aiCalls.length = 0;
+    try {
+      const r = await ADMIN.agent.post('/ai/ask').send({ task: 'CHAT', message: 'Kolay gelsin' });
+      assert.equal(r.status, 201, JSON.stringify(r.body));
+      assert.equal(r.body.model, 'gemini-2.5-flash');
+      const last = aiCalls.at(-1).body.generationConfig;
+      assert.equal(last.thinkingConfig.thinkingBudget, 0);
+      assert.equal(last.temperature, 0.4);
+      // Ikkinchi safar 404 modellar qayta so'ralmaydi
+      aiCalls.length = 0;
+      const r2 = await ADMIN.agent.post('/ai/ask').send({ task: 'CHAT', message: 'Sağ ol' });
+      assert.equal(r2.status, 201);
+      assert.equal(aiCalls.length, 1);
+    } finally {
+      for (const k of Object.keys(aiMode)) if (k !== 'default') delete aiMode[k];
+      resetAiMemory();
+    }
+  });
+
+  it("navbatdagi hamma model eskirsa — Google ro'yxatidan ochiq model topiladi", async () => {
+    const { resetAiMemory } = await import('../dist/ai/ai.provider.js');
+    resetAiMemory();
+    aiMode.default = 'gone';
+    aiMode['gemini-9.1-flash'] = 'ok';
+    try {
+      const r = await ADMIN.agent.post('/ai/ask').send({ task: 'CHAT', message: 'Hoşça kal' });
+      assert.equal(r.status, 201, JSON.stringify(r.body));
+      assert.equal(r.body.model, 'gemini-9.1-flash');
+      assert.ok(!aiCalls.some((c) => c.url.includes('tts:')), 'ovoz modeli matn uchun ishlatilmaydi');
+    } finally {
+      aiMode.default = 'ok';
+      delete aiMode['gemini-9.1-flash'];
+      resetAiMemory();
+    }
+  });
+
+  it("'minimal' rad etilsa 'low' bilan qayta so'raydi", async () => {
+    aiCalls.length = 0;
+    try {
+      const { resetAiMemory } = await import('../dist/ai/ai.provider.js');
+      resetAiMemory();
+      // test-model "low" oladi; "minimal" faqat 3.x nomlarda — shuning uchun 3.6 ni sinaymiz
+      aiMode['test-model'] = 'down';
+      aiMode['gemini-3.6-flash'] = 'no-minimal';
+      const r = await ADMIN.agent.post('/ai/ask').send({ task: 'CHAT', message: 'Görüşürüz' });
+      assert.equal(r.status, 201, JSON.stringify(r.body));
+      const tries = aiCalls.filter((c) => c.url.includes('gemini-3.6-flash')).map((c) => c.body.generationConfig.thinkingConfig?.thinkingLevel);
+      assert.deepEqual(tries, ['minimal', 'low']);
+    } finally {
+      delete aiMode['test-model'];
+      delete aiMode['gemini-3.6-flash'];
+    }
+  });
+
+  it('noto‘g‘ri kalit: boshqa modellar sinalmaydi, tushunarli xato', async () => {
+    aiMode.default = 'ok';
+    const prev = globalThis.fetch;
+    let n = 0;
+    globalThis.fetch = async (url, init) => {
+      if (String(url).includes('generativelanguage')) {
+        n++;
+        return new Response(JSON.stringify({ error: { code: 400, message: 'API key not valid. Please pass a valid API key.', status: 'INVALID_ARGUMENT', details: [{ reason: 'API_KEY_INVALID' }] } }), { status: 400 });
+      }
+      return prev(url, init);
+    };
+    try {
+      const r = await ADMIN.agent.post('/ai/ask').send({ task: 'CHAT', message: 'Anahtar?' });
+      assert.equal(r.status, 503);
+      assert.equal(r.body.code, 'AI_KEY');
+      assert.equal(n, 1);
+    } finally {
+      globalThis.fetch = prev;
     }
   });
 
@@ -493,5 +598,68 @@ describe('AI yordamchi', () => {
     assert.equal(del.status, 200);
     const gone = await TEACHER.agent.get(`/ai/conversations/${id}`);
     assert.equal(gone.status, 404);
+  });
+
+  it("admin \"AI ni tekshirish\": ishlaydigan model topiladi, kalit ko'rinmaydi", async () => {
+    const denied = await TEACHER.agent.post('/ai/admin/test');
+    assert.equal(denied.status, 403);
+    const r = await ADMIN.agent.post('/ai/admin/test');
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    assert.ok(r.body.results.some((x) => x.ok), JSON.stringify(r.body));
+    assert.ok(r.body.workingModel);
+    assert.ok(Array.isArray(r.body.available));
+    assert.ok(!r.body.available.some((m) => /tts|embed/.test(m)));
+    assert.ok(!JSON.stringify(r.body).includes('test-kalit'));
+  });
+});
+
+describe('turkcha ovoz (TTS)', () => {
+  it("so'z ovozga aylanadi: WAV sarlavhasi bilan, ikkinchi safar keshdan", async () => {
+    aiCalls.length = 0;
+    const r = await S1.agent.post('/tts').send({ text: '  Ev  ' });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    assert.equal(r.body.cached, false);
+    assert.match(r.body.url, /^data:audio\/wav;base64,/);
+    const wav = Buffer.from(r.body.url.split(',')[1], 'base64');
+    assert.equal(wav.subarray(0, 4).toString('ascii'), 'RIFF');
+    assert.equal(wav.subarray(8, 12).toString('ascii'), 'WAVE');
+    assert.equal(wav.readUInt32LE(24), 24000, 'namuna chastotasi');
+    assert.equal(wav.length, 44 + 480);
+    const body = aiCalls.find((c) => c.url.includes('tts')).body;
+    assert.deepEqual(body.generationConfig.responseModalities, ['AUDIO']);
+    assert.ok(body.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName);
+    assert.match(body.contents[0].parts[0].text, /Turkish[\s\S]*\nEv$/);
+
+    aiCalls.length = 0;
+    const again = await OUTSIDER.agent.post('/tts').send({ text: 'Ev' });
+    assert.equal(again.status, 201);
+    assert.equal(again.body.cached, true);
+    assert.equal(again.body.url, r.body.url);
+    assert.equal(aiCalls.length, 0, 'keshdagi matn uchun AI ga so\'rov ketmasin');
+  });
+
+  it("eskirgan TTS modeli (404) o'tkazib yuboriladi", async () => {
+    const { resetTtsMemory } = await import('../dist/tts/tts.provider.js');
+    resetTtsMemory();
+    aiMode['gemini-3.8-flash-lite-tts'] = 'gone';
+    aiCalls.length = 0;
+    try {
+      const r = await S1.agent.post('/tts').send({ text: 'Merhaba' });
+      assert.equal(r.status, 201, JSON.stringify(r.body));
+      assert.match(aiCalls[0].url, /gemini-3\.8-flash-lite-tts/);
+      assert.match(aiCalls[1].url, /gemini-3\.8-flash-tts/);
+    } finally {
+      delete aiMode['gemini-3.8-flash-lite-tts'];
+    }
+  });
+
+  it("mehmon ishlata olmaydi, juda uzun matn rad etiladi", async () => {
+    const guest = request.agent(ctx.server).set(CSRF);
+    const g = await guest.post('/tts').send({ text: 'Ev' });
+    assert.equal(g.status, 401);
+    const long = await S1.agent.post('/tts').send({ text: 'a'.repeat(500) });
+    assert.equal(long.status, 400);
+    const empty = await S1.agent.post('/tts').send({ text: '   ' });
+    assert.equal(empty.status, 400);
   });
 });

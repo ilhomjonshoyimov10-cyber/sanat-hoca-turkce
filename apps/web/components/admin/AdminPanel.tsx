@@ -52,13 +52,14 @@ export function AdminPanel() {
   if (user.role !== "ADMIN") return null;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-8 [&>*]:min-w-0">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-cobalt/25 pb-6">
         <div>
           <h1 className="text-[clamp(1.9rem,4vw,2.6rem)] lg:text-[2.6rem]">Administrator paneli</h1>
           <p className="mt-2 text-muted">Butun tizim shu yerdan boshqariladi.</p>
         </div>
-        <div className="segment" role="tablist" aria-label="Bo'limlar">
+        {/* Telefonda 8 ta bo'lim sig'maydi: sahifa emas, faqat shu qator suriladi */}
+        <div className="segment max-w-full overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&>button]:shrink-0" role="tablist" aria-label="Bo'limlar">
           {TABS.map((t) => (
             <button
               key={t.key}

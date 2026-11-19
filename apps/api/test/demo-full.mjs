@@ -134,6 +134,71 @@ for (const [role, email, first, last] of [['ADMIN', 'admin@demo.uz', 'Admin', 'D
   });
 }
 
+// ── Demo faollik: panellar (admin grafiklari, ustoz 3D xaritasi) bo'sh ko'rinmasin ──
+const studentHash = await hashPassword('demo-oquvchi-parol-2026');
+const NAMES = [['Aziza', 'Karimova'], ['Bekzod', 'Tursunov'], ['Dilnoza', 'Rahimova'], ['Jasur', 'Aliyev'], ['Madina', 'Yusupova'], ['Otabek', 'Qodirov'], ['Sevara', 'Nazarova'], ['Ulug\'bek', 'Ergashev'], ['Zarina', 'Saidova'], ['Sardor', 'Ismoilov'], ['Nilufar', 'Hakimova'], ['Timur', 'Rashidov']];
+const DAY = 86400000;
+let seed = 7;
+const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+NAMES.forEach(([first, last], i) => {
+  db.users.push({
+    id: `demo-s${i}`, email: `s${i}@demo.uz`, phone: null, firstName: first, lastName: last, role: 'STUDENT', locale: 'UZ',
+    avatarUrl: null, isActive: true, twoFactorEnabled: false, twoFactorSecret: null, twoFactorLastStep: null,
+    leaderboardOptIn: i % 2 === 0, parentConsent: true, failedLoginCount: 0, lockedUntil: null, passwordHash: studentHash,
+    birthDate: null, bio: null, timezone: 'Asia/Tashkent', createdAt: new Date(now - Math.floor(rnd() * 60) * DAY),
+    emailVerifiedAt: now, telegramVerifiedAt: null, telegramChatId: null, lastLoginAt: i > 9 ? new Date(now - 9 * DAY) : new Date(now - (i % 3) * DAY),
+  });
+});
+const GROUPS = [['A1 · Ertalabki', 'A1', [0, 1, 2, 3]], ['A2 · Kechki', 'A2', [4, 5, 6, 7]], ['B1 · Dam olish', 'B1', [8, 9, 10, 11]]];
+GROUPS.forEach(([name, level, idx], gi) => {
+  db.groups.push({ id: `demo-g${gi}`, name, level, schedule: 'Du-Chor-Ju 19:00', meetingUrl: null, isActive: true, joinCode: null, teacherId: 'demo-teacher', courseId: null, createdAt: new Date(now - (40 - gi) * DAY) });
+  for (const i of idx) db.members.push({ groupId: `demo-g${gi}`, userId: `demo-s${i}`, joinedAt: new Date(now - 30 * DAY) });
+});
+const GAMES = ['FLASHCARDS', 'MATCH_PAIRS', 'LISTEN_AND_WRITE', 'FILL_GAP', 'SUFFIX_TRAINER', 'VERB_FORM', 'DIALOGUE', 'ANTONYM'];
+for (let d = 0; d < 45; d++) {
+  NAMES.forEach((_, i) => {
+    if (i > 9 && d < 9) return; // ikki o'quvchi 9 kundan beri kirmagan — "sustlashganlar"
+    const plays = Math.floor(rnd() * (i < 4 ? 9 : i < 8 ? 6 : 4) * (d % 7 === 6 ? 0.3 : 1));
+    for (let k = 0; k < plays; k++) {
+      const hour = [8, 9, 13, 17, 19, 20, 21, 22][Math.floor(rnd() * 8)];
+      const at = new Date(Date.parse(new Date(now - d * DAY).toISOString().slice(0, 10) + `T${String(hour).padStart(2, '0')}:00:00+05:00`) + Math.floor(rnd() * 3600_000));
+      if (at > now) continue;
+      db.results.push({ id: `demo-r${d}-${i}-${k}`, userId: `demo-s${i}`, game: GAMES[Math.floor(rnd() * GAMES.length)], score: 10, durationSec: null, createdAt: at });
+    }
+  });
+}
+NAMES.forEach((_, i) => db.stats.push({ userId: `demo-s${i}`, xp: 300 + i * 70, level: 2 + (i % 4), streak: i > 9 ? 0 : 1 + (i % 6), longestStreak: 8, lastActiveDay: i > 9 ? new Date(now - 9 * DAY) : new Date(now.toISOString().slice(0, 10)), weeklyXp: 0 }));
+for (let k = 0; k < 18; k++) {
+  db.leads.push({ id: `demo-l${k}`, name: `Ariza ${k + 1}`, phone: `+99890${String(1000000 + k)}`, status: k < 5 ? 'ENROLLED' : k < 11 ? 'CONTACTED' : 'NEW', level: null, message: null, userId: null, createdAt: new Date(now - Math.floor(rnd() * 28) * DAY) });
+}
+db.homework.push({ id: 'demo-hw1', groupId: 'demo-g0', title: 'Oila haqida 5 ta gap', description: 'Har bir gapda egalik qo\'shimchasi bo\'lsin', maxScore: 100, dueAt: new Date(now.getTime() + 2 * DAY), attachmentUrl: null, createdAt: new Date(now - DAY) });
+db.submissions.push({ id: 'demo-sub1', homeworkId: 'demo-hw1', studentId: 'demo-s0', text: 'Benim annem öğretmen.', fileUrl: null, score: null, feedback: null, status: 'SUBMITTED', submittedAt: now });
+db.submissions.push({ id: 'demo-sub2', homeworkId: 'demo-hw1', studentId: 'demo-s1', text: 'Babam doktor.', fileUrl: null, score: null, feedback: null, status: 'SUBMITTED', submittedAt: now });
+
+// ── Soxta Gemini (DEMO_FAKE_AI=1): AI chat va ovoz tarmoqsiz tekshiriladi ──
+if (process.env.DEMO_FAKE_AI === '1') {
+  process.env.AI_PROVIDER = 'gemini';
+  process.env.AI_API_KEY = 'demo-kalit';
+  process.env.AI_MODEL ??= 'gemini-2.0-flash'; // eskirgan nom — 404, keyingisiga o'tishi tekshiriladi
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    const u = String(url);
+    if (!u.includes('generativelanguage.googleapis.com')) return realFetch(url, init);
+    const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json' } });
+    const model = /models\/([^:?]+)/.exec(u)?.[1] ?? '';
+    if (/2\.0-flash/.test(model)) return json({ error: { code: 404, message: `models/${model} is no longer available to new users`, status: 'NOT_FOUND' } }, 404);
+    await new Promise((r) => setTimeout(r, 400));
+    if (model.includes('tts')) {
+      // 0.6 soniyalik yumshoq ovoz (sinus) — o'ynatish ishlashini tekshirish uchun
+      const n = 24000 * 0.6;
+      const pcm = Buffer.alloc(n * 2);
+      for (let i = 0; i < n; i++) pcm.writeInt16LE(Math.round(Math.sin((i / 24000) * 2 * Math.PI * 440) * 6000 * Math.min(1, (n - i) / 2400)), i * 2);
+      return json({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/L16;codec=pcm;rate=24000', data: pcm.toString('base64') } }] } }] });
+    }
+    return json({ candidates: [{ content: { parts: [{ text: 'Merhaba! "Merhaba" — salom degani. (demo javob)' }] } }] });
+  };
+}
+
 const mod = await Test.createTestingModule({ imports: [AppModule] })
   .overrideProvider(PrismaService).useValue(prisma).compile();
 const app = mod.createNestApplication();

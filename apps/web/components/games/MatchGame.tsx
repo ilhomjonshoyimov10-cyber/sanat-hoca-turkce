@@ -57,7 +57,7 @@ export function MatchGame({ onStats, onFail, onExit, level }: GameProps) {
       const body = { token: set.token, pairs: pairs.map((r, left) => ({ left, right: r as number })) };
       const res = await api<MatchResult>("/games/match/answer", { method: "POST", body });
       setResult(res);
-      onStats(res.stats);
+      onStats(res.stats, { correct: res.results.every((x) => x.correct), xp: res.xpGained });
     } catch (e) {
       onFail(e);
     } finally {

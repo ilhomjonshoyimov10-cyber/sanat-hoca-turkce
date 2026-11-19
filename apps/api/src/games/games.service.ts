@@ -33,6 +33,8 @@ const CHAIN_LENGTH = 10;
  * qayta-qayta yuborib cheksiz XP yig'ish mumkin bo'lardi.
  */
 const DAILY_XP_CAP_PER_GAME = 120;
+/** Kunlik maqsad: ~5 ta to'g'ri javob. Kichik — har kuni bajariladigan bo'lsin. */
+const DAILY_GOAL_XP = 50;
 
 /** Ma'no bo'yicha mavzu tegining boshlanishi, masalan "mavzu:ovqat". */
 const TOPIC_TAG = 'mavzu:';
@@ -301,7 +303,13 @@ export class GamesService {
     const last = stats.lastActiveDay ? stats.lastActiveDay.toISOString().slice(0, 10) : null;
     const today = tashkentDay(now);
     const alive = last === today || last === dayBefore(today);
+    // Bugungi XP (Toshkent yarim tunidan) — kunlik maqsad halqasi uchun
+    const todayAgg = await this.prisma.gameResult
+      .aggregate({ where: { userId, createdAt: { gte: new Date(`${today}T00:00:00+05:00`) } }, _sum: { score: true } })
+      .catch(() => null);
     return {
+      todayXp: todayAgg?._sum.score ?? 0,
+      dailyGoal: DAILY_GOAL_XP,
       xp: stats.xp,
       level: stats.level,
       streak: alive ? stats.streak : 0,
@@ -396,7 +404,9 @@ export class GamesService {
   private async xpToday(userId: string, game: GameType): Promise<number> {
     const today = tashkentDay(new Date());
     const rows = await this.prisma.gameResult.findMany({
-      where: { userId, game, createdAt: { gte: new Date(`${today}T00:00:00Z`) } },
+      // Toshkent yarim tuni (UTC+5). Oldin UTC yarim tuni olinardi: tunda 00:00–05:00
+      // oralig'ida chegara umuman ishlamas edi (test aynan shu soatda topdi).
+      where: { userId, game, createdAt: { gte: new Date(`${today}T00:00:00+05:00`) } },
       select: { score: true },
     });
     return rows.reduce((sum, r) => sum + r.score, 0);
